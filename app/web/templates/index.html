@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="tr">
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Amazon Trend Finder</title>
+<link rel="stylesheet" href="/static/css/styles.css">
+<body>
+<header>
+  <h1>Amazon Trend Finder</h1>
+</header>
+
+<section class="controls">
+  <div>
+    <label>Start week</label>
+    <select id="start"></select>
+  </div>
+  <div>
+    <label>End week</label>
+    <select id="end"></select>
+  </div>
+  <div>
+    <label>Include</label>
+    <input id="include" placeholder="iphone, croc..." />
+  </div>
+  <div>
+    <label>Exclude</label>
+    <input id="exclude" placeholder="case, charger..." />
+  </div>
+  <button id="run">Find uptrends</button>
+  <button id="reindex" title="Yeni hafta eklediysen">Reindex</button>
+</section>
+
+<section class="summary">
+  <span id="found">Found: 0</span>
+</section>
+
+<section>
+  <table id="tbl">
+    <thead>
+      <tr>
+        <th>Term</th>
+        <th>Start rank</th>
+        <th>End rank</th>
+        <th>Total improvement</th>
+        <th>Weeks</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</section>
+
+<!-- Modal -->
+<div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 id="modalTitle">Trend</h3>
+      <button id="closeModal">✕</button>
+    </div>
+    <div id="chart" class="chart"></div>
+  </div>
+</div>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+{
+  "project_stage": "Deployment prep",
+  "current_focus": "Dockerfile ve remote VM hazırlığı",
+  "next_steps": ["compose.prod.yml", "CI/CD pipeline", "health endpoint"]
+}

@@ -1,0 +1,5 @@
+﻿data/store/*.pkl
+data/raw/*
+.env
+__pycache__/
+*.pyc
