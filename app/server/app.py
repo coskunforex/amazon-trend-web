@@ -22,8 +22,16 @@ app = Flask(
 # Eski:
 # INDEX = build_index(PROJECT_ROOT)
 
-# Yeni:
-INDEX = build_index_cached(PROJECT_ROOT)
+# CSV yoksa hata vermeden boş başlat
+def _empty_index():
+    return {"weeks": [], "uptrends": [], "series": {}}
+
+try:
+    INDEX = build_index_cached(PROJECT_ROOT)
+except Exception as e:
+    print(f"⚠️ Veri bulunamadı, boş index başlatılıyor: {e}")
+    INDEX = _empty_index()
+
 
 
 @app.route("/")
