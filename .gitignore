@@ -3,3 +3,6 @@ data/raw/*
 .env
 __pycache__/
 *.pyc
+# data klasörü ignore edilebilir ama raw hariç
+!data/raw/
+!data/raw/.keep
