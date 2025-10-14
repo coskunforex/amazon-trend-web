@@ -1,3 +1,9 @@
+from pathlib import Path
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+RAW_DIR = PROJECT_ROOT / "data" / "raw"
+RAW_DIR.mkdir(parents=True, exist_ok=True)
+
+
 from flask import Flask, jsonify, request, render_template
 import os
 from app.core.trend_core import build_index_cached, query_uptrends, query_series
