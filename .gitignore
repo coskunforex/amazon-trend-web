@@ -1,8 +1,10 @@
-﻿data/store/*.pkl
-data/raw/*
-.env
+﻿# Python / env
 __pycache__/
 *.pyc
-# data klasörü ignore edilebilir ama raw hariç
-!data/raw/
-!data/raw/.keep
+.env
+
+# DATA
+data/**            # önce tüm data'yı ignore et
+!data/raw/         # sonra raw klasörünü geri dahil et
+!data/raw/**       # ve raw içindeki TÜM dosyaları dahil et
+data/store/**      # store/cache asla git'e girmesin
