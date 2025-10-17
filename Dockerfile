@@ -1,3 +1,4 @@
+# Dockerfile — SADE, TEK CMD
 FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -16,6 +17,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Daha net loglar için access & error logfile açtık, düşük RAM için 1 worker / 2 thread.
-# Shell-form ile ${PORT} genişliyor.
-CMD ["/bin/sh","-c","gunicorn app.server.app:app -w 1 -k gthread --threads 2 --worker-tmp-dir /dev/shm -b 0.0.0.0:${PORT} --timeout 120 --access-logfile - --error-logfile - --log-level info"]
+# sync worker + proxy ayarı + kısa keep-alive
+CMD ["/bin/sh","-c","gunicorn app.server.app:app -w 1 -k sync -b 0.0.0.0:${PORT} --timeout 90 --keep-alive 2 --forwarded-allow-ips='*' --access-logfile - --error-logfile - --log-level info"]
