@@ -1,94 +1,78 @@
+# app/server/app.py
+from flask import Flask, jsonify, request
+import os, gc
 from pathlib import Path
+
+# Repo kökü
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-RAW_DIR = PROJECT_ROOT / "data" / "raw"
-RAW_DIR.mkdir(parents=True, exist_ok=True)
-
-
-from flask import Flask, jsonify, request, render_template
-import os
-from app.core.trend_core import build_index_cached, query_uptrends, query_series
-
-
-# Proje kökü: bu dosyanın 3 üstü (amazon-trend-web/)
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 app = Flask(
     __name__,
-    template_folder=os.path.join(PROJECT_ROOT, "app", "web", "templates"),
-    static_folder=os.path.join(PROJECT_ROOT, "app", "web", "static"),
+    template_folder=str(PROJECT_ROOT / "app" / "web" / "templates"),
+    static_folder=str(PROJECT_ROOT / "app" / "web" / "static"),
 )
 
-# Uygulama açılışında index'i yükle
-# Eski:
-# INDEX = build_index(PROJECT_ROOT)
+# Boot'ta AĞIR İŞ YOK
+INDEX = None
 
-# CSV yoksa hata vermeden boş başlat
-def _empty_index():
-    return {"weeks": [], "uptrends": [], "series": {}}
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
-try:
-    INDEX = build_index_cached(PROJECT_ROOT)
-except Exception as e:
-    print(f"⚠️ Veri bulunamadı, boş index başlatılıyor: {e}")
-    INDEX = _empty_index()
-
-
-
-@app.route("/")
+@app.get("/")
 def home():
-    return render_template("index.html")
+    return "OK - backend is live"
 
 @app.get("/weeks")
 def weeks():
-    items = []
-    for weekId, dt in INDEX.weeks:
-        items.append({
-            "weekId": weekId,
-            "label": INDEX.week_labels[weekId],
-            "date": dt.isoformat()
-        })
+    global INDEX
+    if INDEX is None:
+        return jsonify([])
+    items = [{"weekId": w, "label": INDEX.week_labels[w], "date": dt.isoformat()}
+             for (w, dt) in INDEX.weeks]
     return jsonify(items)
 
 @app.get("/uptrends")
 def uptrends():
+    global INDEX
+    if INDEX is None:
+        return jsonify([])
     try:
         startId = int(request.args.get("startWeekId"))
-        endId = int(request.args.get("endWeekId"))
+        endId   = int(request.args.get("endWeekId"))
     except:
         return jsonify({"error":"startWeekId & endWeekId required"}), 400
-
     include = request.args.get("include") or ""
     exclude = request.args.get("exclude") or ""
-
-    rows = query_uptrends(INDEX, startId, endId, include=include, exclude=exclude, limit=5000)
+    from app.core import trend_core as core   # LAZY IMPORT
+    rows = core.query_uptrends(INDEX, startId, endId, include=include, exclude=exclude, limit=5000)
     return jsonify(rows)
 
 @app.get("/series")
 def series():
+    global INDEX
+    if INDEX is None:
+        return jsonify([])
     term = request.args.get("term")
     if not term:
         return jsonify({"error":"term required"}), 400
     try:
         startId = int(request.args.get("startWeekId"))
-        endId = int(request.args.get("endWeekId"))
+        endId   = int(request.args.get("endWeekId"))
     except:
         return jsonify({"error":"startWeekId & endWeekId required"}), 400
-
-    rows = query_series(INDEX, term, startId, endId)
+    from app.core import trend_core as core   # LAZY IMPORT
+    rows = core.query_series(INDEX, term, startId, endId)
     return jsonify(rows)
 
 @app.get("/reindex")
 def reindex():
     global INDEX
-    INDEX = build_index(PROJECT_ROOT)
-    return jsonify({"status":"ok", "weeks": len(INDEX.weeks)})
-
-
-@app.route("/health")
-def health():
-    return {"status": "ok"}
-
+    from app.core import trend_core as core   # LAZY IMPORT
+    INDEX = core.build_index_cached(PROJECT_ROOT)
+    gc.collect()
+    return jsonify({"status":"ok","weeks": len(INDEX.weeks)})
 
 if __name__ == "__main__":
-    # Geliştirme için:
-    app.run(host="127.0.0.1", port=8000, debug=True)
+    port = int(os.getenv("PORT", 8000))
+    app.run(host="0.0.0.0", port=port, debug=False)
