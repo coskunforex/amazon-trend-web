@@ -74,8 +74,11 @@ xlsxwriter==3.2.9
   - ./tools/
   - ./.env
   - ./.env.example
+  - ./.gitignore
+  - ./Dockerfile
   - ./STATE.json
   - ./daily_report.md
+  - ./requirements.txt
   - ./roadmap.md
 - **app/**
   - app/core/
@@ -103,8 +106,8 @@ xlsxwriter==3.2.9
 - **config/**
 - **data/**
   - data/raw/
-  - data/store/
 - **data\raw/**
+  - data\raw/.keep
   - data\raw/US_Top_Search_Terms_Simple_Week_2025_07_12.csv
   - data\raw/US_Top_Search_Terms_Simple_Week_2025_07_19.csv
   - data\raw/US_Top_Search_Terms_Simple_Week_2025_07_26.csv
@@ -116,8 +119,6 @@ xlsxwriter==3.2.9
   - data\raw/US_Top_Search_Terms_Simple_Week_2025_09_06.csv
   - data\raw/US_Top_Search_Terms_Simple_Week_2025_09_13.csv
   - data\raw/US_Top_Search_Terms_Simple_Week_2025_09_20.csv
-- **data\store/**
-  - data\store/index_4556008e7eabdf36c29ad24b7a4a3631.pkl
 - **scripts/**
   - scripts/daily_report.py
 - **tools/**
@@ -395,6 +396,12 @@ def query_series(idx: TrendIndex, term: str, start_week_id: int, end_week_id: in
 ### app\server\app.py
 
 ```py
+from pathlib import Path
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+RAW_DIR = PROJECT_ROOT / "data" / "raw"
+RAW_DIR.mkdir(parents=True, exist_ok=True)
+
+
 from flask import Flask, jsonify, request, render_template
 import os
 from app.core.trend_core import build_index_cached, query_uptrends, query_series
@@ -413,8 +420,16 @@ app = Flask(
 # Eski:
 # INDEX = build_index(PROJECT_ROOT)
 
-# Yeni:
-INDEX = build_index_cached(PROJECT_ROOT)
+# CSV yoksa hata vermeden boş başlat
+def _empty_index():
+    return {"weeks": [], "uptrends": [], "series": {}}
+
+try:
+    INDEX = build_index_cached(PROJECT_ROOT)
+except Exception as e:
+    print(f"⚠️ Veri bulunamadı, boş index başlatılıyor: {e}")
+    INDEX = _empty_index()
+
 
 
 @app.route("/")
@@ -465,6 +480,12 @@ def reindex():
     global INDEX
     INDEX = build_index(PROJECT_ROOT)
     return jsonify({"status":"ok", "weeks": len(INDEX.weeks)})
+
+
+@app.route("/health")
+def health():
+    return {"status": "ok"}
+
 
 if __name__ == "__main__":
     # Geliştirme için:

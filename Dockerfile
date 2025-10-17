@@ -26,3 +26,6 @@ COPY . .
 EXPOSE 8000
 # Flask app nesnesi: app.server.app:app  (projendeki dosya/nesne) 
 CMD ["gunicorn", "app.server.app:app", "-b", "0.0.0.0:8000", "-w", "2", "-k", "gthread", "--threads", "8"]
+
+# Dockerfile (son satır)
+CMD ["gunicorn", "app.server.app:app", "-w", "1", "-k", "gthread", "--threads", "6", "-b", "0.0.0.0:${PORT}", "--timeout", "120"]
