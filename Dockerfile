@@ -15,14 +15,11 @@ WORKDIR /app
 
 # Bağımlılıklar
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Uygulama kodu
 COPY . .
 
-# Render kendi portunu ENV olarak veriyor; shell form ile genişletiyoruz
-# Tek worker + 6 thread = düşük RAM, yeterli concurrency
-CMD ["/bin/sh", "-c", "gunicorn app.server.app:app -w 1 -k gthread --threads 6 -b 0.0.0.0:${PORT} --timeout 120"]
-
-ENV PORT=8000
+# Render $PORT'u ENV olarak geçer; shell-form ile genişletiyoruz.
+# Tek worker + 2 thread => düşük RAM, stabil
 CMD ["/bin/sh", "-c", "gunicorn app.server.app:app -w 1 -k gthread --threads 2 --worker-tmp-dir /dev/shm -b 0.0.0.0:${PORT} --timeout 120"]
