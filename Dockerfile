@@ -23,3 +23,6 @@ COPY . .
 # Render kendi portunu ENV olarak veriyor; shell form ile genişletiyoruz
 # Tek worker + 6 thread = düşük RAM, yeterli concurrency
 CMD ["/bin/sh", "-c", "gunicorn app.server.app:app -w 1 -k gthread --threads 6 -b 0.0.0.0:${PORT} --timeout 120"]
+
+ENV PORT=8000
+CMD ["/bin/sh", "-c", "gunicorn app.server.app:app -w 1 -k gthread --threads 2 --worker-tmp-dir /dev/shm -b 0.0.0.0:${PORT} --timeout 120"]
