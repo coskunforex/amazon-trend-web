@@ -6,23 +6,31 @@ from pathlib import Path
 DATA_DIR = Path(os.getenv("DATA_DIR", Path(__file__).resolve().parents[2] / "data"))
 DB_PATH  = DATA_DIR / "trends.duckdb"
 
-def get_conn(read_only=True):
+def _ensure_db():
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    con = duckdb.connect(DB_PATH.as_posix(), read_only=read_only)
-    # Şemayı sabitle
-    con.execute("CREATE SCHEMA IF NOT EXISTS main.trends")
-    return con
+    if not DB_PATH.exists():
+        con = duckdb.connect(DB_PATH.as_posix())
+        con.execute("CREATE SCHEMA IF NOT EXISTS trends")
+        con.execute("CREATE TABLE IF NOT EXISTS trends.searches(week TEXT, term TEXT, rank INTEGER)")
+        con.close()
+
+def get_conn(read_only=True):
+    # DB yoksa oluştur (read_only olsa bile)
+    _ensure_db()
+    return duckdb.connect(DB_PATH.as_posix(), read_only=read_only)
 
 def init_full(project_root):
+    """data/raw altındaki TÜM CSV'leri DuckDB'ye baştan yükler."""
+    from pathlib import Path
     raw = Path(project_root) / "data" / "raw"
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    _ensure_db()
     con  = duckdb.connect(DB_PATH.as_posix())
-    con.execute("CREATE SCHEMA IF NOT EXISTS main.trends")
-    con.execute("DROP TABLE IF EXISTS main.trends.searches")
-    con.execute("CREATE TABLE main.trends.searches(week TEXT, term TEXT, rank INTEGER)")
+    con.execute("CREATE SCHEMA IF NOT EXISTS trends")
+    con.execute("DROP TABLE IF EXISTS trends.searches")
+    con.execute("CREATE TABLE trends.searches(week TEXT, term TEXT, rank INTEGER)")
     for p in sorted(raw.glob("*.csv")):
         con.execute(f"""
-            INSERT INTO main.trends.searches
+            INSERT INTO trends.searches
             SELECT
               '{p.stem}'::TEXT AS week,
               column0::TEXT    AS term,
@@ -37,16 +45,12 @@ def init_full(project_root):
     con.close()
 
 def append_week(week_csv_path: str, week_label: str):
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    """Tek haftalık CSV ekle (haftalık rutin)."""
+    _ensure_db()
     con = duckdb.connect(DB_PATH.as_posix())
-    con.execute("CREATE SCHEMA IF NOT EXISTS main.trends")
-    con.execute("""
-      CREATE TABLE IF NOT EXISTS main.trends.searches(
-        week TEXT, term TEXT, rank INTEGER
-      )
-    """)
+    con.execute("CREATE TABLE IF NOT EXISTS trends.searches(week TEXT, term TEXT, rank INTEGER)")
     con.execute(f"""
-        INSERT INTO main.trends.searches
+        INSERT INTO trends.searches
         SELECT
           '{week_label}'::TEXT,
           column0::TEXT,
