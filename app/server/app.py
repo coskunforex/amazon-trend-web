@@ -58,6 +58,7 @@ def reindex():
         app.logger.exception("reindex failed")
         return jsonify({"error": "reindex_failed", "message": str(e)}), 500
 
+# app/server/app.py içindeki uptrends fonksiyonunu TAMAMIYLA bununla değiştir
 @app.get("/uptrends")
 def uptrends():
     try:
@@ -69,20 +70,44 @@ def uptrends():
             return jsonify({"error": "startWeekLabel & endWeekLabel required"}), 400
 
         con = get_conn(read_only=True)
-        # 🔄 LEAD() kullanımı: self-join yok → az RAM
+        # 1) Tüm haftaları sırala, numerik week_id ver
+        # 2) İstenen aralığı numerik olarak daralt
+        # 3) LEAD() ile ardışık haftalarda rank iyileşmesini say
         q = f"""
-        WITH base AS (
+        WITH all_weeks AS (
+          SELECT DISTINCT week FROM searches ORDER BY week
+        ),
+        weeks_idx AS (
+          SELECT week,
+                 ROW_NUMBER() OVER (ORDER BY week) AS week_id
+          FROM all_weeks
+        ),
+        bounds AS (
+          SELECT
+            (SELECT week_id FROM weeks_idx WHERE week = ?) AS start_id,
+            (SELECT week_id FROM weeks_idx WHERE week = ?) AS end_id
+        ),
+        base AS (
+          SELECT s.term,
+                 s.rank,
+                 w.week_id
+          FROM searches s
+          JOIN weeks_idx w USING(week)
+          JOIN bounds b
+            ON w.week_id BETWEEN b.start_id AND b.end_id
+          WHERE s.rank IS NOT NULL
+        ),
+        stepped AS (
           SELECT
             term,
             rank,
-            LEAD(rank) OVER (PARTITION BY term ORDER BY week) AS next_rank
-          FROM searches
-          WHERE week BETWEEN ? AND ?
+            LEAD(rank) OVER (PARTITION BY term ORDER BY week_id) AS next_rank
+          FROM base
         )
         SELECT
           term,
           SUM(CASE WHEN next_rank < rank THEN 1 ELSE 0 END) AS ups
-        FROM base
+        FROM stepped
         GROUP BY term
         HAVING SUM(CASE WHEN next_rank < rank THEN 1 ELSE 0 END) >= 1
         ORDER BY ups DESC
