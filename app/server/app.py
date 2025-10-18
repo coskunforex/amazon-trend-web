@@ -1,9 +1,8 @@
-# app/server/app.py
 from flask import Flask, jsonify, request
-import os, gc
+import os, logging
 from pathlib import Path
+from app.core.db import get_conn, init_full, append_week
 
-# Repo kökü
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 app = Flask(
@@ -12,8 +11,8 @@ app = Flask(
     static_folder=str(PROJECT_ROOT / "app" / "web" / "static"),
 )
 
-# Boot'ta AĞIR İŞ YOK
-INDEX = None
+logging.basicConfig(level=logging.INFO)
+app.logger.setLevel(logging.INFO)
 
 @app.get("/health")
 def health():
@@ -25,53 +24,96 @@ def home():
 
 @app.get("/weeks")
 def weeks():
-    global INDEX
-    if INDEX is None:
-        return jsonify([])
-    items = [{"weekId": w, "label": INDEX.week_labels[w], "date": dt.isoformat()}
-             for (w, dt) in INDEX.weeks]
-    return jsonify(items)
-
-@app.get("/uptrends")
-def uptrends():
-    global INDEX
-    if INDEX is None:
-        return jsonify([])
     try:
-        startId = int(request.args.get("startWeekId"))
-        endId   = int(request.args.get("endWeekId"))
-    except:
-        return jsonify({"error":"startWeekId & endWeekId required"}), 400
-    include = request.args.get("include") or ""
-    exclude = request.args.get("exclude") or ""
-    from app.core import trend_core as core   # LAZY IMPORT
-    rows = core.query_uptrends(INDEX, startId, endId, include=include, exclude=exclude, limit=5000)
-    return jsonify(rows)
+        con = get_conn()
+        rows = con.execute("SELECT DISTINCT week FROM searches ORDER BY week").fetchall()
+        con.close()
+        return jsonify([{"weekLabel": w[0]} for w in rows])
+    except Exception as e:
+        app.logger.exception("weeks failed")
+        return jsonify({"error":"weeks_failed","message":str(e)}), 500
 
 @app.get("/series")
 def series():
-    global INDEX
-    if INDEX is None:
-        return jsonify([])
-    term = request.args.get("term")
-    if not term:
-        return jsonify({"error":"term required"}), 400
     try:
-        startId = int(request.args.get("startWeekId"))
-        endId   = int(request.args.get("endWeekId"))
-    except:
-        return jsonify({"error":"startWeekId & endWeekId required"}), 400
-    from app.core import trend_core as core   # LAZY IMPORT
-    rows = core.query_series(INDEX, term, startId, endId)
-    return jsonify(rows)
+        term = request.args.get("term")
+        if not term:
+            return jsonify({"error":"term required"}), 400
+        con = get_conn()
+        rows = con.execute("""
+          SELECT week, rank
+          FROM searches
+          WHERE term = ?
+          ORDER BY week
+        """, [term]).fetchall()
+        con.close()
+        return jsonify([{"week": r[0], "rank": int(r[1]) if r[1] is not None else None} for r in rows])
+    except Exception as e:
+        app.logger.exception("series failed")
+        return jsonify({"error":"series_failed","message":str(e)}), 500
+
+@app.get("/uptrends")
+def uptrends():
+    """startWeekLabel, endWeekLabel, limit, offset parametreleriyle basit 'rank iyileşme' metriği."""
+    try:
+        startL = request.args.get("startWeekLabel")
+        endL   = request.args.get("endWeekLabel")
+        if not startL or not endL:
+            return jsonify({"error":"startWeekLabel & endWeekLabel required"}), 400
+        limit  = request.args.get("limit", 200, type=int)
+        offset = request.args.get("offset", 0, type=int)
+
+        con = get_conn()
+        q = f"""
+        WITH base AS (
+          SELECT week, term, rank,
+                 ROW_NUMBER() OVER (PARTITION BY term ORDER BY week) rn
+          FROM searches
+          WHERE week BETWEEN ? AND ?
+        ),
+        pairs AS (
+          SELECT b1.term,
+                 SUM(CASE WHEN b2.rank < b1.rank THEN 1 ELSE 0 END) AS ups
+          FROM base b1
+          JOIN base b2 ON b2.term=b1.term AND b2.rn=b1.rn+1
+          GROUP BY b1.term
+        )
+        SELECT term, ups
+        FROM pairs
+        WHERE ups >= 1
+        ORDER BY ups DESC
+        LIMIT {limit} OFFSET {offset};
+        """
+        rows = con.execute(q, [startL, endL]).fetchall()
+        con.close()
+        return jsonify([{"term": r[0], "ups": int(r[1])} for r in rows])
+    except Exception as e:
+        app.logger.exception("uptrends failed")
+        return jsonify({"error":"uptrends_failed","message":str(e)}), 500
 
 @app.get("/reindex")
 def reindex():
-    global INDEX
-    from app.core import trend_core as core   # LAZY IMPORT
-    INDEX = core.build_index_cached(PROJECT_ROOT)
-    gc.collect()
-    return jsonify({"status":"ok","weeks": len(INDEX.weeks)})
+    """
+    mode=append|full
+    append: ?week=YYYY_MM_DD (CSV: data/raw/YYYY_MM_DD.csv)
+    full: data/raw içindeki tüm CSV'leri baştan yükler (canlıda gerekmedikçe kullanma)
+    """
+    try:
+        mode = (request.args.get("mode") or "append").lower()
+        if mode == "full":
+            init_full(PROJECT_ROOT)
+            return jsonify({"status":"ok","mode":"full"})
+        week = request.args.get("week")
+        if not week:
+            return jsonify({"error":"week required for append"}), 400
+        csv_path = PROJECT_ROOT / "data" / "raw" / f"{week}.csv"
+        if not csv_path.exists():
+            return jsonify({"error":f"csv not found: {csv_path.name}"}), 404
+        append_week(csv_path.as_posix(), week)
+        return jsonify({"status":"ok","mode":"append","week":week})
+    except Exception as e:
+        app.logger.exception("reindex failed")
+        return jsonify({"error":"reindex_failed","message":str(e)}), 500
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
