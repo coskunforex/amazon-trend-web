@@ -3,25 +3,26 @@ import duckdb
 import os
 from pathlib import Path
 
-# Disk kullanırsan DATA_DIR'i env'den alır; yoksa repo/data kullanır
 DATA_DIR = Path(os.getenv("DATA_DIR", Path(__file__).resolve().parents[2] / "data"))
 DB_PATH  = DATA_DIR / "trends.duckdb"
 
 def get_conn(read_only=True):
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    return duckdb.connect(DB_PATH.as_posix(), read_only=read_only)
+    con = duckdb.connect(DB_PATH.as_posix(), read_only=read_only)
+    # Şemayı sabitle
+    con.execute("CREATE SCHEMA IF NOT EXISTS main.trends")
+    return con
 
 def init_full(project_root):
-    """data/raw altındaki TÜM CSV'leri DuckDB'ye baştan yükler."""
     raw = Path(project_root) / "data" / "raw"
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     con  = duckdb.connect(DB_PATH.as_posix())
-    con.execute("CREATE SCHEMA IF NOT EXISTS trends")
-    con.execute("DROP TABLE IF EXISTS trends.searches")
-    con.execute("CREATE TABLE trends.searches(week TEXT, term TEXT, rank INTEGER)")
+    con.execute("CREATE SCHEMA IF NOT EXISTS main.trends")
+    con.execute("DROP TABLE IF EXISTS main.trends.searches")
+    con.execute("CREATE TABLE main.trends.searches(week TEXT, term TEXT, rank INTEGER)")
     for p in sorted(raw.glob("*.csv")):
         con.execute(f"""
-            INSERT INTO trends.searches
+            INSERT INTO main.trends.searches
             SELECT
               '{p.stem}'::TEXT AS week,
               column0::TEXT    AS term,
@@ -36,16 +37,16 @@ def init_full(project_root):
     con.close()
 
 def append_week(week_csv_path: str, week_label: str):
-    """Tek bir haftalık CSV'yi ekler (haftalık rutin)."""
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     con = duckdb.connect(DB_PATH.as_posix())
+    con.execute("CREATE SCHEMA IF NOT EXISTS main.trends")
     con.execute("""
-      CREATE TABLE IF NOT EXISTS trends.searches(
+      CREATE TABLE IF NOT EXISTS main.trends.searches(
         week TEXT, term TEXT, rank INTEGER
       )
     """)
     con.execute(f"""
-        INSERT INTO trends.searches
+        INSERT INTO main.trends.searches
         SELECT
           '{week_label}'::TEXT,
           column0::TEXT,
