@@ -67,24 +67,24 @@ def uptrends():
         offset = request.args.get("offset", 0, type=int)
         if not startL or not endL:
             return jsonify({"error": "startWeekLabel & endWeekLabel required"}), 400
+
         con = get_conn(read_only=True)
+        # 🔄 LEAD() kullanımı: self-join yok → az RAM
         q = f"""
         WITH base AS (
-          SELECT week, term, rank,
-                 ROW_NUMBER() OVER (PARTITION BY term ORDER BY week) rn
+          SELECT
+            term,
+            rank,
+            LEAD(rank) OVER (PARTITION BY term ORDER BY week) AS next_rank
           FROM searches
           WHERE week BETWEEN ? AND ?
-        ),
-        pairs AS (
-          SELECT b1.term,
-                 SUM(CASE WHEN b2.rank < b1.rank THEN 1 ELSE 0 END) AS ups
-          FROM base b1
-          JOIN base b2 ON b2.term=b1.term AND b2.rn=b1.rn+1
-          GROUP BY b1.term
         )
-        SELECT term, ups
-        FROM pairs
-        WHERE ups >= 1
+        SELECT
+          term,
+          SUM(CASE WHEN next_rank < rank THEN 1 ELSE 0 END) AS ups
+        FROM base
+        GROUP BY term
+        HAVING SUM(CASE WHEN next_rank < rank THEN 1 ELSE 0 END) >= 1
         ORDER BY ups DESC
         LIMIT {limit} OFFSET {offset};
         """

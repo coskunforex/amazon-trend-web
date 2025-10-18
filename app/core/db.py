@@ -20,7 +20,6 @@ def _ensure_db():
     con.close()
 
 def _sniff(path: Path):
-    # scripts/convert_to_duckdb.py ile aynı mantık
     enc = 'utf-8'
     try:
         preview = path.read_text(encoding='utf-8', errors='strict').splitlines()
@@ -43,13 +42,18 @@ def _sniff(path: Path):
 
 def get_conn(read_only=True):
     _ensure_db()
-    return duckdb.connect(DB_PATH.as_posix(), read_only=read_only)
+    con = duckdb.connect(DB_PATH.as_posix(), read_only=read_only)
+    # 🔧 Bellek optimizasyonları
+    con.execute("PRAGMA threads=1;")
+    con.execute("PRAGMA preserve_insertion_order=false;")
+    # con.execute("PRAGMA memory_limit='1024MB';")  # opsiyonel
+    return con
 
 def init_full(project_root: Path):
     """data/raw altındaki TÜM CSV'leri baştan yükler."""
     raw = Path(project_root) / "data" / "raw"
     _ensure_db()
-    con = duckdb.connect(DB_PATH.as_posix())
+    con = get_conn(read_only=False)
     con.execute("DROP TABLE IF EXISTS searches")
     con.execute("CREATE TABLE searches(week TEXT, term TEXT, rank INTEGER)")
     for p in sorted(raw.glob("*.csv")):
@@ -77,11 +81,11 @@ def init_full(project_root: Path):
     con.close()
 
 def append_week(week_csv_path: str, week_label: str):
-    """Tek hafta ekleme (haftalık rutin)."""
+    """Tek haftayı (CSV) ekler."""
     _ensure_db()
     p = Path(week_csv_path)
     enc, skip, delim = _sniff(p)
-    con = duckdb.connect(DB_PATH.as_posix())
+    con = get_conn(read_only=False)
     con.execute("CREATE TABLE IF NOT EXISTS searches(week TEXT, term TEXT, rank INTEGER)")
     con.execute(f"""
         INSERT INTO searches
