@@ -61,7 +61,7 @@ def reindex():
 @app.get("/uptrends")
 def uptrends():
     try:
-        # Her iki parametre setini de oku
+        # parametreleri oku (senin mevcut kodun)
         start_id = request.args.get("startWeekId", type=int)
         end_id   = request.args.get("endWeekId", type=int)
         startL   = request.args.get("startWeekLabel")
@@ -96,7 +96,8 @@ def uptrends():
                 return jsonify({"error":"Week labels not found"}), 400
             s_id, e_id = sorted([weeks_idx[startL], weeks_idx[endL]])
 
-        q = f"""
+        # ---- BURADAN İTİBAREN YENİ SQL (çöp terim filtresi eklendi) ----
+        q = """
         WITH all_weeks AS (
           SELECT DISTINCT week FROM searches ORDER BY week
         ),
@@ -104,16 +105,23 @@ def uptrends():
           SELECT week, ROW_NUMBER() OVER (ORDER BY week) AS week_id
           FROM all_weeks
         ),
-        base AS (
+        clean AS (
           SELECT s.term, s.rank, w.week_id
           FROM searches s
           JOIN weeks_idx w USING(week)
-          WHERE w.week_id BETWEEN ? AND ? AND s.rank IS NOT NULL
+          WHERE w.week_id BETWEEN ? AND ?
+            AND s.rank IS NOT NULL
+            AND NOT (
+              s.term LIKE '#%%'                                       -- Excel hataları (#NAME?, #REF!)
+              OR REGEXP_MATCHES(s.term, '^[0-9.eE+\\-]+$')            -- sayısal / scientific (9.78E+12, -3.2, 123)
+              OR LENGTH(TRIM(s.term)) < 2                             -- çok kısa
+              OR NOT REGEXP_MATCHES(s.term, '[A-Za-z]')               -- hiç harf yok
+            )
         ),
         stepped AS (
           SELECT term, rank,
                  LEAD(rank) OVER (PARTITION BY term ORDER BY week_id) AS next_rank
-          FROM base
+          FROM clean
         )
         SELECT term,
                SUM(CASE WHEN next_rank < rank THEN 1 ELSE 0 END) AS ups
@@ -129,6 +137,7 @@ def uptrends():
     except Exception as e:
         app.logger.exception("uptrends failed")
         return jsonify({"error": "uptrends_failed", "message": str(e)}), 500
+
 
 @app.get("/series")
 def series():
