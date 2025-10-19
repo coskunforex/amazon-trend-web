@@ -218,6 +218,12 @@ def query_uptrends(
 
     results = []
     for term, weeks_map in idx.term_ranks.items():
+                # skip invalid or numeric-only terms
+        if not term or term.startswith("#") or term.replace(".", "").isdigit():
+            continue
+        if len(term) < 2:
+            continue
+
         if not _passes_filters(term, include, exclude):
             continue
         check = _strict_uptrend_for_range(weeks_map, start_week_id, end_week_id)
