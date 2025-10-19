@@ -73,38 +73,60 @@ def _find_header_index(rows: List[List[str]]) -> Tuple[Optional[int], Optional[i
     return None, None, 0
 
 def _read_week_csv(path: str, encoding="utf-8-sig") -> Dict[str, int]:
+    """
+    Amazon Brand Analytics CSV'lerini esnek şekilde okur.
+    - 'Reporting Range' veya 'Select week' satırlarını atlar.
+    - Fazla virgül veya tırnak hatalarına toleranslıdır.
+    """
+    import csv
+
     with open(path, "r", encoding=encoding, newline="") as f:
         reader = list(csv.reader(f))
-    rank_idx, term_idx, start = _find_header_index(reader)
-    out: Dict[str, int] = {}
-    for row in reader[start:]:
-        if not row:
-            continue
-        if (
-            rank_idx is None or term_idx is None
-            or rank_idx >= len(row) or term_idx >= len(row)
-        ):
-            # esnek fallback: ilk iki dolu sütun
-            cols = [c for c in row if c and c.strip()]
-            if len(cols) < 2:
-                continue
-            rank_raw, term_raw = cols[0], cols[1]
-        else:
-            rank_raw, term_raw = row[rank_idx], row[term_idx]
 
-        term = (term_raw or "").strip().lower()
-        if not term:
+    # Başlığı bul
+    rank_idx, term_idx, start = _find_header_index(reader)
+
+    # Eğer bulunamazsa: fallback
+    if start == 0:
+        for i, row in enumerate(reader[:15]):  # ilk 15 satırı tara
+            cols = [c.strip().lower() for c in row if c.strip()]
+            if len(cols) >= 2 and "rank" in cols[0] and "term" in cols[1]:
+                rank_idx, term_idx, start = 0, 1, i + 1
+                break
+
+    out: Dict[str, int] = {}
+
+    for row in reader[start:]:
+        if not row or len(row) < 2:
             continue
+
+        # Sütunları esnek al
         try:
-            rank = int(str(rank_raw).strip().replace(",", ""))
+            rank_raw = row[rank_idx].strip() if rank_idx < len(row) else ""
+            term_raw = row[term_idx].strip() if term_idx < len(row) else ""
+        except Exception:
+            continue
+
+        # Geçersiz satırları atla
+        if not rank_raw or not term_raw:
+            continue
+
+        # Sayısal rank temizle
+        try:
+            rank = int(str(rank_raw).replace(",", "").strip())
         except:
             continue
-        if rank < 1:
+
+        term = term_raw.lower()
+        if not term or term.startswith("search term"):
             continue
-        # aynı terim tekrarlanırsa en iyi (en küçük) rank'ı tut
+
+        # Aynı terim varsa en iyi (en düşük) rank'ı al
         if term not in out or rank < out[term]:
             out[term] = rank
+
     return out
+
 
 def build_index(project_root: str) -> TrendIndex:
     """
