@@ -1,67 +1,114 @@
+# app/server/app.py
+from flask import Flask, jsonify, request
+import os, logging
+from pathlib import Path
+from app.core.db import get_conn, init_full, append_week
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+app = Flask(
+    __name__,
+    template_folder=str(PROJECT_ROOT / "app" / "web" / "templates"),
+    static_folder=str(PROJECT_ROOT / "app" / "web" / "static"),
+)
+
+logging.basicConfig(level=logging.INFO)
+app.logger.setLevel(logging.INFO)
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+@app.get("/")
+def home():
+    return "OK - backend is live"
+
+@app.get("/weeks")
+def weeks():
+    try:
+        con = get_conn(read_only=True)
+        rows = con.execute("""
+            SELECT
+              ROW_NUMBER() OVER (ORDER BY week) AS weekId,
+              week AS label
+            FROM (SELECT DISTINCT week FROM searches ORDER BY week)
+        """).fetchall()
+        con.close()
+        return jsonify([{"weekId": int(r[0]), "label": r[1]} for r in rows])
+    except Exception as e:
+        app.logger.exception("weeks failed")
+        return jsonify({"error": "weeks_failed", "message": str(e)}), 500
+
+@app.get("/reindex")
+def reindex():
+    try:
+        mode = (request.args.get("mode") or "append").lower()
+        if mode == "full":
+            init_full(PROJECT_ROOT)
+            return jsonify({"status": "ok", "mode": "full"})
+        week = request.args.get("week")
+        if not week:
+            return jsonify({"error": "week required for append"}), 400
+        csv_path = PROJECT_ROOT / "data" / "raw" / f"{week}.csv"
+        if not csv_path.exists():
+            return jsonify({"error": f"csv not found: {csv_path.name}"}), 404
+        append_week(csv_path.as_posix(), week)
+        return jsonify({"status": "ok", "mode": "append", "week": week})
+    except Exception as e:
+        app.logger.exception("reindex failed")
+        return jsonify({"error": "reindex_failed", "message": str(e)}), 500
+
 @app.get("/uptrends")
 def uptrends():
-    """
-    Param:
-      startWeekLabel, endWeekLabel (zorunlu)
-      include, exclude (opsiyonel, virgül ile)
-      limit, offset
-    """
     try:
-        startL = request.args.get("startWeekLabel")
-        endL   = request.args.get("endWeekLabel")
-        if not startL or not endL:
-            return jsonify({"error":"startWeekLabel & endWeekLabel required"}), 400
-        include = (request.args.get("include") or "").strip()
-        exclude = (request.args.get("exclude") or "").strip()
-        limit   = request.args.get("limit", 200, type=int)
-        offset  = request.args.get("offset", 0, type=int)
+        # Her iki parametre setini de oku
+        start_id = request.args.get("startWeekId", type=int)
+        end_id   = request.args.get("endWeekId", type=int)
+        startL   = request.args.get("startWeekLabel")
+        endL     = request.args.get("endWeekLabel")
+        limit    = request.args.get("limit", 200, type=int)
+        offset   = request.args.get("offset", 0, type=int)
+
+        if not ((start_id and end_id) or (startL and endL)):
+            return jsonify({"error": "Provide startWeekId/endWeekId OR startWeekLabel/endWeekLabel"}), 400
 
         con = get_conn(read_only=True)
 
-        # include/exclude filtre cümleleri
-        inc_clause = ""
-        if include:
-            inc_parts = [p.strip().lower() for p in include.split(",") if p.strip()]
-            if inc_parts:
-                ors = " OR ".join([f"regexp_matches(term, '\\\\b{p}\\\\b')" for p in inc_parts])
-                inc_clause = f"AND ({ors})"
-        exc_clause = ""
-        if exclude:
-            exc_parts = [p.strip().lower() for p in exclude.split(",") if p.strip()]
-            if exc_parts:
-                ors = " OR ".join([f"regexp_matches(term, '\\\\b{p}\\\\b')" for p in exc_parts])
-                exc_clause = f"AND NOT ({ors})"
+        # Tüm haftalara sıra numarası ver
+        con.execute("""
+            WITH all_weeks AS (
+              SELECT DISTINCT week FROM searches ORDER BY week
+            ),
+            weeks_idx AS (
+              SELECT week, ROW_NUMBER() OVER (ORDER BY week) AS week_id
+              FROM all_weeks
+            )
+            SELECT week, week_id FROM weeks_idx
+        """)
+        weeks_idx = {row[0]: int(row[1]) for row in con.fetchall()}
 
-        # SIKI FİLTRE: en az bir harf içersin, #NAME? olmasın, saf sayısal/scientific formatı olmasın
-        #   - regexp_matches(term, '[A-Za-z]')  -> en az bir harf
-        #   - NOT regexp_matches(term, '^[0-9eE.+-]+$') -> tamamı sayı/işaret/E/e/. + - ise ele
-        #   - UPPER(TRIM(term)) <> '#NAME?' -> excel hatası ele
+        # Sınırları belirle
+        if start_id and end_id:
+            s_id, e_id = min(start_id, end_id), max(start_id, end_id)
+        else:
+            if startL not in weeks_idx or endL not in weeks_idx:
+                con.close()
+                return jsonify({"error":"Week labels not found"}), 400
+            s_id, e_id = sorted([weeks_idx[startL], weeks_idx[endL]])
+
         q = f"""
-        PRAGMA threads=1;
         WITH all_weeks AS (
           SELECT DISTINCT week FROM searches ORDER BY week
         ),
-        widx AS (
-          SELECT week, ROW_NUMBER() OVER (ORDER BY week) AS week_id FROM all_weeks
-        ),
-        bounds AS (
-          SELECT
-            (SELECT week_id FROM widx WHERE week = ?) AS s,
-            (SELECT week_id FROM widx WHERE week = ?) AS e
+        weeks_idx AS (
+          SELECT week, ROW_NUMBER() OVER (ORDER BY week) AS week_id
+          FROM all_weeks
         ),
         base AS (
           SELECT s.term, s.rank, w.week_id
           FROM searches s
-          JOIN widx w USING(week)
-          JOIN bounds b ON w.week_id BETWEEN b.s AND b.e
-          WHERE s.rank IS NOT NULL
-            AND s.term IS NOT NULL
-            AND TRIM(s.term) <> ''
-            AND UPPER(TRIM(s.term)) <> '#NAME?'
-            AND regexp_matches(s.term, '[A-Za-z]')
-            AND NOT regexp_matches(s.term, '^[0-9eE.+-]+$')
-            {inc_clause}
-            {exc_clause}
+          JOIN weeks_idx w USING(week)
+          WHERE w.week_id BETWEEN ? AND ? AND s.rank IS NOT NULL
         ),
         stepped AS (
           SELECT term, rank,
@@ -74,11 +121,34 @@ def uptrends():
         GROUP BY term
         HAVING SUM(CASE WHEN next_rank < rank THEN 1 ELSE 0 END) >= 1
         ORDER BY ups DESC
-        LIMIT {limit} OFFSET {offset};
+        LIMIT ? OFFSET ?;
         """
-        rows = con.execute(q, [startL, endL]).fetchall()
+        rows = con.execute(q, [s_id, e_id, limit, offset]).fetchall()
         con.close()
         return jsonify([{"term": r[0], "ups": int(r[1])} for r in rows])
     except Exception as e:
         app.logger.exception("uptrends failed")
-        return jsonify({"error":"uptrends_failed","message":str(e)}), 500
+        return jsonify({"error": "uptrends_failed", "message": str(e)}), 500
+
+@app.get("/series")
+def series():
+    try:
+        term = request.args.get("term")
+        if not term:
+            return jsonify({"error": "term required"}), 400
+        con = get_conn(read_only=True)
+        rows = con.execute("""
+            SELECT week, rank
+            FROM searches
+            WHERE term = ?
+            ORDER BY week
+        """, [term]).fetchall()
+        con.close()
+        return jsonify([{"week": r[0], "rank": int(r[1])} for r in rows])
+    except Exception as e:
+        app.logger.exception("series failed")
+        return jsonify({"error": "series_failed", "message": str(e)}), 500
+
+if __name__ == "__main__":
+    port = int(os.getenv("PORT", 8000))
+    app.run(host="0.0.0.0", port=port, debug=False)
