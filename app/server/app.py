@@ -61,43 +61,19 @@ def reindex():
 @app.get("/uptrends")
 def uptrends():
     try:
-        # parametreleri oku (senin mevcut kodun)
         start_id = request.args.get("startWeekId", type=int)
         end_id   = request.args.get("endWeekId", type=int)
-        startL   = request.args.get("startWeekLabel")
-        endL     = request.args.get("endWeekLabel")
+        include  = (request.args.get("include") or "").strip().lower()
+        exclude  = (request.args.get("exclude") or "").strip().lower()
         limit    = request.args.get("limit", 200, type=int)
         offset   = request.args.get("offset", 0, type=int)
 
-        if not ((start_id and end_id) or (startL and endL)):
-            return jsonify({"error": "Provide startWeekId/endWeekId OR startWeekLabel/endWeekLabel"}), 400
+        if not ((start_id and end_id)):
+            return jsonify({"error": "Provide startWeekId and endWeekId"}), 400
 
         con = get_conn(read_only=True)
 
-        # Tüm haftalara sıra numarası ver
-        con.execute("""
-            WITH all_weeks AS (
-              SELECT DISTINCT week FROM searches ORDER BY week
-            ),
-            weeks_idx AS (
-              SELECT week, ROW_NUMBER() OVER (ORDER BY week) AS week_id
-              FROM all_weeks
-            )
-            SELECT week, week_id FROM weeks_idx
-        """)
-        weeks_idx = {row[0]: int(row[1]) for row in con.fetchall()}
-
-        # Sınırları belirle
-        if start_id and end_id:
-            s_id, e_id = min(start_id, end_id), max(start_id, end_id)
-        else:
-            if startL not in weeks_idx or endL not in weeks_idx:
-                con.close()
-                return jsonify({"error":"Week labels not found"}), 400
-            s_id, e_id = sorted([weeks_idx[startL], weeks_idx[endL]])
-
-        # ---- BURADAN İTİBAREN YENİ SQL (çöp terim filtresi eklendi) ----
-        q = """
+        base_sql = """
         WITH all_weeks AS (
           SELECT DISTINCT week FROM searches ORDER BY week
         ),
@@ -112,16 +88,38 @@ def uptrends():
           WHERE w.week_id BETWEEN ? AND ?
             AND s.rank IS NOT NULL
             AND NOT (
-              s.term LIKE '#%%'                                       -- Excel hataları (#NAME?, #REF!)
-              OR REGEXP_MATCHES(s.term, '^[0-9.eE+\\-]+$')            -- sayısal / scientific (9.78E+12, -3.2, 123)
-              OR LENGTH(TRIM(s.term)) < 2                             -- çok kısa
-              OR NOT REGEXP_MATCHES(s.term, '[A-Za-z]')               -- hiç harf yok
+              s.term LIKE '#%%'
+              OR REGEXP_MATCHES(s.term, '^[0-9.eE+\\-]+$')
+              OR LENGTH(TRIM(s.term)) < 2
+              OR NOT REGEXP_MATCHES(s.term, '[A-Za-z]')
             )
+        )
+        """
+
+        # Dynamic filters
+        params = [start_id, end_id]
+        extra = ""
+        if include:
+            # include = tüm kelimeleri barındırsın
+            words = include.split()
+            for w in words:
+                extra += " AND LOWER(s.term) LIKE ?"
+                params.append(f"%{w}%")
+        if exclude:
+            words = exclude.split()
+            for w in words:
+                extra += " AND LOWER(s.term) NOT LIKE ?"
+                params.append(f"%{w}%")
+
+        q = f"""
+        {base_sql}
+        , filtered AS (
+          SELECT * FROM clean s WHERE 1=1 {extra}
         ),
         stepped AS (
           SELECT term, rank,
                  LEAD(rank) OVER (PARTITION BY term ORDER BY week_id) AS next_rank
-          FROM clean
+          FROM filtered
         )
         SELECT term,
                SUM(CASE WHEN next_rank < rank THEN 1 ELSE 0 END) AS ups
@@ -131,7 +129,9 @@ def uptrends():
         ORDER BY ups DESC
         LIMIT ? OFFSET ?;
         """
-        rows = con.execute(q, [s_id, e_id, limit, offset]).fetchall()
+        params.extend([limit, offset])
+
+        rows = con.execute(q, params).fetchall()
         con.close()
         return jsonify([{"term": r[0], "ups": int(r[1])} for r in rows])
     except Exception as e:
