@@ -43,9 +43,18 @@ def weeks():
 def reindex():
     try:
         mode = (request.args.get("mode") or "append").lower()
+
+        # optional cache clear
+        if request.args.get("clear_cache"):
+            import shutil
+            store = PROJECT_ROOT / "data" / "store"
+            shutil.rmtree(store, ignore_errors=True)
+
         if mode == "full":
             init_full(PROJECT_ROOT)
             return jsonify({"status": "ok", "mode": "full"})
+
+        # append mode
         week = request.args.get("week")
         if not week:
             return jsonify({"error": "week required for append"}), 400
@@ -54,6 +63,7 @@ def reindex():
             return jsonify({"error": f"csv not found: {csv_path.name}"}), 404
         append_week(csv_path.as_posix(), week)
         return jsonify({"status": "ok", "mode": "append", "week": week})
+
     except Exception as e:
         app.logger.exception("reindex failed")
         return jsonify({"error": "reindex_failed", "message": str(e)}), 500
@@ -142,21 +152,56 @@ def uptrends():
 @app.get("/series")
 def series():
     try:
-        term = request.args.get("term")
+        term = (request.args.get("term") or "").strip()
         if not term:
             return jsonify({"error": "term required"}), 400
+
         con = get_conn(read_only=True)
+
+        # Case-insensitive eşleşme + kronolojik sıralama
         rows = con.execute("""
             SELECT week, rank
             FROM searches
-            WHERE term = ?
+            WHERE LOWER(term) = LOWER(?)
             ORDER BY week
         """, [term]).fetchall()
+
         con.close()
+
+        # JSON çıktısı (rank int)
         return jsonify([{"week": r[0], "rank": int(r[1])} for r in rows])
+
     except Exception as e:
         app.logger.exception("series failed")
         return jsonify({"error": "series_failed", "message": str(e)}), 500
+
+@app.get("/diag")
+def diag():
+    try:
+        con = get_conn(read_only=True)
+        rows  = con.execute("SELECT COUNT(*) FROM searches").fetchone()[0]
+        weeks = con.execute("SELECT COUNT(DISTINCT week) FROM searches").fetchone()[0]
+        sample = con.execute("""
+            SELECT term FROM searches
+            GROUP BY term
+            HAVING NOT (
+              term LIKE '#%' OR
+              REGEXP_MATCHES(term, '^[0-9.eE+\\-]+$') OR
+              LENGTH(TRIM(term)) < 2 OR
+              NOT REGEXP_MATCHES(term, '[A-Za-z]')
+            )
+            LIMIT 5
+        """).fetchall()
+        con.close()
+        return jsonify({
+            "rows": int(rows),
+            "weeks": int(weeks),
+            "sample_clean_terms": [r[0] for r in sample]
+        })
+    except Exception as e:
+        app.logger.exception("diag failed")
+        return jsonify({"error":"diag_failed","message":str(e)}), 500
+
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
