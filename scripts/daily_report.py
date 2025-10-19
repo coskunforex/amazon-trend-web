@@ -106,3 +106,48 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# Kaydettiğimiz raporun son snapshot'unu referans olarak sakla
+from datetime import datetime
+import json
+snapshot = {
+    "timestamp": datetime.now().isoformat(),
+    "files": [str(p) for p in Path(PROJECT_ROOT).rglob("*.py")]
+}
+with open("data/last_snapshot.json", "w") as f:
+    json.dump(snapshot, f, indent=2)
+print("Snapshot saved -> data/last_snapshot.json")
+
+# --- AUTO SYNC SNAPSHOT FOR CHATGPT (FULL) ---
+import zipfile
+from datetime import datetime
+
+snapshot_files = [
+    # Core backend
+    "app/server/app.py",
+    "app/core/trend_core.py",
+    "app/core/db.py",
+    "requirements.txt",
+    "Dockerfile",
+    "render.yaml",
+    ".env",
+    # Frontend
+    "app/web/templates/index.html",
+    "app/web/static/js/app.js",
+    "app/web/static/css/style.css",
+    # Scripts & State
+    "scripts/daily_report.py",
+    "STATE.json",
+    "daily_report.md",
+    "structure.txt"
+]
+
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+zip_path = f"daily_sync_full_{timestamp}.zip"
+
+with zipfile.ZipFile(zip_path, "w") as z:
+    for f in snapshot_files:
+        if os.path.exists(f):
+            z.write(f)
+print(f"📦 Full snapshot created: {zip_path}")
+# --- /AUTO SYNC ---

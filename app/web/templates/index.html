@@ -1,65 +1,122 @@
 <!doctype html>
 <html lang="tr">
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Amazon Trend Finder</title>
-<link rel="stylesheet" href="/static/css/styles.css">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Amazon Trend Finder</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+  <style>
+    /* Hafif UX dokunuşları – mevcut CSS’in üstüne çalışır */
+    :root { --pad: 12px; }
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+    header { padding: var(--pad) 16px; display:flex; align-items:center; gap:12px; }
+    header h1 { margin: 0; font-size: 20px; }
+    .controls { display:grid; gap:12px; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); padding: 12px 16px; }
+    .controls label { display:block; font-size: 12px; color:#566; margin-bottom:4px; }
+    .controls input, .controls select { width:100%; padding:8px; border:1px solid #ccd6e0; border-radius:8px; }
+    .controls .actions { display:flex; align-items:end; gap:8px; }
+    .summary { padding: 6px 16px; font-size: 13px; color:#234; display:flex; gap:12px; align-items:center; }
+    .summary .pill { padding:2px 8px; border-radius:999px; background:#eef3f8; border:1px solid #d9e4ee; }
+    table { width:100%; border-collapse:collapse; }
+    thead th { text-align:left; font-weight:600; font-size:13px; color:#355; border-bottom:1px solid #e5ecf2; padding:10px 12px; user-select:none; cursor:pointer; }
+    tbody td { border-bottom:1px solid #f1f4f7; padding:10px 12px; font-size:14px; }
+    tbody tr { transition: background .15s; }
+    tbody tr:hover { background:#fafcff; }
+    .hidden { display:none !important; }
+    .modal { position:fixed; inset:0; background:rgba(9,25,50,.35); display:flex; align-items:center; justify-content:center; padding:16px; }
+    .modal-card { background:#fff; border-radius:14px; width:min(820px, 96vw); max-height:92vh; display:flex; flex-direction:column; box-shadow:0 10px 30px rgba(0,0,0,.15); }
+    .modal-header { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid #eef2f7; }
+    .modal-header h3 { margin:0; font-size:16px; }
+    .chart { padding:10px 12px 16px; overflow:auto; }
+    .btn { padding:9px 12px; border-radius:10px; border:1px solid #cdd9e5; background:#fff; cursor:pointer; }
+    .btn.primary { background:#0b74ff; color:#fff; border-color:#0b74ff; }
+    .btn:disabled { opacity:.6; cursor:not-allowed; }
+    .toast { position:fixed; right:12px; bottom:12px; background:#0b1220; color:#fff; padding:10px 12px; border-radius:10px; font-size:13px; box-shadow:0 8px 24px rgba(0,0,0,.25); }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0; }
+    .loading { display:inline-flex; align-items:center; gap:8px; }
+    .loading .dot { width:6px; height:6px; border-radius:50%; background:#0b74ff; animation: b 1s infinite alternate; }
+    .loading .dot:nth-child(2){ animation-delay:.2s } .loading .dot:nth-child(3){ animation-delay:.4s }
+    @keyframes b { from{ transform:translateY(0)} to{ transform:translateY(-4px)} }
+    svg .axis line { stroke:#c8d4e0; stroke-width:1; }
+    svg .axis text { fill:#5a6b7c; font-size:11px; }
+    svg .line { fill:none; stroke:#0b74ff; stroke-width:2; }
+    svg .dot { fill:#0b74ff; }
+  </style>
+</head>
 <body>
 <header>
-  <h1>Amazon Trend Finder</h1>
+  <h1 id="appTitle">Amazon Trend Finder</h1>
 </header>
 
-<section class="controls">
+<section class="controls" aria-labelledby="filtersTitle">
+  <h2 id="filtersTitle" class="sr-only">Filtreler</h2>
+
   <div>
-    <label>Start week</label>
-    <select id="start"></select>
+    <label for="start">Başlangıç haftası</label>
+    <select id="start" name="start"></select>
   </div>
+
   <div>
-    <label>End week</label>
-    <select id="end"></select>
+    <label for="end">Bitiş haftası</label>
+    <select id="end" name="end"></select>
   </div>
+
   <div>
-    <label>Include</label>
-    <input id="include" placeholder="iphone, croc..." />
+    <label for="include">Dahil et (virgülle)</label>
+    <input id="include" name="include" placeholder="iphone, croc…" autocomplete="off"/>
   </div>
+
   <div>
-    <label>Exclude</label>
-    <input id="exclude" placeholder="case, charger..." />
+    <label for="exclude">Hariç tut (virgülle)</label>
+    <input id="exclude" name="exclude" placeholder="case, charger…" autocomplete="off"/>
   </div>
-  <button id="run">Find uptrends</button>
-  <button id="reindex" title="Yeni hafta eklediysen">Reindex</button>
+
+  <div class="actions">
+    <button id="run" class="btn primary" aria-label="Trendlere bak">Find uptrends</button>
+    <button id="reindex" class="btn" title="Yeni hafta eklediysen">Reindex</button>
+  </div>
 </section>
 
-<section class="summary">
-  <span id="found">Found: 0</span>
+<section class="summary" aria-live="polite">
+  <span id="found" class="pill">Found: 0</span>
+  <span id="range" class="pill"></span>
+  <span id="status" class="loading hidden" aria-hidden="true">
+    <span class="dot"></span><span class="dot"></span><span class="dot"></span> Yükleniyor…
+  </span>
 </section>
 
-<section>
+<section aria-labelledby="resultsTitle">
+  <h2 id="resultsTitle" class="sr-only">Sonuçlar</h2>
   <table id="tbl">
     <thead>
       <tr>
-        <th>Term</th>
-        <th>Start rank</th>
-        <th>End rank</th>
-        <th>Total improvement</th>
-        <th>Weeks</th>
+        <th data-key="term">Term</th>
+        <th data-key="start_rank">Start rank</th>
+        <th data-key="end_rank">End rank</th>
+        <th data-key="total_improvement">Total improvement</th>
+        <th data-key="weeks">Weeks</th>
       </tr>
     </thead>
     <tbody></tbody>
   </table>
+  <div id="empty" class="hidden" style="padding:12px 16px; color:#566;">
+    Sonuç bulunamadı. Filtreleri gevşetmeyi deneyin.
+  </div>
 </section>
 
 <!-- Modal -->
-<div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+<div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
   <div class="modal-card">
     <div class="modal-header">
       <h3 id="modalTitle">Trend</h3>
-      <button id="closeModal">✕</button>
+      <button id="closeModal" class="btn" aria-label="Kapat">✕</button>
     </div>
     <div id="chart" class="chart"></div>
   </div>
 </div>
 
-<script src="/static/js/app.js"></script>
+<div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+<script src="/static/js/app.js" defer></script>
 </body>
 </html>

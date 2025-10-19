@@ -1,10 +1,14 @@
-﻿# Python / env
-__pycache__/
-*.pyc
-.env
+﻿data/
+*.csv
+*.duckdb
+*.db
+*.zip
+*.7z
+*.rar
+*.tar
+*.parquet
 
-# DATA
-data/**            # önce tüm data'yı ignore et
-!data/raw/         # sonra raw klasörünü geri dahil et
-!data/raw/**       # ve raw içindeki TÜM dosyaları dahil et
-data/store/**      # store/cache asla git'e girmesin
+.venv/
+.env
+.vscode/
+__pycache__/
