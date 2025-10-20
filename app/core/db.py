@@ -40,6 +40,7 @@ def _sniff(path: Path):
     delim = '\t' if '\t' in header_line else ','
     return enc, header_line_idx, delim
 
+# app/core/db.py
 import os, duckdb
 
 DATA_DIR = os.getenv("DATA_DIR", "/app/storage")
@@ -58,6 +59,7 @@ def get_conn(read_only=False):
     con.execute("SET threads=1;")
     con.execute("SET preserve_insertion_order=false;")
     return con
+
 
 
 
