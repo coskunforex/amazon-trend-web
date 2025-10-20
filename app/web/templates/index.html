@@ -1,12 +1,12 @@
-<!doctype html>
-<html lang="tr">
+<<!doctype html>
+<html lang="en">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Amazon Trend Finder</title>
+  <title>Amazon Trend Finder AI</title>
   <link rel="stylesheet" href="/static/css/styles.css">
   <style>
-    /* Hafif UX dokunuşları – mevcut CSS’in üstüne çalışır */
+    /* light UX tweaks */
     :root { --pad: 12px; }
     body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
     header { padding: var(--pad) 16px; display:flex; align-items:center; gap:12px; }
@@ -26,7 +26,7 @@
     .modal { position:fixed; inset:0; background:rgba(9,25,50,.35); display:flex; align-items:center; justify-content:center; padding:16px; }
     .modal-card { background:#fff; border-radius:14px; width:min(820px, 96vw); max-height:92vh; display:flex; flex-direction:column; box-shadow:0 10px 30px rgba(0,0,0,.15); }
     .modal-header { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid #eef2f7; }
-    .modal-header h3 { margin:0; font-size:16px; }
+    .modal-header h3 { margin:0; font-size:16px; color:#111; }
     .chart { padding:10px 12px 16px; overflow:auto; }
     .btn { padding:9px 12px; border-radius:10px; border:1px solid #cdd9e5; background:#fff; cursor:pointer; }
     .btn.primary { background:#0b74ff; color:#fff; border-color:#0b74ff; }
@@ -41,39 +41,42 @@
     svg .axis text { fill:#5a6b7c; font-size:11px; }
     svg .line { fill:none; stroke:#0b74ff; stroke-width:2; }
     svg .dot { fill:#0b74ff; }
+    /* modal close button better contrast */
+    .modal-header button { color:#111; background:#fff; border:1px solid #cbd5e1; border-radius:8px; padding:4px 8px; }
+    .modal-header button:hover { background:#f1f5f9; }
   </style>
 </head>
 <body>
 <header>
-  <h1 id="appTitle">Amazon Trend Finder</h1>
+  <h1>Amazon Trend Finder AI</h1>
 </header>
 
 <section class="controls" aria-labelledby="filtersTitle">
-  <h2 id="filtersTitle" class="sr-only">Filtreler</h2>
+  <h2 id="filtersTitle" class="sr-only">Filters</h2>
 
   <div>
-    <label for="start">Başlangıç haftası</label>
+    <label for="start">Start week</label>
     <select id="start" name="start"></select>
   </div>
 
   <div>
-    <label for="end">Bitiş haftası</label>
+    <label for="end">End week</label>
     <select id="end" name="end"></select>
   </div>
 
   <div>
-    <label for="include">Dahil et (virgülle)</label>
-    <input id="include" name="include" placeholder="iphone, croc…" autocomplete="off"/>
+    <label for="include">Include (comma-separated)</label>
+    <input id="include" name="include" placeholder="iphone, crocs…" autocomplete="off"/>
   </div>
 
   <div>
-    <label for="exclude">Hariç tut (virgülle)</label>
+    <label for="exclude">Exclude (comma-separated)</label>
     <input id="exclude" name="exclude" placeholder="case, charger…" autocomplete="off"/>
   </div>
 
   <div class="actions">
-    <button id="run" class="btn primary" aria-label="Trendlere bak">Find uptrends</button>
-    <button id="reindex" class="btn" title="Yeni hafta eklediysen">Reindex</button>
+    <button id="run" class="btn primary" aria-label="Find uptrends">Find uptrends</button>
+    <!-- removed: reindex button -->
   </div>
 </section>
 
@@ -81,12 +84,12 @@
   <span id="found" class="pill">Found: 0</span>
   <span id="range" class="pill"></span>
   <span id="status" class="loading hidden" aria-hidden="true">
-    <span class="dot"></span><span class="dot"></span><span class="dot"></span> Yükleniyor…
+    <span class="dot"></span><span class="dot"></span><span class="dot"></span> Loading…
   </span>
 </section>
 
 <section aria-labelledby="resultsTitle">
-  <h2 id="resultsTitle" class="sr-only">Sonuçlar</h2>
+  <h2 id="resultsTitle" class="sr-only">Results</h2>
   <table id="tbl">
     <thead>
       <tr>
@@ -100,7 +103,7 @@
     <tbody></tbody>
   </table>
   <div id="empty" class="hidden" style="padding:12px 16px; color:#566;">
-    Sonuç bulunamadı. Filtreleri gevşetmeyi deneyin.
+    No results. Try relaxing your filters.
   </div>
 </section>
 
@@ -109,7 +112,7 @@
   <div class="modal-card">
     <div class="modal-header">
       <h3 id="modalTitle">Trend</h3>
-      <button id="closeModal" class="btn" aria-label="Kapat">✕</button>
+      <button id="closeModal" class="btn" aria-label="Close">✕</button>
     </div>
     <div id="chart" class="chart"></div>
   </div>
