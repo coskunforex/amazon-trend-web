@@ -1,16 +1,26 @@
+// app/web/static/js/app.js
+
 const $ = (sel)=>document.querySelector(sel);
+
 const startSel = $("#start"), endSel = $("#end");
 const includeInp = $("#include"), excludeInp = $("#exclude");
-const runBtn = $("#run"), reindexBtn = $("#reindex");
-const tbody = $("#tbl tbody"), found = $("#found"), emptyEl = $("#empty");
-const rangePill = $("#range"), statusEl = $("#status");
+const runBtn = $("#run");
+const reindexBtn = $("#reindex");                 // may be null
+const tbody = $("#tbl tbody"), found = $("#found");
+const emptyEl = $("#empty");                      // may be null
+const rangePill = $("#range") || $("#rangeBadge");// support both ids
+const statusEl = $("#status");                    // may be null
+
 const modal = $("#modal"), closeModalBtn = $("#closeModal"), chartEl = $("#chart");
-const toast = $("#toast");
+const toast = $("#toast");                        // may be null
+
 let weeks = [];
 let lastFocusedBeforeModal = null;
 let currentSort = { key: "total_improvement", dir: "desc" };
 
+/* ---------- helpers ---------- */
 function showToast(msg, ms=2600){
+  if(!toast) { console.warn(msg); return; }
   toast.textContent = msg;
   toast.classList.remove("hidden");
   setTimeout(()=>toast.classList.add("hidden"), ms);
@@ -26,9 +36,12 @@ async function fetchJSON(url){
 }
 
 function setLoading(on){
-  statusEl.classList.toggle("hidden", !on);
-  statusEl.setAttribute("aria-hidden", on ? "false":"true");
-  runBtn.disabled = on; reindexBtn.disabled = on;
+  if(statusEl){
+    statusEl.classList.toggle("hidden", !on);
+    statusEl.setAttribute("aria-hidden", on ? "false":"true");
+  }
+  if(runBtn) runBtn.disabled = on;
+  if(reindexBtn) reindexBtn.disabled = on;
 }
 
 function persistFilters(){
@@ -50,23 +63,24 @@ function restoreFilters(){
   }catch{}
 }
 
+/* ---------- weeks ---------- */
 async function loadWeeks(){
   setLoading(true);
   try{
     weeks = await fetchJSON("/weeks");
     startSel.innerHTML = ""; endSel.innerHTML = "";
     for(const w of weeks){
-      const o1 = document.createElement("option"); o1.value = w.weekId; o1.textContent = w.label;
-      const o2 = document.createElement("option"); o2.value = w.weekId; o2.textContent = w.label;
+      const o1 = document.createElement("option"); o1.value = w.weekId; o1.textContent = `Week ${w.label}`;
+      const o2 = document.createElement("option"); o2.value = w.weekId; o2.textContent = `Week ${w.label}`;
       startSel.appendChild(o1); endSel.appendChild(o2);
     }
     if(weeks.length >= 2){
-      startSel.value = weeks[Math.max(0, weeks.length-6)].weekId; // varsayılan: son 6 haftanın başı
+      startSel.value = weeks[Math.max(0, weeks.length-6)].weekId; // default: last 6 weeks window
       endSel.value = weeks[weeks.length-1].weekId;
     }
     restoreFilters();
   }catch(err){
-    showToast("Hafta listesi alınamadı.");
+    showToast("Failed to load weeks.");
     console.error(err);
   }finally{
     setLoading(false);
@@ -75,24 +89,30 @@ async function loadWeeks(){
 
 function parseWeeks(){
   let s = parseInt(startSel.value,10), e = parseInt(endSel.value,10);
-  if(!s || !e) throw new Error("Lütfen başlangıç ve bitiş haftasını seçin.");
+  if(!s || !e) throw new Error("Please select start and end week.");
   if(e < s){ const t=s; s=e; e=t; }
-  if((e - s + 1) < 2) throw new Error("Aralık en az 2 hafta olmalı.");
+  if((e - s + 1) < 2) throw new Error("Range must be at least 2 weeks.");
+
   const sLabel = weeks.find(w=>w.weekId===s)?.label || s;
   const eLabel = weeks.find(w=>w.weekId===e)?.label || e;
-  return { s, e, sLabel, eLabel };
+  const total = (e - s + 1);
+  return { s, e, sLabel, eLabel, total };
 }
 
+/* ---------- query ---------- */
 async function runQuery(){
   try{
     setLoading(true);
-    const { s, e, sLabel, eLabel } = parseWeeks();
-    rangePill.textContent = `${sLabel} → ${eLabel}`;
+    const { s, e, sLabel, eLabel, total } = parseWeeks();
+    if(rangePill) rangePill.textContent = `${total} weeks • ${sLabel} → ${eLabel}`;
+
+    const norm = str => str.replaceAll(",", " ").trim();
     const params = new URLSearchParams({
       startWeekId: s, endWeekId: e,
-      include: includeInp.value.trim(),
-      exclude: excludeInp.value.trim(),
+      include: norm(includeInp.value),
+      exclude: norm(excludeInp.value),
     });
+
     const rows = await fetchJSON("/uptrends?" + params.toString());
     const sorted = sortRows(rows, currentSort.key, currentSort.dir);
     renderTable(sorted, s, e);
@@ -118,11 +138,11 @@ function sortRows(rows, key, dir){
 function renderTable(rows, s, e){
   tbody.innerHTML = "";
   found.textContent = `Found: ${rows.length}`;
-  emptyEl.classList.toggle("hidden", rows.length>0);
+  if(emptyEl) emptyEl.classList.toggle("hidden", rows.length>0);
 
   for(const r of rows){
     const tr = document.createElement("tr");
-    tr.tabIndex = 0; // klavyeyle seçilebilir
+    tr.tabIndex = 0;
     tr.innerHTML = `
       <td>${r.term}</td>
       <td>${r.start_rank}</td>
@@ -137,6 +157,7 @@ function renderTable(rows, s, e){
   }
 }
 
+/* ---------- series + chart ---------- */
 async function showSeries(term, s, e){
   try{
     setLoading(true);
@@ -145,7 +166,7 @@ async function showSeries(term, s, e){
     drawMiniChart(term, data);
     openModal();
   }catch(err){
-    showToast("Seri alınamadı.");
+    showToast("Failed to load series.");
     console.error(err);
   }finally{
     setLoading(false);
@@ -153,9 +174,11 @@ async function showSeries(term, s, e){
 }
 
 function drawMiniChart(title, data){
+  // y axis reversed (smaller rank = better)
   const ranks = data.map(d=>d.rank).filter(v=>Number.isFinite(v));
   const minR = ranks.length ? Math.min(...ranks) : 0;
   const maxR = ranks.length ? Math.max(...ranks) : 1;
+
   const pad = 24, W = 740, H = 260;
   const y = (v)=> {
     const t = (v - minR) / Math.max(1, (maxR - minR));
@@ -176,14 +199,14 @@ function drawMiniChart(title, data){
   }
 
   const svg = `
-  <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${title} rank grafiği">
+  <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${title} rank chart">
     <g class="axis">
       <line x1="${pad}" y1="${pad}" x2="${pad}" y2="${H-pad}" />
       <line x1="${pad}" y1="${H-pad}" x2="${W-pad}" y2="${H-pad}" />
       <text x="${pad}" y="${pad-6}">${minR}</text>
       <text x="${pad}" y="${H-pad+16}">${data[0]?.weekLabel||""}</text>
       <text x="${W-pad-80}" y="${H-pad+16}">${data[data.length-1]?.weekLabel||""}</text>
-      <text x="${pad}" y="${H-pad+30}" fill="#9fb0c0">${title}</text>
+      <text x="${pad}" y="${H-pad+30}" fill="#0f172a">${title}</text>
     </g>
     <path class="line" d="${path}"/>
     ${pts.map(p => p.y===null? "" : `<circle class="dot" cx="${p.x}" cy="${p.y}" r="3"><title>${p.label} • rank ${p.rank}</title></circle>`).join("")}
@@ -192,11 +215,11 @@ function drawMiniChart(title, data){
   chartEl.innerHTML = svg;
 }
 
-/* ---- Modal erişilebilirliği ---- */
+/* ---------- modal a11y ---------- */
 function openModal(){
   lastFocusedBeforeModal = document.activeElement;
   modal.classList.remove("hidden");
-  closeModalBtn.focus();
+  closeModalBtn && closeModalBtn.focus();
   document.addEventListener("keydown", escClose);
   document.addEventListener("focus", trapFocus, true);
 }
@@ -211,32 +234,38 @@ function trapFocus(e){
   if(modal.classList.contains("hidden")) return;
   if(!modal.contains(e.target)){
     e.stopPropagation();
-    closeModalBtn.focus();
+    closeModalBtn && closeModalBtn.focus();
   }
 }
 
-/* ---- Events ---- */
-runBtn.addEventListener("click", runQuery);
-reindexBtn.addEventListener("click", async ()=>{
-  try{
-    setLoading(true);
-    await fetchJSON("/reindex");
-    await loadWeeks();
-    showToast("Reindex tamam.");
-  }catch(err){
-    showToast("Reindex başarısız.");
-    console.error(err);
-  }finally{
-    setLoading(false);
-  }
-});
-closeModalBtn.addEventListener("click", closeModal);
+/* ---------- events ---------- */
+runBtn && runBtn.addEventListener("click", runQuery);
+
+// reindex button is optional; guard it
+if (reindexBtn) {
+  reindexBtn.addEventListener("click", async ()=>{
+    try{
+      setLoading(true);
+      await fetchJSON("/reindex");
+      await loadWeeks();
+      showToast("Reindex completed.");
+    }catch(err){
+      showToast("Reindex failed.");
+      console.error(err);
+    }finally{
+      setLoading(false);
+    }
+  });
+}
+
+closeModalBtn && closeModalBtn.addEventListener("click", closeModal);
 modal.addEventListener("click",(e)=>{ if(e.target===modal) closeModal(); });
+
 document.addEventListener("keydown",(e)=>{
   if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==="enter"){ runQuery(); }
 });
 
-/* Sütun başlığına tıklayınca sıralama */
+/* sortable headers (data-key attrs must exist) */
 document.querySelectorAll("#tbl thead th").forEach(th=>{
   th.addEventListener("click", ()=>{
     const key = th.dataset.key;
@@ -245,7 +274,6 @@ document.querySelectorAll("#tbl thead th").forEach(th=>{
       key,
       dir: (currentSort.key===key && currentSort.dir==="asc") ? "desc" : "asc"
     };
-    // mevcut satırları yeniden sırala
     const rows = Array.from(tbody.querySelectorAll("tr")).map(tr=>{
       const [term, s, e, imp, w] = Array.from(tr.children).map(td=>td.textContent);
       return {
@@ -260,11 +288,11 @@ document.querySelectorAll("#tbl thead th").forEach(th=>{
   });
 });
 
-/* Filtre değişince otomatik kaydet */
+/* persist filters */
 [startSel, endSel, includeInp, excludeInp].forEach(el=>{
   el.addEventListener("change", persistFilters);
   el.addEventListener("input", persistFilters);
 });
 
-/* Başlat */
-loadWeeks().then(runQuery);
+/* init */
+loadWeeks().then(runQuery).catch(console.error);
