@@ -40,27 +40,26 @@ def _sniff(path: Path):
     delim = '\t' if '\t' in header_line else ','
     return enc, header_line_idx, delim
 
-import os, duckdb, pathlib
+# app/core/db.py (veya get_conn nerede ise)
+import os, duckdb
 
-DATA_DIR = os.getenv("DATA_DIR", "./data")
+DATA_DIR = os.getenv("DATA_DIR", "/app/storage")
 
 def get_conn(read_only=False):
     db_path = os.path.join(DATA_DIR, "trends.duckdb")
     os.makedirs(DATA_DIR, exist_ok=True)
-
     con = duckdb.connect(db_path, read_only=read_only)
 
-    # ---- DuckDB tuning ----
-    # temp dosyalarını kalıcı diske değil, ephemeral /tmp'ye yaz
-    os.makedirs("/tmp/duckdb", exist_ok=True)
-    con.execute("SET temp_directory='/tmp/duckdb';")
+    tmp = os.path.join(DATA_DIR, "tmp")
+    os.makedirs(tmp, exist_ok=True)
+    con.execute(f"SET temp_directory='{tmp}';")
 
-    # makul limitler (Render Standard için güvenli)
-    con.execute("PRAGMA max_temp_directory_size='512MB';")
+    # Disk 5GB ise temp kotayı büyüt
+    con.execute("PRAGMA max_temp_directory_size='4GB';")
+    # RAM pikini sınırlayalım (OOM’a karşı güvenli)
     con.execute("SET memory_limit='512MB';")
-    con.execute("SET threads=2;")
+    con.execute("SET threads=1;")
     con.execute("SET preserve_insertion_order=false;")
-
     return con
 
 
