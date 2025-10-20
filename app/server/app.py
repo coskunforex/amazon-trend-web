@@ -81,12 +81,16 @@ def uptrends():
         exclude  = (request.args.get("exclude") or "").strip().lower()
         limit    = request.args.get("limit", 200, type=int)
         offset   = request.args.get("offset", 0, type=int)
+        if not (start_id and end_id): return jsonify({"error":"Provide startWeekId and endWeekId"}), 400
+        if end_id < start_id: start_id, end_id = end_id, start_id
 
-        if not ((start_id and end_id)):
-            return jsonify({"error": "Provide startWeekId and endWeekId"}), 400
+        # virgül+boşluk normalize
+        def split_terms(s): 
+            return [t.strip() for t in s.replace(",", " ").split() if t.strip()]
+        inc_terms = split_terms(include)
+        exc_terms = split_terms(exclude)
 
         con = get_conn(read_only=True)
-
         base_sql = """
         WITH all_weeks AS (
           SELECT DISTINCT week FROM searches ORDER BY week
@@ -109,48 +113,49 @@ def uptrends():
             )
         )
         """
-
-        # Dynamic filters
         params = [start_id, end_id]
         extra = ""
-        if include:
-            # include = tüm kelimeleri barındırsın
-            words = include.split()
-            for w in words:
-                extra += " AND LOWER(s.term) LIKE ?"
-                params.append(f"%{w}%")
-        if exclude:
-            words = exclude.split()
-            for w in words:
-                extra += " AND LOWER(s.term) NOT LIKE ?"
-                params.append(f"%{w}%")
+        for w in inc_terms:
+            extra += " AND LOWER(s.term) LIKE ?"; params.append(f"%{w}%")
+        for w in exc_terms:
+            extra += " AND LOWER(s.term) NOT LIKE ?"; params.append(f"%{w}%")
 
         q = f"""
         {base_sql}
-        , filtered AS (
-          SELECT * FROM clean s WHERE 1=1 {extra}
-        ),
-        stepped AS (
-          SELECT term, rank,
-                 LEAD(rank) OVER (PARTITION BY term ORDER BY week_id) AS next_rank
+        , filtered AS ( SELECT * FROM clean s WHERE 1=1 {extra} )
+        , agg AS (
+          SELECT
+            term,
+            MIN(CASE WHEN week_id = ? THEN rank END) AS start_rank,
+            MIN(CASE WHEN week_id = ? THEN rank END) AS end_rank,
+            COUNT(DISTINCT week_id) AS weeks
           FROM filtered
+          GROUP BY term
         )
-        SELECT term,
-               SUM(CASE WHEN next_rank < rank THEN 1 ELSE 0 END) AS ups
-        FROM stepped
-        GROUP BY term
-        HAVING SUM(CASE WHEN next_rank < rank THEN 1 ELSE 0 END) >= 1
-        ORDER BY ups DESC
+        SELECT
+          term,
+          CAST(start_rank AS INTEGER) AS start_rank,
+          CAST(end_rank   AS INTEGER) AS end_rank,
+          CAST(start_rank - end_rank AS INTEGER) AS total_improvement,
+          weeks
+        FROM agg
+        WHERE start_rank IS NOT NULL AND end_rank IS NOT NULL
+          AND (start_rank - end_rank) > 0
+        ORDER BY total_improvement DESC
         LIMIT ? OFFSET ?;
         """
-        params.extend([limit, offset])
-
+        params.extend([start_id, end_id, limit, offset])
         rows = con.execute(q, params).fetchall()
         con.close()
-        return jsonify([{"term": r[0], "ups": int(r[1])} for r in rows])
+        return jsonify([
+          {"term": r[0], "start_rank": int(r[1]), "end_rank": int(r[2]),
+           "total_improvement": int(r[3]), "weeks": int(r[4])}
+          for r in rows
+        ])
     except Exception as e:
         app.logger.exception("uptrends failed")
-        return jsonify({"error": "uptrends_failed", "message": str(e)}), 500
+        return jsonify({"error":"uptrends_failed","message":str(e)}), 500
+
 
 
 @app.get("/series")
@@ -158,26 +163,19 @@ def series():
     try:
         term = (request.args.get("term") or "").strip()
         if not term:
-            return jsonify({"error": "term required"}), 400
-
+            return jsonify({"error":"term required"}), 400
         con = get_conn(read_only=True)
-
-        # Case-insensitive eşleşme + kronolojik sıralama
         rows = con.execute("""
             SELECT week, rank
             FROM searches
             WHERE LOWER(term) = LOWER(?)
             ORDER BY week
         """, [term]).fetchall()
-
         con.close()
-
-        # JSON çıktısı (rank int)
-        return jsonify([{"week": r[0], "rank": int(r[1])} for r in rows])
-
+        return jsonify([{"weekLabel": r[0], "rank": int(r[1])} for r in rows])
     except Exception as e:
         app.logger.exception("series failed")
-        return jsonify({"error": "series_failed", "message": str(e)}), 500
+        return jsonify({"error":"series_failed","message":str(e)}), 500
 
 @app.get("/diag")
 def diag():

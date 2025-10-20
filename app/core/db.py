@@ -40,14 +40,30 @@ def _sniff(path: Path):
     delim = '\t' if '\t' in header_line else ','
     return enc, header_line_idx, delim
 
-def get_conn(read_only=True):
-    _ensure_db()
-    con = duckdb.connect(DB_PATH.as_posix(), read_only=read_only)
-    # 🔧 Bellek optimizasyonları
-    con.execute("PRAGMA threads=1;")
-    con.execute("PRAGMA preserve_insertion_order=false;")
-    # con.execute("PRAGMA memory_limit='1024MB';")  # opsiyonel
+# app/core/db.py
+import os, duckdb, pathlib
+
+DATA_DIR = os.getenv("DATA_DIR", "./data")
+
+def get_conn(read_only=False):
+    db_path = os.path.join(DATA_DIR, "trends.duckdb")
+    os.makedirs(DATA_DIR, exist_ok=True)
+
+    con = duckdb.connect(db_path, read_only=read_only)
+
+    # ---- DuckDB tuning: temp dosyaları kalıcı diske al, limitleri artır ----
+    tmp = os.path.join(DATA_DIR, "tmp")
+    os.makedirs(tmp, exist_ok=True)
+
+    # Temp ve limitler
+    con.execute(f"SET temp_directory='{tmp}';")
+    con.execute("PRAGMA max_temp_directory_size='900MB';")   # diskte yer var
+    con.execute("SET memory_limit='512MB';")                 # RAM kotası
+    con.execute("SET threads=2;")                            # daha az thread = daha az ara veri
+    con.execute("SET preserve_insertion_order=false;")       # ara maliyetleri azaltır
+
     return con
+
 
 def init_full(project_root: Path):
     """data/raw altındaki TÜM CSV'leri baştan yükler."""
