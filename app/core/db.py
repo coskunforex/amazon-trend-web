@@ -40,7 +40,6 @@ def _sniff(path: Path):
     delim = '\t' if '\t' in header_line else ','
     return enc, header_line_idx, delim
 
-# app/core/db.py (veya get_conn nerede ise)
 import os, duckdb
 
 DATA_DIR = os.getenv("DATA_DIR", "/app/storage")
@@ -52,15 +51,14 @@ def get_conn(read_only=False):
 
     tmp = os.path.join(DATA_DIR, "tmp")
     os.makedirs(tmp, exist_ok=True)
-    con.execute(f"SET temp_directory='{tmp}';")
 
-    # Disk 5GB ise temp kotayı büyüt
-    con.execute("PRAGMA max_temp_directory_size='4GB';")
-    # RAM pikini sınırlayalım (OOM’a karşı güvenli)
+    con.execute(f"SET temp_directory='{tmp}';")
+    con.execute("SET max_temp_directory_size='4GB';")
     con.execute("SET memory_limit='512MB';")
     con.execute("SET threads=1;")
     con.execute("SET preserve_insertion_order=false;")
     return con
+
 
 
 
