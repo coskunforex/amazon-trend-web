@@ -19,9 +19,13 @@ app.logger.setLevel(logging.INFO)
 def health():
     return {"status": "ok"}
 
+from flask import send_from_directory
+
 @app.get("/")
 def home():
-    return "OK - backend is live"
+    # templates klasöründeki index.html'i döndür
+    return send_from_directory(app.template_folder, "index.html")
+
 
 @app.get("/weeks")
 def weeks():
