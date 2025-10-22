@@ -84,7 +84,7 @@ def uptrends():
         exclude  = (request.args.get("exclude") or "").strip().lower()
         limit    = request.args.get("limit", 200, type=int)
         offset   = request.args.get("offset", 0, type=int)
-        max_rank = request.args.get("maxRank", 300, type=int)  # daha hafif sorgu
+        max_rank = request.args.get("maxRank", 300, type=int)  # ağırlaşırsa 200 de deneyebilirsin
 
         if not (start_id and end_id):
             return jsonify({"error": "Provide startWeekId and endWeekId"}), 400
@@ -93,8 +93,8 @@ def uptrends():
 
         con = get_conn(read_only=True)
 
-        # REGEX YOK, rank sınırı VAR, >=2 hafta şartı VAR
-        base_sql = """
+        # Hafif sorgu: regex yok, rank sınırı var. İlk ve son haftanın rank'larını hesaplıyoruz.
+        sql = """
         WITH all_weeks AS (
           SELECT DISTINCT week FROM searches ORDER BY week
         ),
@@ -102,7 +102,7 @@ def uptrends():
           SELECT week, ROW_NUMBER() OVER (ORDER BY week) AS week_id
           FROM all_weeks
         ),
-        windowed AS (
+        filtered AS (
           SELECT s.term, s.rank, w.week_id
           FROM searches s
           JOIN weeks_idx w USING(week)
@@ -110,60 +110,80 @@ def uptrends():
             AND s.rank IS NOT NULL
             AND s.rank <= ?
             AND LENGTH(TRIM(s.term)) >= 2
-            AND LOWER(s.term) <> UPPER(s.term)  -- harf içeriyor (regex yerine)
+            AND LOWER(s.term) <> UPPER(s.term)  -- harf içeriyor
         ),
-        filtered AS (
-          SELECT * FROM windowed
+        -- include/exclude filtreleri
+        filt2 AS (
+          SELECT *
+          FROM filtered
           WHERE 1=1
         """
         params = [start_id, end_id, max_rank]
 
         if include:
             for w in include.split():
-                base_sql += " AND LOWER(term) LIKE ?"
+                sql += " AND LOWER(term) LIKE ?"
                 params.append(f"%{w}%")
         if exclude:
             for w in exclude.split():
-                base_sql += " AND LOWER(term) NOT LIKE ?"
+                sql += " AND LOWER(term) NOT LIKE ?"
                 params.append(f"%{w}%")
 
-        base_sql += """
+        sql += """
         ),
-        atleast2 AS (
-          SELECT term
-          FROM filtered
+        term_bounds AS (               -- aralıkta görüldüğü ilk/son hafta
+          SELECT term,
+                 MIN(week_id) AS min_w,
+                 MAX(week_id) AS max_w,
+                 COUNT(*)     AS cnt
+          FROM filt2
           GROUP BY term
           HAVING COUNT(*) >= 2
         ),
-        stepped AS (
+        start_end AS (                 -- ilk ve son haftanın rank'larını al
+          SELECT f.term,
+                 MAX(CASE WHEN f.week_id = tb.min_w THEN f.rank END) AS start_rank,
+                 MAX(CASE WHEN f.week_id = tb.max_w THEN f.rank END) AS end_rank,
+                 tb.cnt AS weeks
+          FROM filt2 f
+          JOIN term_bounds tb USING(term)
+          GROUP BY f.term, tb.cnt
+        ),
+        stepped AS (                   -- “kaç hafta iyileşme var” metrik
           SELECT f.term, f.rank,
                  LEAD(f.rank) OVER (PARTITION BY f.term ORDER BY f.week_id) AS next_rank
-          FROM filtered f
-          JOIN atleast2 a USING(term)
+          FROM filt2 f
+          JOIN term_bounds tb USING(term)
+        ),
+        ups AS (
+          SELECT term,
+                 SUM(CASE WHEN next_rank < rank THEN 1 ELSE 0 END) AS ups_cnt
+          FROM stepped
+          GROUP BY term
         )
-        SELECT term,
-               SUM(CASE WHEN next_rank < rank THEN 1 ELSE 0 END) AS ups
-        FROM stepped
-        GROUP BY term
-        HAVING SUM(CASE WHEN next_rank < rank THEN 1 ELSE 0 END) >= 1
-        ORDER BY ups DESC
+        SELECT se.term,
+               se.start_rank::BIGINT,
+               se.end_rank::BIGINT,
+               (se.start_rank - se.end_rank)::BIGINT AS total_improvement,
+               se.weeks::BIGINT
+        FROM start_end se
+        JOIN ups u USING(term)
+        ORDER BY total_improvement DESC
         LIMIT ? OFFSET ?;
         """
 
         params.extend([limit, offset])
 
-        rows = con.execute(base_sql, params).fetchall()
+        rows = con.execute(sql, params).fetchall()
         con.close()
 
-        # UI'nin beklediği şemayı dolduralım (MVP: start/end şimdilik None)
-        weeks_count = (end_id - start_id + 1)
         return jsonify([
             {
                 "term": r[0],
-                "start_rank": None,
-                "end_rank": None,
-                "total_improvement": int(r[1]),  # geçici olarak "ups" burada
-                "weeks": weeks_count
+                "start_rank": int(r[1]) if r[1] is not None else None,
+                "end_rank": int(r[2]) if r[2] is not None else None,
+                "total_improvement": int(r[3]) if r[3] is not None else None,
+                "weeks": int(r[4]) if r[4] is not None else None,
             }
             for r in rows
         ])
@@ -172,11 +192,6 @@ def uptrends():
         app.logger.exception("uptrends failed")
         return jsonify({"error": "uptrends_failed", "message": str(e)}), 500
 
-
-
-    except Exception as e:
-        app.logger.exception("uptrends failed")
-        return jsonify({"error": "uptrends_failed", "message": str(e)}), 500
 
 # ---------- API: Series ----------
 @app.get("/series")
