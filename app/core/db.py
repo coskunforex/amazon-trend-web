@@ -40,24 +40,22 @@ def _sniff(path: Path):
     delim = '\t' if '\t' in header_line else ','
     return enc, header_line_idx, delim
 
-# app/core/db.py
-import os, duckdb
-
-DATA_DIR = os.getenv("DATA_DIR", "/app/storage")
-
+# app/core/db.py  ->  get_conn'i BU HALİYLE kullan
 def get_conn(read_only=False):
+    import duckdb, os
+    DATA_DIR = os.environ.get("DATA_DIR", "/app/storage")
     db_path = os.path.join(DATA_DIR, "trends.duckdb")
-    os.makedirs(DATA_DIR, exist_ok=True)
     con = duckdb.connect(db_path, read_only=read_only)
 
+    # Her bağlantıda güvenli ayarlar (OOM önleyici)
     tmp = os.path.join(DATA_DIR, "tmp")
     os.makedirs(tmp, exist_ok=True)
-
     con.execute(f"SET temp_directory='{tmp}';")
-    con.execute("SET max_temp_directory_size='4GB';")
-    con.execute("SET memory_limit='512MB';")
-    con.execute("SET threads=1;")
-    con.execute("SET preserve_insertion_order=false;")
+    con.execute("SET max_temp_directory_size='4GB';")   # Render disk 5GB ise güvenli
+    con.execute("SET memory_limit='512MB';")            # RAM'i sınırlı tut
+    con.execute("SET threads=1;")                       # tek thread, stabil
+    con.execute("SET preserve_insertion_order=false;")  # ara bellek kullanımını azalt
+
     return con
 
 

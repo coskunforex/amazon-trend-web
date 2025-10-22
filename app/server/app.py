@@ -75,7 +75,7 @@ def reindex():
         app.logger.exception("reindex failed")
         return jsonify({"error": "reindex_failed", "message": str(e)}), 500
 
-# ---------- API: Uptrends ----------
+# app/server/app.py -> /uptrends (HAFİF ve STABİL)
 @app.get("/uptrends")
 def uptrends():
     try:
@@ -85,12 +85,16 @@ def uptrends():
         exclude  = (request.args.get("exclude") or "").strip().lower()
         limit    = request.args.get("limit", 200, type=int)
         offset   = request.args.get("offset", 0, type=int)
+        max_rank = request.args.get("maxRank", 300, type=int)  # daha hafif sorgu
 
         if not (start_id and end_id):
             return jsonify({"error": "Provide startWeekId and endWeekId"}), 400
+        if end_id < start_id:
+            start_id, end_id = end_id, start_id
 
         con = get_conn(read_only=True)
 
+        # REGEX YOK, rank sınırı VAR, >=2 hafta şartı VAR
         base_sql = """
         WITH all_weeks AS (
           SELECT DISTINCT week FROM searches ORDER BY week
@@ -99,41 +103,44 @@ def uptrends():
           SELECT week, ROW_NUMBER() OVER (ORDER BY week) AS week_id
           FROM all_weeks
         ),
-        clean AS (
+        windowed AS (
           SELECT s.term, s.rank, w.week_id
           FROM searches s
           JOIN weeks_idx w USING(week)
           WHERE w.week_id BETWEEN ? AND ?
             AND s.rank IS NOT NULL
-            AND NOT (
-              s.term LIKE '#%%'
-              OR REGEXP_MATCHES(s.term, '^[0-9.eE+\\-]+$')
-              OR LENGTH(TRIM(s.term)) < 2
-              OR NOT REGEXP_MATCHES(s.term, '[A-Za-z]')
-            )
-        )
+            AND s.rank <= ?
+            AND LENGTH(TRIM(s.term)) >= 2
+            AND LOWER(s.term) <> UPPER(s.term)  -- harf içeriyor (regex yerine)
+        ),
+        filtered AS (
+          SELECT * FROM windowed
+          WHERE 1=1
         """
+        params = [start_id, end_id, max_rank]
 
-        params = [start_id, end_id]
-        extra = ""
         if include:
             for w in include.split():
-                extra += " AND LOWER(s.term) LIKE ?"
+                base_sql += " AND LOWER(term) LIKE ?"
                 params.append(f"%{w}%")
         if exclude:
             for w in exclude.split():
-                extra += " AND LOWER(s.term) NOT LIKE ?"
+                base_sql += " AND LOWER(term) NOT LIKE ?"
                 params.append(f"%{w}%")
 
-        q = f"""
-        {base_sql}
-        , filtered AS (
-          SELECT * FROM clean s WHERE 1=1 {extra}
+        base_sql += """
+        ),
+        atleast2 AS (
+          SELECT term
+          FROM filtered
+          GROUP BY term
+          HAVING COUNT(*) >= 2
         ),
         stepped AS (
-          SELECT term, rank,
-                 LEAD(rank) OVER (PARTITION BY term ORDER BY week_id) AS next_rank
-          FROM filtered
+          SELECT f.term, f.rank,
+                 LEAD(f.rank) OVER (PARTITION BY f.term ORDER BY f.week_id) AS next_rank
+          FROM filtered f
+          JOIN atleast2 a USING(term)
         )
         SELECT term,
                SUM(CASE WHEN next_rank < rank THEN 1 ELSE 0 END) AS ups
@@ -143,11 +150,15 @@ def uptrends():
         ORDER BY ups DESC
         LIMIT ? OFFSET ?;
         """
+
         params.extend([limit, offset])
 
-        rows = con.execute(q, params).fetchall()
+        rows = con.execute(base_sql, params).fetchall()
         con.close()
+
+        # UI mevcut haliyle ups kolonunu kullanıyor. (İleride start/end/total eklenebilir)
         return jsonify([{"term": r[0], "ups": int(r[1])} for r in rows])
+
     except Exception as e:
         app.logger.exception("uptrends failed")
         return jsonify({"error": "uptrends_failed", "message": str(e)}), 500
