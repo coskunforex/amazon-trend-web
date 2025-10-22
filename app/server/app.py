@@ -1,4 +1,5 @@
 # app/server/app.py
+import re
 from flask import Flask, jsonify, request
 import os, logging
 from pathlib import Path
@@ -115,10 +116,18 @@ def uptrends():
         """
         params = [start_id, end_id]
         extra = ""
-        for w in inc_terms:
-            extra += " AND LOWER(s.term) LIKE ?"; params.append(f"%{w}%")
-        for w in exc_terms:
-            extra += " AND LOWER(s.term) NOT LIKE ?"; params.append(f"%{w}%")
+
+# include: tam kelime / kelime sınırı (trumpet eşleşmez)
+for w in inc_terms:
+    # kelimenin başında/sonunda harf-rakam olmayan sınır: (^|[^a-z0-9])  …  ([^a-z0-9]|$)
+    pat = rf'(^|[^a-z0-9]){re.escape(w)}([^a-z0-9]|$)'
+    extra += " AND REGEXP_MATCHES(LOWER(s.term), ?)"
+    params.append(pat)
+
+# exclude: aynen bırakabilirsin; dilersen aynı mantıkla regex yaparız
+for w in exc_terms:
+    extra += " AND LOWER(s.term) NOT LIKE ?"
+    params.append(f"%{w}%")
 
         q = f"""
         {base_sql}
