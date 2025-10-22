@@ -79,6 +79,9 @@ xlsxwriter==3.2.9
   - ./STATE.json
   - ./daily_report.md
   - ./daily_sync_full_20251019_113201.zip
+  - ./daily_sync_full_20251019_122246.zip
+  - ./daily_sync_full_20251020_142938.zip
+  - ./mvp-stable.zip
   - ./requirements.txt
   - ./roadmap.md
   - ./structure.txt
@@ -204,14 +207,29 @@ def _sniff(path: Path):
     delim = '\t' if '\t' in header_line else ','
     return enc, header_line_idx, delim
 
-def get_conn(read_only=True):
-    _ensure_db()
-    con = duckdb.connect(DB_PATH.as_posix(), read_only=read_only)
-    # 🔧 Bellek optimizasyonları
-    con.execute("PRAGMA threads=1;")
-    con.execute("PRAGMA preserve_insertion_order=false;")
-    # con.execute("PRAGMA memory_limit='1024MB';")  # opsiyonel
+# app/core/db.py
+import os, duckdb
+
+DATA_DIR = os.getenv("DATA_DIR", "/app/storage")
+
+def get_conn(read_only=False):
+    db_path = os.path.join(DATA_DIR, "trends.duckdb")
+    os.makedirs(DATA_DIR, exist_ok=True)
+    con = duckdb.connect(db_path, read_only=read_only)
+
+    tmp = os.path.join(DATA_DIR, "tmp")
+    os.makedirs(tmp, exist_ok=True)
+
+    con.execute(f"SET temp_directory='{tmp}';")
+    con.execute("SET max_temp_directory_size='4GB';")
+    con.execute("SET memory_limit='512MB';")
+    con.execute("SET threads=1;")
+    con.execute("SET preserve_insertion_order=false;")
     return con
+
+
+
+
 
 def init_full(project_root: Path):
     """data/raw altındaki TÜM CSV'leri baştan yükler."""
@@ -635,9 +653,13 @@ app.logger.setLevel(logging.INFO)
 def health():
     return {"status": "ok"}
 
+from flask import send_from_directory
+
 @app.get("/")
 def home():
-    return "OK - backend is live"
+    # templates klasöründeki index.html'i döndür
+    return send_from_directory(app.template_folder, "index.html")
+
 
 @app.get("/weeks")
 def weeks():
@@ -659,9 +681,18 @@ def weeks():
 def reindex():
     try:
         mode = (request.args.get("mode") or "append").lower()
+
+        # optional cache clear
+        if request.args.get("clear_cache"):
+            import shutil
+            store = PROJECT_ROOT / "data" / "store"
+            shutil.rmtree(store, ignore_errors=True)
+
         if mode == "full":
             init_full(PROJECT_ROOT)
             return jsonify({"status": "ok", "mode": "full"})
+
+        # append mode
         week = request.args.get("week")
         if not week:
             return jsonify({"error": "week required for append"}), 400
@@ -670,6 +701,7 @@ def reindex():
             return jsonify({"error": f"csv not found: {csv_path.name}"}), 404
         append_week(csv_path.as_posix(), week)
         return jsonify({"status": "ok", "mode": "append", "week": week})
+
     except Exception as e:
         app.logger.exception("reindex failed")
         return jsonify({"error": "reindex_failed", "message": str(e)}), 500
@@ -677,43 +709,23 @@ def reindex():
 @app.get("/uptrends")
 def uptrends():
     try:
-        # parametreleri oku (senin mevcut kodun)
         start_id = request.args.get("startWeekId", type=int)
         end_id   = request.args.get("endWeekId", type=int)
-        startL   = request.args.get("startWeekLabel")
-        endL     = request.args.get("endWeekLabel")
+        include  = (request.args.get("include") or "").strip().lower()
+        exclude  = (request.args.get("exclude") or "").strip().lower()
         limit    = request.args.get("limit", 200, type=int)
         offset   = request.args.get("offset", 0, type=int)
+        if not (start_id and end_id): return jsonify({"error":"Provide startWeekId and endWeekId"}), 400
+        if end_id < start_id: start_id, end_id = end_id, start_id
 
-        if not ((start_id and end_id) or (startL and endL)):
-            return jsonify({"error": "Provide startWeekId/endWeekId OR startWeekLabel/endWeekLabel"}), 400
+        # virgül+boşluk normalize
+        def split_terms(s): 
+            return [t.strip() for t in s.replace(",", " ").split() if t.strip()]
+        inc_terms = split_terms(include)
+        exc_terms = split_terms(exclude)
 
         con = get_conn(read_only=True)
-
-        # Tüm haftalara sıra numarası ver
-        con.execute("""
-            WITH all_weeks AS (
-              SELECT DISTINCT week FROM searches ORDER BY week
-            ),
-            weeks_idx AS (
-              SELECT week, ROW_NUMBER() OVER (ORDER BY week) AS week_id
-              FROM all_weeks
-            )
-            SELECT week, week_id FROM weeks_idx
-        """)
-        weeks_idx = {row[0]: int(row[1]) for row in con.fetchall()}
-
-        # Sınırları belirle
-        if start_id and end_id:
-            s_id, e_id = min(start_id, end_id), max(start_id, end_id)
-        else:
-            if startL not in weeks_idx or endL not in weeks_idx:
-                con.close()
-                return jsonify({"error":"Week labels not found"}), 400
-            s_id, e_id = sorted([weeks_idx[startL], weeks_idx[endL]])
-
-        # ---- BURADAN İTİBAREN YENİ SQL (çöp terim filtresi eklendi) ----
-        q = """
+        base_sql = """
         WITH all_weeks AS (
           SELECT DISTINCT week FROM searches ORDER BY week
         ),
@@ -728,51 +740,104 @@ def uptrends():
           WHERE w.week_id BETWEEN ? AND ?
             AND s.rank IS NOT NULL
             AND NOT (
-              s.term LIKE '#%%'                                       -- Excel hataları (#NAME?, #REF!)
-              OR REGEXP_MATCHES(s.term, '^[0-9.eE+\\-]+$')            -- sayısal / scientific (9.78E+12, -3.2, 123)
-              OR LENGTH(TRIM(s.term)) < 2                             -- çok kısa
-              OR NOT REGEXP_MATCHES(s.term, '[A-Za-z]')               -- hiç harf yok
+              s.term LIKE '#%%'
+              OR REGEXP_MATCHES(s.term, '^[0-9.eE+\\-]+$')
+              OR LENGTH(TRIM(s.term)) < 2
+              OR NOT REGEXP_MATCHES(s.term, '[A-Za-z]')
             )
-        ),
-        stepped AS (
-          SELECT term, rank,
-                 LEAD(rank) OVER (PARTITION BY term ORDER BY week_id) AS next_rank
-          FROM clean
         )
-        SELECT term,
-               SUM(CASE WHEN next_rank < rank THEN 1 ELSE 0 END) AS ups
-        FROM stepped
-        GROUP BY term
-        HAVING SUM(CASE WHEN next_rank < rank THEN 1 ELSE 0 END) >= 1
-        ORDER BY ups DESC
+        """
+        params = [start_id, end_id]
+        extra = ""
+        for w in inc_terms:
+            extra += " AND LOWER(s.term) LIKE ?"; params.append(f"%{w}%")
+        for w in exc_terms:
+            extra += " AND LOWER(s.term) NOT LIKE ?"; params.append(f"%{w}%")
+
+        q = f"""
+        {base_sql}
+        , filtered AS ( SELECT * FROM clean s WHERE 1=1 {extra} )
+        , agg AS (
+          SELECT
+            term,
+            MIN(CASE WHEN week_id = ? THEN rank END) AS start_rank,
+            MIN(CASE WHEN week_id = ? THEN rank END) AS end_rank,
+            COUNT(DISTINCT week_id) AS weeks
+          FROM filtered
+          GROUP BY term
+        )
+        SELECT
+          term,
+          CAST(start_rank AS INTEGER) AS start_rank,
+          CAST(end_rank   AS INTEGER) AS end_rank,
+          CAST(start_rank - end_rank AS INTEGER) AS total_improvement,
+          weeks
+        FROM agg
+        WHERE start_rank IS NOT NULL AND end_rank IS NOT NULL
+          AND (start_rank - end_rank) > 0
+        ORDER BY total_improvement DESC
         LIMIT ? OFFSET ?;
         """
-        rows = con.execute(q, [s_id, e_id, limit, offset]).fetchall()
+        params.extend([start_id, end_id, limit, offset])
+        rows = con.execute(q, params).fetchall()
         con.close()
-        return jsonify([{"term": r[0], "ups": int(r[1])} for r in rows])
+        return jsonify([
+          {"term": r[0], "start_rank": int(r[1]), "end_rank": int(r[2]),
+           "total_improvement": int(r[3]), "weeks": int(r[4])}
+          for r in rows
+        ])
     except Exception as e:
         app.logger.exception("uptrends failed")
-        return jsonify({"error": "uptrends_failed", "message": str(e)}), 500
+        return jsonify({"error":"uptrends_failed","message":str(e)}), 500
+
 
 
 @app.get("/series")
 def series():
     try:
-        term = request.args.get("term")
+        term = (request.args.get("term") or "").strip()
         if not term:
-            return jsonify({"error": "term required"}), 400
+            return jsonify({"error":"term required"}), 400
         con = get_conn(read_only=True)
         rows = con.execute("""
             SELECT week, rank
             FROM searches
-            WHERE term = ?
+            WHERE LOWER(term) = LOWER(?)
             ORDER BY week
         """, [term]).fetchall()
         con.close()
-        return jsonify([{"week": r[0], "rank": int(r[1])} for r in rows])
+        return jsonify([{"weekLabel": r[0], "rank": int(r[1])} for r in rows])
     except Exception as e:
         app.logger.exception("series failed")
-        return jsonify({"error": "series_failed", "message": str(e)}), 500
+        return jsonify({"error":"series_failed","message":str(e)}), 500
+
+@app.get("/diag")
+def diag():
+    try:
+        con = get_conn(read_only=True)
+        rows  = con.execute("SELECT COUNT(*) FROM searches").fetchone()[0]
+        weeks = con.execute("SELECT COUNT(DISTINCT week) FROM searches").fetchone()[0]
+        sample = con.execute("""
+            SELECT term FROM searches
+            GROUP BY term
+            HAVING NOT (
+              term LIKE '#%' OR
+              REGEXP_MATCHES(term, '^[0-9.eE+\\-]+$') OR
+              LENGTH(TRIM(term)) < 2 OR
+              NOT REGEXP_MATCHES(term, '[A-Za-z]')
+            )
+            LIMIT 5
+        """).fetchall()
+        con.close()
+        return jsonify({
+            "rows": int(rows),
+            "weeks": int(weeks),
+            "sample_clean_terms": [r[0] for r in sample]
+        })
+    except Exception as e:
+        app.logger.exception("diag failed")
+        return jsonify({"error":"diag_failed","message":str(e)}), 500
+
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
@@ -813,50 +878,151 @@ svg{width:100%;height:260px;background:transparent}
 ### app\web\static\js\app.js
 
 ```js
+// app/web/static/js/app.js
+
 const $ = (sel)=>document.querySelector(sel);
+
 const startSel = $("#start"), endSel = $("#end");
 const includeInp = $("#include"), excludeInp = $("#exclude");
-const runBtn = $("#run"), reindexBtn = $("#reindex");
+const runBtn = $("#run");
+const reindexBtn = $("#reindex");                 // may be null
 const tbody = $("#tbl tbody"), found = $("#found");
-const modal = $("#modal"), closeModalBtn = $("#closeModal"), chartEl = $("#chart");
-let weeks = [];
+const emptyEl = $("#empty");                      // may be null
+const rangePill = $("#range") || $("#rangeBadge");// support both ids
+const statusEl = $("#status");                    // may be null
 
-async function loadWeeks(){
-  const res = await fetch("/weeks");
-  weeks = await res.json();
-  startSel.innerHTML = ""; endSel.innerHTML = "";
-  for(const w of weeks){
-    const o1 = document.createElement("option"); o1.value = w.weekId; o1.textContent = w.label;
-    const o2 = document.createElement("option"); o2.value = w.weekId; o2.textContent = w.label;
-    startSel.appendChild(o1); endSel.appendChild(o2);
+const modal = $("#modal"), closeModalBtn = $("#closeModal"), chartEl = $("#chart");
+const toast = $("#toast");                        // may be null
+
+let weeks = [];
+let lastFocusedBeforeModal = null;
+let currentSort = { key: "total_improvement", dir: "desc" };
+
+/* ---------- helpers ---------- */
+function showToast(msg, ms=2600){
+  if(!toast) { console.warn(msg); return; }
+  toast.textContent = msg;
+  toast.classList.remove("hidden");
+  setTimeout(()=>toast.classList.add("hidden"), ms);
+}
+
+async function fetchJSON(url){
+  const res = await fetch(url);
+  if(!res.ok){
+    const t = await res.text().catch(()=>res.statusText);
+    throw new Error(`${res.status} ${res.statusText} - ${t}`);
   }
-  if(weeks.length >= 2){
-    startSel.value = weeks[Math.max(0, weeks.length-6)].weekId; // varsayılan: son 6 haftanın başı
-    endSel.value = weeks[weeks.length-1].weekId;
+  return res.json();
+}
+
+function setLoading(on){
+  if(statusEl){
+    statusEl.classList.toggle("hidden", !on);
+    statusEl.setAttribute("aria-hidden", on ? "false":"true");
+  }
+  if(runBtn) runBtn.disabled = on;
+  if(reindexBtn) reindexBtn.disabled = on;
+}
+
+function persistFilters(){
+  const data = {
+    start: startSel.value, end: endSel.value,
+    include: includeInp.value, exclude: excludeInp.value
+  };
+  localStorage.setItem("atf.filters", JSON.stringify(data));
+}
+function restoreFilters(){
+  const raw = localStorage.getItem("atf.filters");
+  if(!raw) return;
+  try{
+    const d = JSON.parse(raw);
+    if(d.start) startSel.value = String(d.start);
+    if(d.end) endSel.value = String(d.end);
+    if(d.include!=null) includeInp.value = d.include;
+    if(d.exclude!=null) excludeInp.value = d.exclude;
+  }catch{}
+}
+
+/* ---------- weeks ---------- */
+async function loadWeeks(){
+  setLoading(true);
+  try{
+    weeks = await fetchJSON("/weeks");
+    startSel.innerHTML = ""; endSel.innerHTML = "";
+    for(const w of weeks){
+      const o1 = document.createElement("option"); o1.value = w.weekId; o1.textContent = `Week ${w.label}`;
+      const o2 = document.createElement("option"); o2.value = w.weekId; o2.textContent = `Week ${w.label}`;
+      startSel.appendChild(o1); endSel.appendChild(o2);
+    }
+    if(weeks.length >= 2){
+      startSel.value = weeks[Math.max(0, weeks.length-6)].weekId; // default: last 6 weeks window
+      endSel.value = weeks[weeks.length-1].weekId;
+    }
+    restoreFilters();
+  }catch(err){
+    showToast("Failed to load weeks.");
+    console.error(err);
+  }finally{
+    setLoading(false);
   }
 }
 
-async function runQuery(){
+function parseWeeks(){
   let s = parseInt(startSel.value,10), e = parseInt(endSel.value,10);
-  if(!s || !e) return;
+  if(!s || !e) throw new Error("Please select start and end week.");
   if(e < s){ const t=s; s=e; e=t; }
-  if((e - s + 1) < 2){ alert("Aralık en az 2 hafta olmalı."); return; }
+  if((e - s + 1) < 2) throw new Error("Range must be at least 2 weeks.");
 
-  const params = new URLSearchParams({
-    startWeekId: s, endWeekId: e,
-    include: includeInp.value.trim(),
-    exclude: excludeInp.value.trim(),
+  const sLabel = weeks.find(w=>w.weekId===s)?.label || s;
+  const eLabel = weeks.find(w=>w.weekId===e)?.label || e;
+  const total = (e - s + 1);
+  return { s, e, sLabel, eLabel, total };
+}
+
+/* ---------- query ---------- */
+async function runQuery(){
+  try{
+    setLoading(true);
+    const { s, e, sLabel, eLabel, total } = parseWeeks();
+    if(rangePill) rangePill.textContent = `${total} weeks • ${sLabel} → ${eLabel}`;
+
+    const norm = str => str.replaceAll(",", " ").trim();
+    const params = new URLSearchParams({
+      startWeekId: s, endWeekId: e,
+      include: norm(includeInp.value),
+      exclude: norm(excludeInp.value),
+    });
+
+    const rows = await fetchJSON("/uptrends?" + params.toString());
+    const sorted = sortRows(rows, currentSort.key, currentSort.dir);
+    renderTable(sorted, s, e);
+    persistFilters();
+  }catch(err){
+    showToast(err.message);
+    console.error(err);
+  }finally{
+    setLoading(false);
+  }
+}
+
+function sortRows(rows, key, dir){
+  const mul = dir === "desc" ? -1 : 1;
+  return [...rows].sort((a,b)=>{
+    let va = a[key], vb = b[key];
+    const na = typeof va === "number", nb = typeof vb === "number";
+    if(na && nb) return (va - vb) * mul;
+    return String(va).localeCompare(String(vb)) * mul;
   });
-  const res = await fetch("/uptrends?" + params.toString());
-  const rows = await res.json();
-  renderTable(rows, s, e);
 }
 
 function renderTable(rows, s, e){
   tbody.innerHTML = "";
   found.textContent = `Found: ${rows.length}`;
+  if(emptyEl) emptyEl.classList.toggle("hidden", rows.length>0);
+
   for(const r of rows){
     const tr = document.createElement("tr");
+    tr.tabIndex = 0;
     tr.innerHTML = `
       <td>${r.term}</td>
       <td>${r.start_rank}</td>
@@ -864,32 +1030,44 @@ function renderTable(rows, s, e){
       <td>${r.total_improvement}</td>
       <td>${r.weeks}</td>
     `;
-    tr.addEventListener("click", ()=>showSeries(r.term, s, e));
+    const open = ()=>showSeries(r.term, s, e);
+    tr.addEventListener("click", open);
+    tr.addEventListener("keydown", (ev)=>{ if(ev.key==="Enter" || ev.key===" ") { ev.preventDefault(); open(); }});
     tbody.appendChild(tr);
   }
 }
 
+/* ---------- series + chart ---------- */
 async function showSeries(term, s, e){
-  const params = new URLSearchParams({ term, startWeekId: s, endWeekId: e });
-  const res = await fetch("/series?" + params.toString());
-  const data = await res.json();
-  drawMiniChart(term, data);
-  modal.classList.remove("hidden");
+  try{
+    setLoading(true);
+    const params = new URLSearchParams({ term, startWeekId: s, endWeekId: e });
+    const data = await fetchJSON("/series?" + params.toString());
+    drawMiniChart(term, data);
+    openModal();
+  }catch(err){
+    showToast("Failed to load series.");
+    console.error(err);
+  }finally{
+    setLoading(false);
+  }
 }
 
 function drawMiniChart(title, data){
-  // y ekseni ters: min rank (en iyi) üstte
-  const ranks = data.map(d=>d.rank).filter(v=>typeof v==="number");
-  const minR = Math.min(...ranks), maxR = Math.max(...ranks);
-  const pad = 24, W = 680, H = 240;
-  const y = (v)=> { // ters eksen
+  // y axis reversed (smaller rank = better)
+  const ranks = data.map(d=>d.rank).filter(v=>Number.isFinite(v));
+  const minR = ranks.length ? Math.min(...ranks) : 0;
+  const maxR = ranks.length ? Math.max(...ranks) : 1;
+
+  const pad = 24, W = 740, H = 260;
+  const y = (v)=> {
     const t = (v - minR) / Math.max(1, (maxR - minR));
     return pad + (H - 2*pad) * t;
   };
   const x = (i)=> pad + (W - 2*pad) * (i/(Math.max(1, data.length-1)));
 
   const pts = data.map((d,i)=>{
-    const rr = (typeof d.rank==="number") ? d.rank : null;
+    const rr = Number.isFinite(d.rank) ? d.rank : null;
     return { x:x(i), y: rr!==null? y(rr): null, label:d.weekLabel, rank: rr };
   });
 
@@ -901,14 +1079,14 @@ function drawMiniChart(title, data){
   }
 
   const svg = `
-  <svg viewBox="0 0 ${W} ${H}">
+  <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${title} rank chart">
     <g class="axis">
       <line x1="${pad}" y1="${pad}" x2="${pad}" y2="${H-pad}" />
       <line x1="${pad}" y1="${H-pad}" x2="${W-pad}" y2="${H-pad}" />
       <text x="${pad}" y="${pad-6}">${minR}</text>
       <text x="${pad}" y="${H-pad+16}">${data[0]?.weekLabel||""}</text>
       <text x="${W-pad-80}" y="${H-pad+16}">${data[data.length-1]?.weekLabel||""}</text>
-      <text x="${pad}" y="${H-pad+30}" fill="#9fb0c0">${title}</text>
+      <text x="${pad}" y="${H-pad+30}" fill="#0f172a">${title}</text>
     </g>
     <path class="line" d="${path}"/>
     ${pts.map(p => p.y===null? "" : `<circle class="dot" cx="${p.x}" cy="${p.y}" r="3"><title>${p.label} • rank ${p.rank}</title></circle>`).join("")}
@@ -917,84 +1095,216 @@ function drawMiniChart(title, data){
   chartEl.innerHTML = svg;
 }
 
-$("#run").addEventListener("click", runQuery);
-$("#reindex").addEventListener("click", async ()=>{
-  await fetch("/reindex");
-  await loadWeeks();
-});
-$("#closeModal").addEventListener("click", ()=>modal.classList.add("hidden"));
-modal.addEventListener("click",(e)=>{ if(e.target===modal) modal.classList.add("hidden"); });
+/* ---------- modal a11y ---------- */
+function openModal(){
+  lastFocusedBeforeModal = document.activeElement;
+  modal.classList.remove("hidden");
+  closeModalBtn && closeModalBtn.focus();
+  document.addEventListener("keydown", escClose);
+  document.addEventListener("focus", trapFocus, true);
+}
+function closeModal(){
+  modal.classList.add("hidden");
+  document.removeEventListener("keydown", escClose);
+  document.removeEventListener("focus", trapFocus, true);
+  if(lastFocusedBeforeModal) lastFocusedBeforeModal.focus();
+}
+function escClose(e){ if(e.key==="Escape") closeModal(); }
+function trapFocus(e){
+  if(modal.classList.contains("hidden")) return;
+  if(!modal.contains(e.target)){
+    e.stopPropagation();
+    closeModalBtn && closeModalBtn.focus();
+  }
+}
 
-loadWeeks().then(runQuery);
+/* ---------- events ---------- */
+runBtn && runBtn.addEventListener("click", runQuery);
+
+// reindex button is optional; guard it
+if (reindexBtn) {
+  reindexBtn.addEventListener("click", async ()=>{
+    try{
+      setLoading(true);
+      await fetchJSON("/reindex");
+      await loadWeeks();
+      showToast("Reindex completed.");
+    }catch(err){
+      showToast("Reindex failed.");
+      console.error(err);
+    }finally{
+      setLoading(false);
+    }
+  });
+}
+
+closeModalBtn && closeModalBtn.addEventListener("click", closeModal);
+modal.addEventListener("click",(e)=>{ if(e.target===modal) closeModal(); });
+
+document.addEventListener("keydown",(e)=>{
+  if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==="enter"){ runQuery(); }
+});
+
+/* sortable headers (data-key attrs must exist) */
+document.querySelectorAll("#tbl thead th").forEach(th=>{
+  th.addEventListener("click", ()=>{
+    const key = th.dataset.key;
+    if(!key) return;
+    currentSort = {
+      key,
+      dir: (currentSort.key===key && currentSort.dir==="asc") ? "desc" : "asc"
+    };
+    const rows = Array.from(tbody.querySelectorAll("tr")).map(tr=>{
+      const [term, s, e, imp, w] = Array.from(tr.children).map(td=>td.textContent);
+      return {
+        term,
+        start_rank: Number(s), end_rank: Number(e),
+        total_improvement: Number(imp), weeks: Number(w)
+      };
+    });
+    const { s, e } = parseWeeks();
+    const sorted = sortRows(rows, currentSort.key, currentSort.dir);
+    renderTable(sorted, s, e);
+  });
+});
+
+/* persist filters */
+[startSel, endSel, includeInp, excludeInp].forEach(el=>{
+  el.addEventListener("change", persistFilters);
+  el.addEventListener("input", persistFilters);
+});
+
+/* init */
+loadWeeks().then(runQuery).catch(console.error);
 
 ```
 
 ### app\web\templates\index.html
 
 ```html
-<!doctype html>
-<html lang="tr">
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Amazon Trend Finder</title>
-<link rel="stylesheet" href="/static/css/styles.css">
+<<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Amazon Trend Finder AI</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+  <style>
+    /* light UX tweaks */
+    :root { --pad: 12px; }
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+    header { padding: var(--pad) 16px; display:flex; align-items:center; gap:12px; }
+    header h1 { margin: 0; font-size: 20px; }
+    .controls { display:grid; gap:12px; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); padding: 12px 16px; }
+    .controls label { display:block; font-size: 12px; color:#566; margin-bottom:4px; }
+    .controls input, .controls select { width:100%; padding:8px; border:1px solid #ccd6e0; border-radius:8px; }
+    .controls .actions { display:flex; align-items:end; gap:8px; }
+    .summary { padding: 6px 16px; font-size: 13px; color:#234; display:flex; gap:12px; align-items:center; }
+    .summary .pill { padding:2px 8px; border-radius:999px; background:#eef3f8; border:1px solid #d9e4ee; }
+    table { width:100%; border-collapse:collapse; }
+    thead th { text-align:left; font-weight:600; font-size:13px; color:#355; border-bottom:1px solid #e5ecf2; padding:10px 12px; user-select:none; cursor:pointer; }
+    tbody td { border-bottom:1px solid #f1f4f7; padding:10px 12px; font-size:14px; }
+    tbody tr { transition: background .15s; }
+    tbody tr:hover { background:#fafcff; }
+    .hidden { display:none !important; }
+    .modal { position:fixed; inset:0; background:rgba(9,25,50,.35); display:flex; align-items:center; justify-content:center; padding:16px; }
+    .modal-card { background:#fff; border-radius:14px; width:min(820px, 96vw); max-height:92vh; display:flex; flex-direction:column; box-shadow:0 10px 30px rgba(0,0,0,.15); }
+    .modal-header { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid #eef2f7; }
+    .modal-header h3 { margin:0; font-size:16px; color:#111; }
+    .chart { padding:10px 12px 16px; overflow:auto; }
+    .btn { padding:9px 12px; border-radius:10px; border:1px solid #cdd9e5; background:#fff; cursor:pointer; }
+    .btn.primary { background:#0b74ff; color:#fff; border-color:#0b74ff; }
+    .btn:disabled { opacity:.6; cursor:not-allowed; }
+    .toast { position:fixed; right:12px; bottom:12px; background:#0b1220; color:#fff; padding:10px 12px; border-radius:10px; font-size:13px; box-shadow:0 8px 24px rgba(0,0,0,.25); }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0; }
+    .loading { display:inline-flex; align-items:center; gap:8px; }
+    .loading .dot { width:6px; height:6px; border-radius:50%; background:#0b74ff; animation: b 1s infinite alternate; }
+    .loading .dot:nth-child(2){ animation-delay:.2s } .loading .dot:nth-child(3){ animation-delay:.4s }
+    @keyframes b { from{ transform:translateY(0)} to{ transform:translateY(-4px)} }
+    svg .axis line { stroke:#c8d4e0; stroke-width:1; }
+    svg .axis text { fill:#5a6b7c; font-size:11px; }
+    svg .line { fill:none; stroke:#0b74ff; stroke-width:2; }
+    svg .dot { fill:#0b74ff; }
+    /* modal close button better contrast */
+    .modal-header button { color:#111; background:#fff; border:1px solid #cbd5e1; border-radius:8px; padding:4px 8px; }
+    .modal-header button:hover { background:#f1f5f9; }
+  </style>
+</head>
 <body>
 <header>
-  <h1>Amazon Trend Finder</h1>
+  <h1>Amazon Trend Finder AI</h1>
 </header>
 
-<section class="controls">
+<section class="controls" aria-labelledby="filtersTitle">
+  <h2 id="filtersTitle" class="sr-only">Filters</h2>
+
   <div>
-    <label>Start week</label>
-    <select id="start"></select>
+    <label for="start">Start week</label>
+    <select id="start" name="start"></select>
   </div>
+
   <div>
-    <label>End week</label>
-    <select id="end"></select>
+    <label for="end">End week</label>
+    <select id="end" name="end"></select>
   </div>
+
   <div>
-    <label>Include</label>
-    <input id="include" placeholder="iphone, croc..." />
+    <label for="include">Include (comma-separated)</label>
+    <input id="include" name="include" placeholder="iphone, crocs…" autocomplete="off"/>
   </div>
+
   <div>
-    <label>Exclude</label>
-    <input id="exclude" placeholder="case, charger..." />
+    <label for="exclude">Exclude (comma-separated)</label>
+    <input id="exclude" name="exclude" placeholder="case, charger…" autocomplete="off"/>
   </div>
-  <button id="run">Find uptrends</button>
-  <button id="reindex" title="Yeni hafta eklediysen">Reindex</button>
+
+  <div class="actions">
+    <button id="run" class="btn primary" aria-label="Find uptrends">Find uptrends</button>
+    <!-- removed: reindex button -->
+  </div>
 </section>
 
-<section class="summary">
-  <span id="found">Found: 0</span>
+<section class="summary" aria-live="polite">
+  <span id="found" class="pill">Found: 0</span>
+  <span id="range" class="pill"></span>
+  <span id="status" class="loading hidden" aria-hidden="true">
+    <span class="dot"></span><span class="dot"></span><span class="dot"></span> Loading…
+  </span>
 </section>
 
-<section>
+<section aria-labelledby="resultsTitle">
+  <h2 id="resultsTitle" class="sr-only">Results</h2>
   <table id="tbl">
     <thead>
       <tr>
-        <th>Term</th>
-        <th>Start rank</th>
-        <th>End rank</th>
-        <th>Total improvement</th>
-        <th>Weeks</th>
+        <th data-key="term">Term</th>
+        <th data-key="start_rank">Start rank</th>
+        <th data-key="end_rank">End rank</th>
+        <th data-key="total_improvement">Total improvement</th>
+        <th data-key="weeks">Weeks</th>
       </tr>
     </thead>
     <tbody></tbody>
   </table>
+  <div id="empty" class="hidden" style="padding:12px 16px; color:#566;">
+    No results. Try relaxing your filters.
+  </div>
 </section>
 
 <!-- Modal -->
-<div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+<div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
   <div class="modal-card">
     <div class="modal-header">
       <h3 id="modalTitle">Trend</h3>
-      <button id="closeModal">✕</button>
+      <button id="closeModal" class="btn" aria-label="Close">✕</button>
     </div>
     <div id="chart" class="chart"></div>
   </div>
 </div>
 
-<script src="/static/js/app.js"></script>
+<div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+<script src="/static/js/app.js" defer></script>
 </body>
 </html>
 
