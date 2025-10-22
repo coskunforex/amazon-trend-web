@@ -29,7 +29,7 @@ svg{width:100%;height:260px;background:transparent}
   /* loading nokta boyutunu buradan kontrol edersin.
      Projendeki loading dots ile aynı olsun diye 0.9rem verdim.
      Loading tarafında farklıysa burayı aynı değere çek. */
-  --loading-dot-size: 2.4rem;
+  --loading-dot-size: 4.1rem;
   --loading-dot-color: #3b82f6; /* mavi */
 }
 
