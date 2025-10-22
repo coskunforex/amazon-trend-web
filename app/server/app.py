@@ -75,7 +75,6 @@ def reindex():
         app.logger.exception("reindex failed")
         return jsonify({"error": "reindex_failed", "message": str(e)}), 500
 
-# app/server/app.py -> /uptrends (HAFİF ve STABİL)
 @app.get("/uptrends")
 def uptrends():
     try:
@@ -156,17 +155,23 @@ def uptrends():
         rows = con.execute(base_sql, params).fetchall()
         con.close()
 
-       # frontend'in beklediği şemayı üretelim
-return jsonify([
-    {
-        "term": r[0],
-        "start_rank": 0,
-        "end_rank": 0,
-        "total_improvement": int(r[1]),  # geçici olarak ups burada
-        "weeks": (end_id - start_id + 1)
-    }
-    for r in rows
-])
+        # UI'nin beklediği şemayı dolduralım (MVP: start/end şimdilik None)
+        weeks_count = (end_id - start_id + 1)
+        return jsonify([
+            {
+                "term": r[0],
+                "start_rank": None,
+                "end_rank": None,
+                "total_improvement": int(r[1]),  # geçici olarak "ups" burada
+                "weeks": weeks_count
+            }
+            for r in rows
+        ])
+
+    except Exception as e:
+        app.logger.exception("uptrends failed")
+        return jsonify({"error": "uptrends_failed", "message": str(e)}), 500
+
 
 
     except Exception as e:
