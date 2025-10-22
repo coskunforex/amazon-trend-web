@@ -156,8 +156,18 @@ def uptrends():
         rows = con.execute(base_sql, params).fetchall()
         con.close()
 
-        # UI mevcut haliyle ups kolonunu kullanıyor. (İleride start/end/total eklenebilir)
-        return jsonify([{"term": r[0], "ups": int(r[1])} for r in rows])
+       # frontend'in beklediği şemayı üretelim
+return jsonify([
+    {
+        "term": r[0],
+        "start_rank": 0,
+        "end_rank": 0,
+        "total_improvement": int(r[1]),  # geçici olarak ups burada
+        "weeks": (end_id - start_id + 1)
+    }
+    for r in rows
+])
+
 
     except Exception as e:
         app.logger.exception("uptrends failed")
