@@ -259,3 +259,28 @@ def diag():
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
     app.run(host="0.0.0.0", port=port, debug=False)
+
+# en üstte var zaten:
+from flask import Flask, jsonify, request, send_from_directory, render_template
+from pathlib import Path
+# ...
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+app = Flask(
+    __name__,
+    template_folder=str(PROJECT_ROOT / "app" / "web" / "templates"),
+    static_folder=str(PROJECT_ROOT / "app" / "web" / "static"),
+)
+
+# --- YENİ / GÜNCEL ROUTES ---
+
+@app.get("/")
+def landing():
+    # templates/landing.html dosyasını göster
+    return render_template("landing.html")
+
+@app.get("/app")
+def app_ui():
+    # eskiden "/" dönen UI: templates/index.html
+    return send_from_directory(app.template_folder, "index.html")
