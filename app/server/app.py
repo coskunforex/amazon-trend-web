@@ -163,19 +163,47 @@ def series():
     try:
         term = (request.args.get("term") or "").strip()
         if not term:
-            return jsonify({"error":"term required"}), 400
+            return jsonify({"error": "term required"}), 400
+
+        start_id = request.args.get("startWeekId", type=int)
+        end_id   = request.args.get("endWeekId", type=int)
+        if start_id and end_id and end_id < start_id:
+            start_id, end_id = end_id, start_id
+
         con = get_conn(read_only=True)
-        rows = con.execute("""
-            SELECT week, rank
-            FROM searches
-            WHERE LOWER(term) = LOWER(?)
-            ORDER BY week
-        """, [term]).fetchall()
+
+        base_sql = """
+        WITH all_weeks AS (
+          SELECT DISTINCT week FROM searches ORDER BY week
+        ),
+        weeks_idx AS (
+          SELECT week, ROW_NUMBER() OVER (ORDER BY week) AS week_id
+          FROM all_weeks
+        )
+        SELECT s.week, s.rank
+        FROM searches s
+        JOIN weeks_idx w USING(week)
+        WHERE LOWER(s.term) = LOWER(?)
+        """
+        params = [term]
+
+        # sadece iki id de geldiyse aralığı uygula
+        if start_id and end_id:
+            base_sql += " AND w.week_id BETWEEN ? AND ?"
+            params += [start_id, end_id]
+
+        base_sql += " ORDER BY s.week"
+
+        rows = con.execute(base_sql, params).fetchall()
         con.close()
-        return jsonify([{"weekLabel": r[0], "rank": int(r[1])} for r in rows])
+
+        # weekLabel dahil döndürelim (UI her ikisini de destekliyor)
+        return jsonify([{"week": r[0], "weekLabel": r[0], "rank": int(r[1])} for r in rows])
+
     except Exception as e:
         app.logger.exception("series failed")
-        return jsonify({"error":"series_failed","message":str(e)}), 500
+        return jsonify({"error": "series_failed", "message": str(e)}), 500
+
 
 @app.get("/diag")
 def diag():
