@@ -84,7 +84,7 @@ def uptrends():
         exclude  = (request.args.get("exclude") or "").strip().lower()
         limit    = request.args.get("limit", 200, type=int)
         offset   = request.args.get("offset", 0, type=int)
-        max_rank = request.args.get("maxRank", 300, type=int)  # ağırlaşırsa 200 de deneyebilirsin
+        max_rank = request.args.get("maxRank", 300, type=int)  # gerekirse 200'e düşür
 
         if not (start_id and end_id):
             return jsonify({"error": "Provide startWeekId and endWeekId"}), 400
@@ -92,8 +92,19 @@ def uptrends():
             start_id, end_id = end_id, start_id
 
         con = get_conn(read_only=True)
+        try:
+            tmp_root = os.environ.get("DATA_DIR", "/app/storage")
+            os.makedirs(os.path.join(tmp_root, "tmp"), exist_ok=True)
+            con.execute(f"SET temp_directory='{os.path.join(tmp_root, 'tmp')}';")
+            con.execute("SET max_temp_directory_size='4GB';")
+            con.execute("SET memory_limit='512MB';")
+            con.execute("SET threads=1;")
+        except Exception:
+            pass
 
-        # Hafif sorgu: regex yok, rank sınırı var. İlk ve son haftanın rank'larını hesaplıyoruz.
+        # ---------------------------------------------------------------------
+        # Ana sorgu
+        # ---------------------------------------------------------------------
         sql = """
         WITH all_weeks AS (
           SELECT DISTINCT week FROM searches ORDER BY week
@@ -110,28 +121,29 @@ def uptrends():
             AND s.rank IS NOT NULL
             AND s.rank <= ?
             AND LENGTH(TRIM(s.term)) >= 2
-            AND LOWER(s.term) <> UPPER(s.term)  -- harf içeriyor
+            AND LOWER(s.term) <> UPPER(s.term)
         ),
-        -- include/exclude filtreleri
         filt2 AS (
-          SELECT *
-          FROM filtered
-          WHERE 1=1
+          SELECT * FROM filtered WHERE 1=1
         """
         params = [start_id, end_id, max_rank]
 
+        # 🔹 include / exclude: boşlukla ayrılmış kelimeler
+        def _parts_space(s: str):
+            return [p.strip().lower() for p in s.split() if p.strip()]
+
         if include:
-            for w in include.split():
+            for w in _parts_space(include):
                 sql += " AND LOWER(term) LIKE ?"
                 params.append(f"%{w}%")
         if exclude:
-            for w in exclude.split():
+            for w in _parts_space(exclude):
                 sql += " AND LOWER(term) NOT LIKE ?"
                 params.append(f"%{w}%")
 
         sql += """
         ),
-        term_bounds AS (               -- aralıkta görüldüğü ilk/son hafta
+        term_bounds AS (
           SELECT term,
                  MIN(week_id) AS min_w,
                  MAX(week_id) AS max_w,
@@ -140,7 +152,7 @@ def uptrends():
           GROUP BY term
           HAVING COUNT(*) >= 2
         ),
-        start_end AS (                 -- ilk ve son haftanın rank'larını al
+        start_end AS (
           SELECT f.term,
                  MAX(CASE WHEN f.week_id = tb.min_w THEN f.rank END) AS start_rank,
                  MAX(CASE WHEN f.week_id = tb.max_w THEN f.rank END) AS end_rank,
@@ -149,7 +161,7 @@ def uptrends():
           JOIN term_bounds tb USING(term)
           GROUP BY f.term, tb.cnt
         ),
-        stepped AS (                   -- “kaç hafta iyileşme var” metrik
+        stepped AS (
           SELECT f.term, f.rank,
                  LEAD(f.rank) OVER (PARTITION BY f.term ORDER BY f.week_id) AS next_rank
           FROM filt2 f
@@ -168,7 +180,7 @@ def uptrends():
                se.weeks::BIGINT
         FROM start_end se
         JOIN ups u USING(term)
-        ORDER BY total_improvement DESC
+        ORDER BY total_improvement DESC, se.end_rank ASC
         LIMIT ? OFFSET ?;
         """
 
@@ -181,16 +193,16 @@ def uptrends():
             {
                 "term": r[0],
                 "start_rank": int(r[1]) if r[1] is not None else None,
-                "end_rank": int(r[2]) if r[2] is not None else None,
+                "end_rank":   int(r[2]) if r[2] is not None else None,
                 "total_improvement": int(r[3]) if r[3] is not None else None,
                 "weeks": int(r[4]) if r[4] is not None else None,
-            }
-            for r in rows
+            } for r in rows
         ])
 
     except Exception as e:
         app.logger.exception("uptrends failed")
         return jsonify({"error": "uptrends_failed", "message": str(e)}), 500
+
 
 
 # ---------- API: Series ----------
