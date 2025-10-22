@@ -1,7 +1,6 @@
 # app/server/app.py
-import re
-from flask import Flask, jsonify, request, send_from_directory
-import os, logging
+from flask import Flask, jsonify, request, send_from_directory, render_template
+import logging, os
 from pathlib import Path
 from app.core.db import get_conn, init_full, append_week
 
@@ -16,18 +15,22 @@ app = Flask(
 logging.basicConfig(level=logging.INFO)
 app.logger.setLevel(logging.INFO)
 
-
+# ---------- Health & UI ----------
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
-
 @app.get("/")
-def home():
-    # templates klasöründeki index.html'i döndür
+def landing():
+    # Landing page (templates/landing.html)
+    return render_template("landing.html")
+
+@app.get("/app")
+def app_ui():
+    # Eski UI (templates/index.html)
     return send_from_directory(app.template_folder, "index.html")
 
-
+# ---------- API: Weeks ----------
 @app.get("/weeks")
 def weeks():
     try:
@@ -44,7 +47,7 @@ def weeks():
         app.logger.exception("weeks failed")
         return jsonify({"error": "weeks_failed", "message": str(e)}), 500
 
-
+# ---------- API: Reindex ----------
 @app.get("/reindex")
 def reindex():
     try:
@@ -60,7 +63,6 @@ def reindex():
             init_full(PROJECT_ROOT)
             return jsonify({"status": "ok", "mode": "full"})
 
-        # append mode
         week = request.args.get("week")
         if not week:
             return jsonify({"error": "week required for append"}), 400
@@ -69,12 +71,11 @@ def reindex():
             return jsonify({"error": f"csv not found: {csv_path.name}"}), 404
         append_week(csv_path.as_posix(), week)
         return jsonify({"status": "ok", "mode": "append", "week": week})
-
     except Exception as e:
         app.logger.exception("reindex failed")
         return jsonify({"error": "reindex_failed", "message": str(e)}), 500
 
-
+# ---------- API: Uptrends ----------
 @app.get("/uptrends")
 def uptrends():
     try:
@@ -87,17 +88,9 @@ def uptrends():
 
         if not (start_id and end_id):
             return jsonify({"error": "Provide startWeekId and endWeekId"}), 400
-        if end_id < start_id:
-            start_id, end_id = end_id, start_id
-
-        # virgül+boşluk normalize
-        def split_terms(s: str):
-            return [t.strip() for t in s.replace(",", " ").split() if t.strip()]
-
-        inc_terms = split_terms(include)
-        exc_terms = split_terms(exclude)
 
         con = get_conn(read_only=True)
+
         base_sql = """
         WITH all_weeks AS (
           SELECT DISTINCT week FROM searches ORDER BY week
@@ -120,67 +113,46 @@ def uptrends():
             )
         )
         """
+
         params = [start_id, end_id]
         extra = ""
-
-        # include: tam kelime / kelime sınırı (ör. 'trump' eşleşsin, 'trumpet' eşleşmesin)
-        for w in inc_terms:
-            # kelimenin başında/sonunda harf-rakam olmayan sınır: (^|[^a-z0-9]) … ([^a-z0-9]|$)
-            pat = rf'(^|[^a-z0-9]){re.escape(w)}([^a-z0-9]|$)'
-            extra += " AND REGEXP_MATCHES(LOWER(s.term), ?)"
-            params.append(pat)
-
-        # exclude: mevcut davranışı koruyoruz (istersen regex'e de geçiririz)
-        for w in exc_terms:
-            extra += " AND LOWER(s.term) NOT LIKE ?"
-            params.append(f"%{w}%")
+        if include:
+            for w in include.split():
+                extra += " AND LOWER(s.term) LIKE ?"
+                params.append(f"%{w}%")
+        if exclude:
+            for w in exclude.split():
+                extra += " AND LOWER(s.term) NOT LIKE ?"
+                params.append(f"%{w}%")
 
         q = f"""
         {base_sql}
         , filtered AS (
           SELECT * FROM clean s WHERE 1=1 {extra}
-        )
-        , agg AS (
-          SELECT
-            term,
-            MIN(CASE WHEN week_id = ? THEN rank END) AS start_rank,
-            MIN(CASE WHEN week_id = ? THEN rank END) AS end_rank,
-            COUNT(DISTINCT week_id) AS weeks
+        ),
+        stepped AS (
+          SELECT term, rank,
+                 LEAD(rank) OVER (PARTITION BY term ORDER BY week_id) AS next_rank
           FROM filtered
-          GROUP BY term
         )
-        SELECT
-          term,
-          CAST(start_rank AS INTEGER) AS start_rank,
-          CAST(end_rank   AS INTEGER) AS end_rank,
-          CAST(start_rank - end_rank AS INTEGER) AS total_improvement,
-          weeks
-        FROM agg
-        WHERE start_rank IS NOT NULL AND end_rank IS NOT NULL
-          AND (start_rank - end_rank) > 0
-        ORDER BY total_improvement DESC
+        SELECT term,
+               SUM(CASE WHEN next_rank < rank THEN 1 ELSE 0 END) AS ups
+        FROM stepped
+        GROUP BY term
+        HAVING SUM(CASE WHEN next_rank < rank THEN 1 ELSE 0 END) >= 1
+        ORDER BY ups DESC
         LIMIT ? OFFSET ?;
         """
-        params.extend([start_id, end_id, limit, offset])
+        params.extend([limit, offset])
+
         rows = con.execute(q, params).fetchall()
         con.close()
-
-        return jsonify([
-          {
-            "term": r[0],
-            "start_rank": int(r[1]),
-            "end_rank": int(r[2]),
-            "total_improvement": int(r[3]),
-            "weeks": int(r[4]),
-          }
-          for r in rows
-        ])
-
+        return jsonify([{"term": r[0], "ups": int(r[1])} for r in rows])
     except Exception as e:
         app.logger.exception("uptrends failed")
         return jsonify({"error": "uptrends_failed", "message": str(e)}), 500
 
-
+# ---------- API: Series ----------
 @app.get("/series")
 def series():
     try:
@@ -188,46 +160,21 @@ def series():
         if not term:
             return jsonify({"error": "term required"}), 400
 
-        start_id = request.args.get("startWeekId", type=int)
-        end_id   = request.args.get("endWeekId", type=int)
-        if start_id and end_id and end_id < start_id:
-            start_id, end_id = end_id, start_id
-
         con = get_conn(read_only=True)
-
-        base_sql = """
-        WITH all_weeks AS (
-          SELECT DISTINCT week FROM searches ORDER BY week
-        ),
-        weeks_idx AS (
-          SELECT week, ROW_NUMBER() OVER (ORDER BY week) AS week_id
-          FROM all_weeks
-        )
-        SELECT s.week, s.rank
-        FROM searches s
-        JOIN weeks_idx w USING(week)
-        WHERE LOWER(s.term) = LOWER(?)
-        """
-        params = [term]
-
-        # sadece iki id de geldiyse aralığı uygula
-        if start_id and end_id:
-            base_sql += " AND w.week_id BETWEEN ? AND ?"
-            params += [start_id, end_id]
-
-        base_sql += " ORDER BY s.week"
-
-        rows = con.execute(base_sql, params).fetchall()
+        rows = con.execute("""
+            SELECT week, rank
+            FROM searches
+            WHERE LOWER(term) = LOWER(?)
+            ORDER BY week
+        """, [term]).fetchall()
         con.close()
 
-        # weekLabel dahil döndürelim (UI her ikisini de destekliyor)
-        return jsonify([{"week": r[0], "weekLabel": r[0], "rank": int(r[1])} for r in rows])
-
+        return jsonify([{"week": r[0], "rank": int(r[1])} for r in rows])
     except Exception as e:
         app.logger.exception("series failed")
         return jsonify({"error": "series_failed", "message": str(e)}), 500
 
-
+# ---------- API: Diagnostics ----------
 @app.get("/diag")
 def diag():
     try:
@@ -238,10 +185,10 @@ def diag():
             SELECT term FROM searches
             GROUP BY term
             HAVING NOT (
-              term LIKE '#%'
-              OR REGEXP_MATCHES(term, '^[0-9.eE+\\-]+$')
-              OR LENGTH(TRIM(term)) < 2
-              OR NOT REGEXP_MATCHES(term, '[A-Za-z]')
+              term LIKE '#%' OR
+              REGEXP_MATCHES(term, '^[0-9.eE+\\-]+$') OR
+              LENGTH(TRIM(term)) < 2 OR
+              NOT REGEXP_MATCHES(term, '[A-Za-z]')
             )
             LIMIT 5
         """).fetchall()
@@ -259,28 +206,3 @@ def diag():
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
     app.run(host="0.0.0.0", port=port, debug=False)
-
-# en üstte var zaten:
-from flask import Flask, jsonify, request, send_from_directory, render_template
-from pathlib import Path
-# ...
-
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-
-app = Flask(
-    __name__,
-    template_folder=str(PROJECT_ROOT / "app" / "web" / "templates"),
-    static_folder=str(PROJECT_ROOT / "app" / "web" / "static"),
-)
-
-# --- YENİ / GÜNCEL ROUTES ---
-
-@app.get("/")
-def landing():
-    # templates/landing.html dosyasını göster
-    return render_template("landing.html")
-
-@app.get("/app")
-def app_ui():
-    # eskiden "/" dönen UI: templates/index.html
-    return send_from_directory(app.template_folder, "index.html")
