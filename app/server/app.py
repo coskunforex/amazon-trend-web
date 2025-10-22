@@ -1,6 +1,6 @@
 # app/server/app.py
 import re
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 import os, logging
 from pathlib import Path
 from app.core.db import get_conn, init_full, append_week
@@ -16,11 +16,11 @@ app = Flask(
 logging.basicConfig(level=logging.INFO)
 app.logger.setLevel(logging.INFO)
 
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
-from flask import send_from_directory
 
 @app.get("/")
 def home():
@@ -43,6 +43,7 @@ def weeks():
     except Exception as e:
         app.logger.exception("weeks failed")
         return jsonify({"error": "weeks_failed", "message": str(e)}), 500
+
 
 @app.get("/reindex")
 def reindex():
@@ -73,6 +74,7 @@ def reindex():
         app.logger.exception("reindex failed")
         return jsonify({"error": "reindex_failed", "message": str(e)}), 500
 
+
 @app.get("/uptrends")
 def uptrends():
     try:
@@ -82,12 +84,16 @@ def uptrends():
         exclude  = (request.args.get("exclude") or "").strip().lower()
         limit    = request.args.get("limit", 200, type=int)
         offset   = request.args.get("offset", 0, type=int)
-        if not (start_id and end_id): return jsonify({"error":"Provide startWeekId and endWeekId"}), 400
-        if end_id < start_id: start_id, end_id = end_id, start_id
+
+        if not (start_id and end_id):
+            return jsonify({"error": "Provide startWeekId and endWeekId"}), 400
+        if end_id < start_id:
+            start_id, end_id = end_id, start_id
 
         # virgül+boşluk normalize
-        def split_terms(s): 
+        def split_terms(s: str):
             return [t.strip() for t in s.replace(",", " ").split() if t.strip()]
+
         inc_terms = split_terms(include)
         exc_terms = split_terms(exclude)
 
@@ -117,21 +123,23 @@ def uptrends():
         params = [start_id, end_id]
         extra = ""
 
-# include: tam kelime / kelime sınırı (trumpet eşleşmez)
-for w in inc_terms:
-    # kelimenin başında/sonunda harf-rakam olmayan sınır: (^|[^a-z0-9])  …  ([^a-z0-9]|$)
-    pat = rf'(^|[^a-z0-9]){re.escape(w)}([^a-z0-9]|$)'
-    extra += " AND REGEXP_MATCHES(LOWER(s.term), ?)"
-    params.append(pat)
+        # include: tam kelime / kelime sınırı (ör. 'trump' eşleşsin, 'trumpet' eşleşmesin)
+        for w in inc_terms:
+            # kelimenin başında/sonunda harf-rakam olmayan sınır: (^|[^a-z0-9]) … ([^a-z0-9]|$)
+            pat = rf'(^|[^a-z0-9]){re.escape(w)}([^a-z0-9]|$)'
+            extra += " AND REGEXP_MATCHES(LOWER(s.term), ?)"
+            params.append(pat)
 
-# exclude: aynen bırakabilirsin; dilersen aynı mantıkla regex yaparız
-for w in exc_terms:
-    extra += " AND LOWER(s.term) NOT LIKE ?"
-    params.append(f"%{w}%")
+        # exclude: mevcut davranışı koruyoruz (istersen regex'e de geçiririz)
+        for w in exc_terms:
+            extra += " AND LOWER(s.term) NOT LIKE ?"
+            params.append(f"%{w}%")
 
         q = f"""
         {base_sql}
-        , filtered AS ( SELECT * FROM clean s WHERE 1=1 {extra} )
+        , filtered AS (
+          SELECT * FROM clean s WHERE 1=1 {extra}
+        )
         , agg AS (
           SELECT
             term,
@@ -156,15 +164,21 @@ for w in exc_terms:
         params.extend([start_id, end_id, limit, offset])
         rows = con.execute(q, params).fetchall()
         con.close()
+
         return jsonify([
-          {"term": r[0], "start_rank": int(r[1]), "end_rank": int(r[2]),
-           "total_improvement": int(r[3]), "weeks": int(r[4])}
+          {
+            "term": r[0],
+            "start_rank": int(r[1]),
+            "end_rank": int(r[2]),
+            "total_improvement": int(r[3]),
+            "weeks": int(r[4]),
+          }
           for r in rows
         ])
+
     except Exception as e:
         app.logger.exception("uptrends failed")
-        return jsonify({"error":"uptrends_failed","message":str(e)}), 500
-
+        return jsonify({"error": "uptrends_failed", "message": str(e)}), 500
 
 
 @app.get("/series")
@@ -224,10 +238,10 @@ def diag():
             SELECT term FROM searches
             GROUP BY term
             HAVING NOT (
-              term LIKE '#%' OR
-              REGEXP_MATCHES(term, '^[0-9.eE+\\-]+$') OR
-              LENGTH(TRIM(term)) < 2 OR
-              NOT REGEXP_MATCHES(term, '[A-Za-z]')
+              term LIKE '#%'
+              OR REGEXP_MATCHES(term, '^[0-9.eE+\\-]+$')
+              OR LENGTH(TRIM(term)) < 2
+              OR NOT REGEXP_MATCHES(term, '[A-Za-z]')
             )
             LIMIT 5
         """).fetchall()
