@@ -180,8 +180,9 @@ def uptrends():
                se.weeks::BIGINT
         FROM start_end se
         JOIN ups u USING(term)
-        ORDER BY total_improvement DESC, se.end_rank ASC
+        ORDER BY 4 DESC, 3 ASC
         LIMIT ? OFFSET ?;
+
         """
 
         params.extend([limit, offset])
