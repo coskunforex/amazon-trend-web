@@ -1,87 +1,89 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Amazon Trend Finder AI</title>
-
-  <!-- FLASK way: cache-busting & doğru yol -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body class="landing">
+
+  <!-- NAV -->
   <header class="nav">
-    <div class="nav__brand">
-      <span class="dots">● ● ●</span>
-      <span>Amazon Trend Finder AI</span>
-    </div>
+    <div class="nav__brand">Amazon Trend Finder AI</div>
     <nav class="nav__links">
       <a href="/app">Open App</a>
-      <a href="/diag" target="_blank" rel="noopener">Diagnostics</a>
+      <a href="/diag" target="_blank">Diagnostics</a>
     </nav>
   </header>
 
-  <main class="hero">
+  <!-- HERO -->
+  <section class="hero">
     <div class="hero__text">
       <h1>Turn weekly Amazon search data into actionable trends.</h1>
       <p>Pick a date range, add quick include/exclude keywords, and instantly see which queries are steadily climbing.</p>
-
-      <div class="hero__ctas">
+      <div class="hero__cta">
         <a class="btn btn--primary" href="/app">Launch App</a>
         <a class="btn btn--ghost" href="#screens">See Screens</a>
       </div>
 
-      <ul class="bullets">
+      <ul class="hero__bullets">
         <li>Strict, week-over-week uptrends</li>
         <li>Fast filtering (include/exclude)</li>
         <li>Lightweight charts with exact ranks</li>
       </ul>
     </div>
 
-    <div class="hero__image">
-      <img
-        src="{{ url_for('static', filename='img/hero_main.png') }}"
-        alt="App overview"
-        loading="eager"
-      />
-    </div>
-  </main>
-
-  <section class="why">
-    <h2>Why Amazon Trend Finder AI?</h2>
-    <div class="cards">
-      <article class="card">
-        <h3>Real weekly signals</h3>
-        <p>Based on raw Brand Analytics CSVs—no guessing, just rank deltas across chosen weeks.</p>
-      </article>
-      <article class="card">
-        <h3>Clear improvement scores</h3>
-        <p>Sort by total improvement to surface the most meaningful gains first.</p>
-      </article>
-      <article class="card">
-        <h3>Simple, robust UI</h3>
-        <p>Pick weeks, filter terms, click any row to see its time-series chart—done.</p>
-      </article>
+    <div class="hero__media">
+      <img src="{{ url_for('static', filename='img/app-screen.png') }}"
+           alt="App overview" loading="lazy">
     </div>
   </section>
 
+  <!-- WHY SECTION -->
+  <section class="value">
+    <h2>Why Amazon Trend Finder AI?</h2>
+    <div class="value__grid">
+      <div class="card">
+        <h3>Real weekly signals</h3>
+        <p>Based on raw Brand Analytics CSVs—no guessing, just rank deltas across chosen weeks.</p>
+      </div>
+      <div class="card">
+        <h3>Clear improvement scores</h3>
+        <p>Sort by total improvement to surface the most meaningful gains first.</p>
+      </div>
+      <div class="card">
+        <h3>Simple, robust UI</h3>
+        <p>Pick weeks, filter terms, click any row to see its time-series chart—done.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREENSHOTS -->
   <section id="screens" class="screens">
     <h2>Screenshots</h2>
     <div class="screens__grid">
       <figure>
-        <img src="{{ url_for('static', filename='img/dashboard_table.png') }}"
-             alt="Results table" loading="lazy" />
+        <img src="{{ url_for('static', filename='img/app-screen.png') }}"
+             alt="Results table" loading="lazy">
         <figcaption>Rank deltas table</figcaption>
       </figure>
       <figure>
-        <img src="{{ url_for('static', filename='img/dashboard_trend_modal.png') }}"
-             alt="Trend chart" loading="lazy" />
+        <img src="{{ url_for('static', filename='img/sample1.png') }}"
+             alt="Trend chart" loading="lazy">
         <figcaption>Trend chart modal</figcaption>
+      </figure>
+      <figure>
+        <img src="{{ url_for('static', filename='img/sample2.png') }}"
+             alt="Filters & weeks" loading="lazy">
+        <figcaption>Filters & week picker</figcaption>
       </figure>
     </div>
   </section>
 
   <footer class="footer">
-    <small>© {{ 2025 }} Amazon Trend Finder AI</small>
+    <span>© 2025 Amazon Trend Finder AI</span>
   </footer>
+
 </body>
 </html>
