@@ -84,8 +84,7 @@ def uptrends():
         exclude  = (request.args.get("exclude") or "").strip().lower()
         limit    = request.args.get("limit", 200, type=int)
         offset   = request.args.get("offset", 0, type=int)
-        max_rank = request.args.get("maxRank", 1_000_000, type=int)
-
+        max_rank = request.args.get("maxRank", 300, type=int)  # istersen URL'de büyüt
 
         if not (start_id and end_id):
             return jsonify({"error": "Provide startWeekId and endWeekId"}), 400
@@ -94,18 +93,18 @@ def uptrends():
 
         con = get_conn(read_only=True)
         try:
+            # güvenli DuckDB ayarları (disk + limitler)
             tmp_root = os.environ.get("DATA_DIR", "/app/storage")
             os.makedirs(os.path.join(tmp_root, "tmp"), exist_ok=True)
             con.execute(f"SET temp_directory='{os.path.join(tmp_root, 'tmp')}';")
-            con.execute("SET max_temp_directory_size='4GB';")
-            con.execute("SET memory_limit='512MB';")
-            con.execute("SET threads=1;")
+            con.execute("SET max_temp_directory_size='10GB';")
+            con.execute("SET memory_limit='2GB';")
+            con.execute("SET threads=2;")
+            con.execute("SET preserve_insertion_order=false;")
         except Exception:
             pass
 
-        # ---------------------------------------------------------------------
-        # Ana sorgu
-        # ---------------------------------------------------------------------
+        # ❗ YENİ: Pencere fonksiyonu YOK. Sadece ilk/son rank ve fark.
         sql = """
         WITH all_weeks AS (
           SELECT DISTINCT week FROM searches ORDER BY week
@@ -129,7 +128,7 @@ def uptrends():
         """
         params = [start_id, end_id, max_rank]
 
-        # 🔹 include / exclude: boşlukla ayrılmış kelimeler
+        # include/exclude boşlukla ayrılmış kelimeler
         def _parts_space(s: str):
             return [p.strip().lower() for p in s.split() if p.strip()]
 
@@ -161,18 +160,6 @@ def uptrends():
           FROM filt2 f
           JOIN term_bounds tb USING(term)
           GROUP BY f.term, tb.cnt
-        ),
-        stepped AS (
-          SELECT f.term, f.rank,
-                 LEAD(f.rank) OVER (PARTITION BY f.term ORDER BY f.week_id) AS next_rank
-          FROM filt2 f
-          JOIN term_bounds tb USING(term)
-        ),
-        ups AS (
-          SELECT term,
-                 SUM(CASE WHEN next_rank < rank THEN 1 ELSE 0 END) AS ups_cnt
-          FROM stepped
-          GROUP BY term
         )
         SELECT se.term,
                se.start_rank::BIGINT,
@@ -180,10 +167,10 @@ def uptrends():
                (se.start_rank - se.end_rank)::BIGINT AS total_improvement,
                se.weeks::BIGINT
         FROM start_end se
-        JOIN ups u USING(term)
-        ORDER BY 4 DESC, 3 ASC
+        WHERE se.start_rank IS NOT NULL AND se.end_rank IS NOT NULL
+          AND se.start_rank > se.end_rank             -- gerçekten iyileşenler
+        ORDER BY 4 DESC, 3 ASC                        -- total_improvement DESC, end_rank ASC
         LIMIT ? OFFSET ?;
-
         """
 
         params.extend([limit, offset])
