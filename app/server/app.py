@@ -84,7 +84,8 @@ def uptrends():
         exclude  = (request.args.get("exclude") or "").strip().lower()
         limit    = request.args.get("limit", 200, type=int)
         offset   = request.args.get("offset", 0, type=int)
-        max_rank = request.args.get("maxRank", 300, type=int)  # istersen URL'de büyüt
+        # YÜKSEK DEFAULT: büyük farklar gözüksün
+        max_rank = request.args.get("maxRank", 1_500_000, type=int)
 
         if not (start_id and end_id):
             return jsonify({"error": "Provide startWeekId and endWeekId"}), 400
@@ -93,7 +94,6 @@ def uptrends():
 
         con = get_conn(read_only=True)
         try:
-            # güvenli DuckDB ayarları (disk + limitler)
             tmp_root = os.environ.get("DATA_DIR", "/app/storage")
             os.makedirs(os.path.join(tmp_root, "tmp"), exist_ok=True)
             con.execute(f"SET temp_directory='{os.path.join(tmp_root, 'tmp')}';")
@@ -104,7 +104,6 @@ def uptrends():
         except Exception:
             pass
 
-        # ❗ YENİ: Pencere fonksiyonu YOK. Sadece ilk/son rank ve fark.
         sql = """
         WITH all_weeks AS (
           SELECT DISTINCT week FROM searches ORDER BY week
@@ -128,7 +127,7 @@ def uptrends():
         """
         params = [start_id, end_id, max_rank]
 
-        # include/exclude boşlukla ayrılmış kelimeler
+        # include/exclude: boşluk ile
         def _parts_space(s: str):
             return [p.strip().lower() for p in s.split() if p.strip()]
 
@@ -167,9 +166,10 @@ def uptrends():
                (se.start_rank - se.end_rank)::BIGINT AS total_improvement,
                se.weeks::BIGINT
         FROM start_end se
-        WHERE se.start_rank IS NOT NULL AND se.end_rank IS NOT NULL
-          AND se.start_rank > se.end_rank             -- gerçekten iyileşenler
-        ORDER BY 4 DESC, 3 ASC                        -- total_improvement DESC, end_rank ASC
+        WHERE se.start_rank IS NOT NULL
+          AND se.end_rank   IS NOT NULL
+          AND se.start_rank > se.end_rank
+        ORDER BY total_improvement DESC, se.end_rank ASC
         LIMIT ? OFFSET ?;
         """
 
@@ -191,6 +191,7 @@ def uptrends():
     except Exception as e:
         app.logger.exception("uptrends failed")
         return jsonify({"error": "uptrends_failed", "message": str(e)}), 500
+
 
 
 
