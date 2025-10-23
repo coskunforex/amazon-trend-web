@@ -84,7 +84,7 @@ def uptrends():
         exclude  = (request.args.get("exclude") or "").strip().lower()
         limit    = request.args.get("limit", 200, type=int)
         offset   = request.args.get("offset", 0, type=int)
-        max_rank = request.args.get("maxRank", 1_500_000, type=int)
+        max_rank = request.args.get("maxRank", 1_000_000, type=int)
 
 
         if not (start_id and end_id):
