@@ -1,117 +1,87 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Amazon Trend Finder AI</title>
-<link rel="stylesheet" href="/static/css/styles.css">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Amazon Trend Finder AI</title>
 
-<body class="lp-body">
-  <!-- Top Bar -->
-  <header class="lp-nav">
-    <div class="lp-container lp-nav-inner">
-      <div class="lp-brand">
-        <span class="lp-logo-text">
-          <span class="lp-logo-a">A</span>mazon Trend Finder <span class="lp-badge">AI</span>
-          <span class="lp-dots" aria-hidden="true">
-            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-          </span>
-        </span>
-      </div>
-      <nav class="lp-nav-actions">
-        <a class="lp-link" href="/app">Open App</a>
-        <a class="lp-link ghost" href="/diag" target="_blank" rel="noopener">Diagnostics</a>
-      </nav>
+  <!-- FLASK way: cache-busting & doğru yol -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body class="landing">
+  <header class="nav">
+    <div class="nav__brand">
+      <span class="dots">● ● ●</span>
+      <span>Amazon Trend Finder AI</span>
     </div>
+    <nav class="nav__links">
+      <a href="/app">Open App</a>
+      <a href="/diag" target="_blank" rel="noopener">Diagnostics</a>
+    </nav>
   </header>
 
-  <!-- Hero -->
-  <section class="lp-hero">
-    <div class="lp-container lp-hero-grid">
-      <div class="lp-hero-copy">
-        <h1>Turn weekly Amazon search data into <span class="em">actionable trends</span>.</h1>
-        <p class="lp-sub">
-          Pick a date range, add quick include/exclude keywords, and instantly see which queries are steadily climbing.
-        </p>
-        <div class="lp-cta">
-          <a class="btn primary" href="/app">Launch App</a>
-          <a class="btn" href="#screens">See Screens</a>
-        </div>
-        <ul class="lp-bullets">
-          <li>Strict, week-over-week uptrends</li>
-          <li>Fast filtering (include/exclude)</li>
-          <li>Lightweight charts with exact ranks</li>
-        </ul>
+  <main class="hero">
+    <div class="hero__text">
+      <h1>Turn weekly Amazon search data into actionable trends.</h1>
+      <p>Pick a date range, add quick include/exclude keywords, and instantly see which queries are steadily climbing.</p>
+
+      <div class="hero__ctas">
+        <a class="btn btn--primary" href="/app">Launch App</a>
+        <a class="btn btn--ghost" href="#screens">See Screens</a>
       </div>
-      <div class="lp-hero-visual">
-        <img src="/static/img/app-screen.png" alt="App overview">
-      </div>
+
+      <ul class="bullets">
+        <li>Strict, week-over-week uptrends</li>
+        <li>Fast filtering (include/exclude)</li>
+        <li>Lightweight charts with exact ranks</li>
+      </ul>
+    </div>
+
+    <div class="hero__image">
+      <img
+        src="{{ url_for('static', filename='img/hero_main.png') }}"
+        alt="App overview"
+        loading="eager"
+      />
+    </div>
+  </main>
+
+  <section class="why">
+    <h2>Why Amazon Trend Finder AI?</h2>
+    <div class="cards">
+      <article class="card">
+        <h3>Real weekly signals</h3>
+        <p>Based on raw Brand Analytics CSVs—no guessing, just rank deltas across chosen weeks.</p>
+      </article>
+      <article class="card">
+        <h3>Clear improvement scores</h3>
+        <p>Sort by total improvement to surface the most meaningful gains first.</p>
+      </article>
+      <article class="card">
+        <h3>Simple, robust UI</h3>
+        <p>Pick weeks, filter terms, click any row to see its time-series chart—done.</p>
+      </article>
     </div>
   </section>
 
-  <!-- Features -->
-  <section class="lp-section">
-    <div class="lp-container">
-      <h2 class="lp-h2">Why Amazon Trend Finder AI?</h2>
-      <div class="cards">
-        <div class="card">
-          <h3>Real weekly signals</h3>
-          <p>Based on raw Brand Analytics CSVs—no guessing, just rank deltas across chosen weeks.</p>
-        </div>
-        <div class="card">
-          <h3>Clear improvement scores</h3>
-          <p>Sort by total improvement to surface the most meaningful gains first.</p>
-        </div>
-        <div class="card">
-          <h3>Simple, robust UI</h3>
-          <p>Pick weeks, filter terms, click any row to see its time-series chart—done.</p>
-        </div>
-      </div>
+  <section id="screens" class="screens">
+    <h2>Screenshots</h2>
+    <div class="screens__grid">
+      <figure>
+        <img src="{{ url_for('static', filename='img/dashboard_table.png') }}"
+             alt="Results table" loading="lazy" />
+        <figcaption>Rank deltas table</figcaption>
+      </figure>
+      <figure>
+        <img src="{{ url_for('static', filename='img/dashboard_trend_modal.png') }}"
+             alt="Trend chart" loading="lazy" />
+        <figcaption>Trend chart modal</figcaption>
+      </figure>
     </div>
   </section>
 
-  <!-- Screens -->
-  <section id="screens" class="lp-section alt">
-    <div class="lp-container">
-      <h2 class="lp-h2">Screenshots</h2>
-      <div class="screens">
-        <figure>
-          <img src="/static/img/sample1.png" alt="Uptrends table">
-          <figcaption>Rank improvements table</figcaption>
-        </figure>
-        <figure>
-          <img src="/static/img/sample2.png" alt="Trend modal chart">
-          <figcaption>Trend chart modal</figcaption>
-        </figure>
-      </div>
-      <div class="lp-center">
-        <a class="btn primary" href="/app">Start Exploring</a>
-      </div>
-    </div>
-  </section>
-
-  <!-- How it works -->
-  <section class="lp-section">
-    <div class="lp-container">
-      <h2 class="lp-h2">How it works</h2>
-      <ol class="steps">
-        <li>Select a start and end week</li>
-        <li>Optionally add include/exclude keywords</li>
-        <li>Click “Find uptrends” and inspect the results</li>
-        <li>Open any row to see the week-by-week ranks</li>
-      </ol>
-    </div>
-  </section>
-
-  <!-- Footer -->
-  <footer class="lp-footer">
-    <div class="lp-container lp-footer-inner">
-      <span>© <span id="y"></span> Amazon Trend Finder AI</span>
-      <a class="lp-link" href="/app">Open App</a>
-    </div>
+  <footer class="footer">
+    <small>© {{ 2025 }} Amazon Trend Finder AI</small>
   </footer>
-
-  <script>
-    document.getElementById('y').textContent = new Date().getFullYear();
-  </script>
 </body>
 </html>
