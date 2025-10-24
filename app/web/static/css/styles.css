@@ -1,93 +1,225 @@
-:root{
-  --bg:#0f1720;
-  --panel:#121a24;
-  --text:#e6edf3;
-  --muted:#9fb0c3;
-  --brand:#1976ff;
-  --brand-ghost:#243346;
-  --stroke:#1f2a37;
-  --radius:14px;
+/* Amazon Trend Finder AI — APP Styles (dark theme) */
+:root {
+  --bg: #0b1120;
+  --panel: #0f172a;
+  --text: #e5edf5;
+  --muted: #93a4b8;
+  --stroke: #1e293b;
+  --brand: #0ea5e9;
+  --radius: 12px;
 }
 
-*{box-sizing:border-box}
-html,body{height:100%}
-body{
-  margin:0; background:var(--bg); color:var(--text);
-  font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;
+* {
+  box-sizing: border-box;
 }
 
-/* NAVIGATION */
-.nav{
-  max-width:1200px; margin:0 auto; padding:18px 20px;
-  display:flex; align-items:center; justify-content:space-between;
-}
-.nav__brand{font-weight:700; letter-spacing:.2px}
-.nav__links a{color:var(--muted); margin-left:18px; text-decoration:none}
-.nav__links a:hover{color:var(--text)}
-
-/* HERO */
-.hero{
-  max-width:1200px; margin:0 auto; padding:48px 20px 24px;
-  display:grid; grid-template-columns:1.2fr 1fr; gap:40px; align-items:center;
-}
-.hero__text h1{font-size:40px; line-height:1.2; margin:0 0 10px}
-.hero__text p{color:var(--muted); margin:0 0 16px}
-.hero__cta{display:flex; gap:12px; margin:16px 0 10px}
-.btn{
-  display:inline-block; padding:10px 16px; border-radius:999px; text-decoration:none;
-  border:1px solid transparent; font-weight:600;
-}
-.btn--primary{background:var(--brand); color:#fff}
-.btn--primary:hover{filter:brightness(1.06)}
-.btn--ghost{background:var(--brand-ghost); color:#cfe0ff; border-color:#2b3a4e}
-.btn--ghost:hover{filter:brightness(1.06)}
-.hero__bullets{margin:14px 0 0; padding-left:18px; color:var(--muted)}
-.hero__bullets li{margin:6px 0}
-.hero__media img{
-  width:100%; height:auto; border-radius:var(--radius);
-  display:block; box-shadow:0 6px 30px rgba(0,0,0,.35);
-  border:1px solid var(--stroke);
+html, body {
+  height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Inter", "Segoe UI", Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
 }
 
-/* VALUE SECTION */
-.value{max-width:1200px; margin:20px auto 0; padding:0 20px}
-.value h2{margin:14px 0 18px}
-.value__grid{
-  display:grid; gap:16px; grid-template-columns:repeat(3,1fr);
+/* Header */
+header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--stroke);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
 }
-.card{
-  background:var(--panel); border:1px solid var(--stroke); border-radius:var(--radius);
-  padding:18px;
-}
-.card h3{margin:6px 0 8px}
-.card p{margin:0; color:var(--muted)}
-
-/* SCREENSHOTS */
-.screens{max-width:1200px; margin:26px auto 60px; padding:0 20px}
-.screens h2{margin:10px 0 12px}
-.screens__grid{
-  display:grid; gap:16px; grid-template-columns:repeat(3,1fr);
-}
-figure{margin:0}
-figure img{
-  width:100%; height:auto; display:block; border-radius:12px;
-  border:1px solid var(--stroke); background:#0b1219;
-}
-figcaption{color:var(--muted); font-size:13px; margin-top:6px}
-
-/* FOOTER */
-.footer{
-  border-top:1px solid var(--stroke); color:var(--muted);
-  max-width:1200px; margin:20px auto 30px; padding:16px 20px;
+header h1 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
 }
 
-/* RESPONSIVE */
-@media (max-width: 1024px){
-  .hero{grid-template-columns:1fr; gap:26px}
-  .hero__text h1{font-size:34px}
-  .value__grid, .screens__grid{grid-template-columns:1fr 1fr}
+/* Controls (filters) */
+.controls {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  padding: 14px 18px;
 }
-@media (max-width: 640px){
-  .value__grid, .screens__grid{grid-template-columns:1fr}
-  .hero__text h1{font-size:28px}
+.controls label {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.controls input,
+.controls select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--stroke);
+  background: #0b1220;
+  color: var(--text);
+}
+.actions {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+}
+.btn {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #134e6f;
+  background: var(--brand);
+  color: #041320;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Summary */
+.summary {
+  padding: 6px 18px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: var(--muted);
+}
+.pill {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #0a192f;
+  border: 1px solid var(--stroke);
+  color: #c8d7ea;
+  font-size: 13px;
+}
+.loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.loading .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--brand);
+  animation: b 1s infinite alternate;
+}
+.loading .dot:nth-child(2) { animation-delay: 0.2s; }
+.loading .dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes b {
+  from { transform: translateY(0); }
+  to { transform: translateY(-4px); }
+}
+
+/* Table */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+thead th {
+  text-align: left;
+  font-weight: 700;
+  font-size: 13px;
+  color: #c7d2df;
+  border-bottom: 1px solid var(--stroke);
+  padding: 10px 14px;
+  user-select: none;
+  cursor: pointer;
+}
+tbody td {
+  border-bottom: 1px solid #0e1a2b;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: #e2e8f0;
+}
+tbody tr {
+  transition: background 0.12s;
+}
+tbody tr:hover {
+  background: #0f1a2c;
+}
+
+/* Empty state */
+#empty {
+  padding: 12px 18px;
+  color: var(--muted);
+}
+
+/* Modal */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 12, 24, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.modal-card {
+  background: #0a1424;
+  border: 1px solid var(--stroke);
+  border-radius: 16px;
+  width: min(820px, 96vw);
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--stroke);
+}
+.modal-header h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.modal-header .btn {
+  background: #0b1220;
+  color: #e5edf5;
+  border: 1px solid var(--stroke);
+}
+.chart {
+  padding: 10px 12px 16px;
+  overflow: auto;
+}
+.hidden {
+  display: none !important;
+}
+
+/* Chart SVG */
+svg .axis line {
+  stroke: #2a3b52;
+  stroke-width: 1;
+}
+svg .axis text {
+  fill: #96a8bd;
+  font-size: 11px;
+}
+svg .line {
+  fill: none;
+  stroke: #38bdf8;
+  stroke-width: 2;
+}
+svg .dot {
+  fill: #38bdf8;
+}
+
+/* Toast message */
+.toast {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  background: #0b1220;
+  color: #e5edf5;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  border: 1px solid var(--stroke);
 }
