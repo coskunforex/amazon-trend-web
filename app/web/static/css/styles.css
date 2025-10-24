@@ -130,28 +130,31 @@ svg .dot{ fill:#38bdf8; }
   padding:10px 12px; border-radius:10px; font-size:13px; border:1px solid var(--stroke);
 }
 
-/* Header içinde dotları mutlak hizala (A harfinin hizasından, başlığın üstünde) */
+/* Header içinde top-dots hizalama ve parlaklık ayarı */
 .app-header { 
-  position: relative; 
-  padding-top: 22px;   /* başlığın üstüne boşluk aç */
+  position: relative;
+  padding-top: 22px; /* başlık üstüne biraz boşluk */
 }
 
-.app-header .top-dots{
+.app-header .top-dots {
   position: absolute;
-  top: 6px;            /* başlığa yakınlık */
-  left: 18px;          /* header padding ile aynı */
+  top: 6px;   /* A harfine yakınlık */
+  left: 18px; /* başlıktaki padding ile aynı hizaya getir */
   display: flex;
   gap: 6px;
-  padding: 0;          /* header içindeyiz, ekstra padding yok */
 }
 
-.app-header .top-dots span{
+.app-header .top-dots span {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: linear-gradient(180deg, #38bdf8, #0ea5e9);
-  box-shadow: 0 0 10px rgba(56,189,248,.65), 0 0 2px rgba(56,189,248,.6) inset;
+  background: linear-gradient(180deg, #3abef8, #139be3);
+  /* daha yumuşak ışık efekti */
+  box-shadow: 0 0 4px rgba(56,189,248,0.55),
+              0 0 1px rgba(56,189,248,0.4) inset;
+  opacity: 0.95;
 }
+
 
 /* Başlık ufak ayar: üst boşluk zaten padding-top ile verildi */
 .app-header .app-title{
