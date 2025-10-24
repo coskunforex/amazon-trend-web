@@ -130,9 +130,17 @@ svg .dot{ fill:#38bdf8; }
   padding:10px 12px; border-radius:10px; font-size:13px; border:1px solid var(--stroke);
 }
 
-/* Başlık + nokta hizası (A harfiyle birebir) */
+/* --------- TOP DOTS: tek kaynak (A harfine kilitli) --------- */
+
+/* Eski kuralları tamamen etkisiz kıl (özellikle padding/gap kalıntıları) */
+.top-dots { all: unset; }
+.top-dots span { all: unset; }
+
+/* Başlık kutusu */
 .app-header{
-  padding-top: 22px; /* başlık üstüne yer aç */
+  position: relative;
+  /* soldaki 18px padding genel layout’unla aynı; üstte 22px alan bırakıyoruz */
+  padding: 22px 18px 12px 18px;
 }
 
 .app-title{
@@ -143,31 +151,23 @@ svg .dot{ fill:#38bdf8; }
   letter-spacing: .2px;
 }
 
-/* Noktalar artık H1'in içinde, sol kenarı h1 ile aynı */
+/* Noktalar artık H1’in içinde; sol kenarı A ile birebir aynı */
 .app-title .top-dots{
   position: absolute;
-  top: -14px;   /* noktaların başlık üstünde yüksekliği */
+  top: -14px;   /* yükseklik (gerekirse -13 / -15 deneyebilirsin) */
   left: 0;      /* A harfinin tam başlangıcı */
   display: flex;
   gap: 6px;
+  padding: 0;
+  margin: 0;
 }
 
-.app-title .top-dots span{
+.app-title .top-dots > span{
+  display: block;
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: linear-gradient(180deg, #3abef8, #139be3);
-  box-shadow: 0 0 4px rgba(56,189,248,.55),
-              0 0 1px rgba(56,189,248,.40) inset;
+  box-shadow: 0 0 4px rgba(56,189,248,.55), 0 0 1px rgba(56,189,248,.40) inset;
   opacity: .95;
-}
-
-
-
-/* Başlık ufak ayar: üst boşluk zaten padding-top ile verildi */
-.app-header .app-title{
-  margin: 0;
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: .2px;
 }
