@@ -154,7 +154,7 @@ svg .dot{ fill:#38bdf8; }
 /* Noktalar artık H1’in içinde; sol kenarı A ile birebir aynı */
 .app-title .top-dots{
   position: absolute;
-  top: -14px;   /* yükseklik (gerekirse -13 / -15 deneyebilirsin) */
+  top: -11px;   /* yükseklik (gerekirse -13 / -15 deneyebilirsin) */
   left: 0;      /* A harfinin tam başlangıcı */
   display: flex;
   gap: 6px;
