@@ -130,34 +130,36 @@ svg .dot{ fill:#38bdf8; }
   padding:10px 12px; border-radius:10px; font-size:13px; border:1px solid var(--stroke);
 }
 
-/* Header içinde top-dots hizalama ve parlaklık ayarı */
-.app-header { 
-  position: relative;
-  padding-top: 22px; /* başlık üstüne biraz boşluk */
+/* Başlık + nokta hizası (A harfiyle birebir) */
+.app-header{
+  padding-top: 22px; /* başlık üstüne yer aç */
 }
 
-/* Header içinde top-dots hizalama (A harfiyle aynı çizgi) */
-.app-header {
+.app-title{
   position: relative;
-  padding-top: 22px;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: .2px;
 }
 
-.app-header .top-dots {
+/* Noktalar artık H1'in içinde, sol kenarı h1 ile aynı */
+.app-title .top-dots{
   position: absolute;
-  top: 6px;
-  left: 22px;         /* ← 18'di, 22 yaptık. Gerekirse 23-24 deneyebilirsin */
+  top: -14px;   /* noktaların başlık üstünde yüksekliği */
+  left: 0;      /* A harfinin tam başlangıcı */
   display: flex;
   gap: 6px;
 }
 
-.app-header .top-dots span {
+.app-title .top-dots span{
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: linear-gradient(180deg, #3abef8, #139be3);
-  box-shadow: 0 0 4px rgba(56,189,248,0.55),
-              0 0 1px rgba(56,189,248,0.4) inset;
-  opacity: 0.95;
+  box-shadow: 0 0 4px rgba(56,189,248,.55),
+              0 0 1px rgba(56,189,248,.40) inset;
+  opacity: .95;
 }
 
 
