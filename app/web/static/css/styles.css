@@ -136,10 +136,16 @@ svg .dot{ fill:#38bdf8; }
   padding-top: 22px; /* başlık üstüne biraz boşluk */
 }
 
+/* Header içinde top-dots hizalama (A harfiyle aynı çizgi) */
+.app-header {
+  position: relative;
+  padding-top: 22px;
+}
+
 .app-header .top-dots {
   position: absolute;
-  top: 6px;   /* A harfine yakınlık */
-  left: 18px; /* başlıktaki padding ile aynı hizaya getir */
+  top: 6px;
+  left: 22px;         /* ← 18'di, 22 yaptık. Gerekirse 23-24 deneyebilirsin */
   display: flex;
   gap: 6px;
 }
@@ -149,11 +155,11 @@ svg .dot{ fill:#38bdf8; }
   height: 8px;
   border-radius: 50%;
   background: linear-gradient(180deg, #3abef8, #139be3);
-  /* daha yumuşak ışık efekti */
   box-shadow: 0 0 4px rgba(56,189,248,0.55),
               0 0 1px rgba(56,189,248,0.4) inset;
   opacity: 0.95;
 }
+
 
 
 /* Başlık ufak ayar: üst boşluk zaten padding-top ile verildi */
