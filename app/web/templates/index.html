@@ -6,10 +6,12 @@
   <title>Amazon Trend Finder AI — App</title>
 
   <!-- Dış CSS (koyu tema) -->
- <link rel="stylesheet" href="/static/css/styles.css?v=app-final-4">
+<link rel="stylesheet" href="/static/css/styles.css?v=app-final-6">
+
 
 </head>
-<body>
+<body data-mode="{{ mode or 'demo' }}">
+
 
 
  <header class="app-header">
@@ -20,6 +22,13 @@
     Amazon Trend Finder AI
   </h1>
 </header>
+
+{% if mode == 'demo' %}
+  <div class="upgrade-banner" role="status">
+    You’re using the free demo. Last 10–12 weeks only, advanced filters disabled.
+    <a href="/pro" class="btn small">Upgrade to Pro</a>
+  </div>
+{% endif %}
 
 
 
@@ -99,3 +108,23 @@
   <script src="/static/js/app.js" defer></script>
 </body>
 </html>
+/* Demo banner */
+.upgrade-banner {
+  margin: 10px 18px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px dashed #1e293b;
+  background: #0b1220;
+  color: #c8d7ea;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.upgrade-banner .btn.small {
+  padding: 8px 10px;
+  font-size: 13px;
+  background: #0ea5e9;
+  color: #041320;
+  border-radius: 8px;
+  text-decoration: none;
+}

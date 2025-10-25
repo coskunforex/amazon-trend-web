@@ -1,33 +1,32 @@
-
 // DEMO / PRO ayrımı
 const MODE = document.body.dataset.mode || 'demo';
 
 function applyDemoLimits() {
-  if (MODE !== 'demo') return;
+  if (MODE !== 'demo') return; // sadece demo'da çalışır
 
-  // include/exclude kapalı
+  // include/exclude kapat
   const inc = document.querySelector('#include');
   const exc = document.querySelector('#exclude');
   if (inc) { inc.disabled = true; inc.placeholder = "Available in Pro"; }
   if (exc) { exc.disabled = true; exc.placeholder = "Available in Pro"; }
 
-  // haftaları 12 ile sınırla
+  // hafta sayısını 8 ile sınırla
   const limitWeeks = () => {
     const startSel = document.querySelector('#start');
-    const endSel   = document.querySelector('#end');
-    const trim = (sel, keepLastN=12) => {
+    const endSel = document.querySelector('#end');
+    const trim = (sel, keepLastN = 8) => {
       if (!sel) return;
       const opts = Array.from(sel.querySelectorAll('option'));
       const toRemove = opts.slice(0, Math.max(0, opts.length - keepLastN));
       toRemove.forEach(o => o.remove());
     };
-    trim(startSel, 12);
-    trim(endSel,   12);
+    trim(startSel, 8);
+    trim(endSel, 8);
   };
 
-  // haftalar yüklendikten sonra uygula
   setTimeout(limitWeeks, 0);
 }
+
 
 // app/web/static/js/app.js
 
