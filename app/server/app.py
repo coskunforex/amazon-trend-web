@@ -1,10 +1,12 @@
 # app/server/app.py
-from flask import Flask, jsonify, request, send_from_directory, render_template, session, redirect, url_for
+from flask import Flask, jsonify, request, render_template, session, redirect, url_for
 import logging, os
 from pathlib import Path
+
 from app.core.db import get_conn, init_full, append_week
-# AUTH helpers (küçük auth modülü)
-from app.core.auth import ensure_users_table, create_user, verify_user, get_user
+from app.core.auth import (
+    ensure_users_table, create_user, verify_user, get_user, set_plan
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -14,17 +16,16 @@ app = Flask(
     static_folder=str(PROJECT_ROOT / "app" / "web" / "static"),
 )
 
-# --- Session (SECRET_KEY olmadan login çalışmaz) ---
+# ---------- Secrets / Logs / DB bootstrap ----------
 app.secret_key = os.environ.get("SECRET_KEY", "dev-change-me")
 
-# --- DB & logs ---
 logging.basicConfig(level=logging.INFO)
 app.logger.setLevel(logging.INFO)
 
-# --- users tablosu garanti olsun ---
+# users tablosu hazır olsun
 ensure_users_table()
 
-# ---------- Health & UI ----------
+# ---------- Health & Landing ----------
 @app.get("/health")
 def health():
     return {"status": "ok"}
@@ -33,21 +34,20 @@ def health():
 def landing():
     return render_template("landing.html")
 
-# DEMO (free)
+# ---------- APP (demo/pro) ----------
 @app.get("/app")
 def app_demo():
+    # Demo: include/exclude kapalı, 8 hafta UI limiti (JS tarafında uygulanıyor)
     return render_template("index.html", mode="demo")
 
-# PRO (full) — login + plan kontrolü
 @app.get("/pro")
 def app_pro():
+    # Pro: login + plan kontrolü
     email = session.get("user_email")
     if not email:
-        # login'e gönder, sonra geri gelsin
         return redirect(url_for("login", next="/pro"))
     u = get_user(email)
     if not u or u.get("plan") != "pro":
-        # hesabı var ama plan pro değil → dashboard
         return redirect(url_for("dashboard"))
     return render_template("index.html", mode="pro")
 
@@ -87,6 +87,19 @@ def dashboard():
     email = session.get("user_email")
     user = get_user(email) if email else None
     return render_template("dashboard.html", user=user)
+
+# ---------- TEMP ADMIN (payment gelene kadar) ----------
+@app.post("/admin/setpro")
+def admin_setpro():
+    admin_key_env = os.environ.get("ADMIN_KEY")
+    key = request.form.get("key") or request.args.get("key")
+    email = (request.form.get("email") or request.args.get("email") or "").strip().lower()
+    if not admin_key_env or key != admin_key_env:
+        return jsonify({"error": "forbidden"}), 403
+    if not email:
+        return jsonify({"error": "email required"}), 400
+    set_plan(email, "pro")
+    return jsonify({"status": "ok", "email": email, "plan": "pro"})
 
 # ---------- API: Weeks ----------
 @app.get("/weeks")
@@ -186,7 +199,6 @@ def uptrends():
         """
         params = [start_id, end_id, max_rank]
 
-        # include/exclude: boşluk ile
         def _parts_space(s: str):
             return [p.strip().lower() for p in s.split() if p.strip()]
 
@@ -251,7 +263,7 @@ def uptrends():
         app.logger.exception("uptrends failed")
         return jsonify({"error": "uptrends_failed", "message": str(e)}), 500
 
-# ---------- API: Series ----------
+# ---------- API: Series (range-aware) ----------
 @app.get("/series")
 def series():
     try:
@@ -264,7 +276,6 @@ def series():
 
         con = get_conn(read_only=True)
 
-        # start/end geldiyse SEÇİLİ ARALIĞI getir
         if start_id and end_id:
             if end_id < start_id:
                 start_id, end_id = end_id, start_id
@@ -284,7 +295,6 @@ def series():
                 ORDER BY w.week
             """, [term, start_id, end_id]).fetchall()
         else:
-            # aralık yoksa TAM TARİHÇE (eski davranış)
             rows = con.execute("""
                 SELECT week, rank
                 FROM searches
@@ -294,7 +304,6 @@ def series():
 
         con.close()
 
-        # app.js grafikte weekLabel bekliyor; ikisini de gönderelim
         return jsonify([{"week": r[0], "weekLabel": r[0], "rank": int(r[1])} for r in rows])
     except Exception as e:
         app.logger.exception("series failed")
