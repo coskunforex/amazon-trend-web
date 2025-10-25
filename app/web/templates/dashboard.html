@@ -1,0 +1,24 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Dashboard — Amazon Trend Finder AI</title>
+<link rel="stylesheet" href="/static/css/auth.css?v=1">
+</head><body>
+<div class="auth">
+  <h1>Account</h1>
+  {% if user %}
+    <p><b>Email:</b> {{ user.email }}</p>
+    <p><b>Plan:</b> {{ user.plan|upper }}</p>
+    <div class="row">
+      {% if user.plan != 'pro' %}
+        <a class="btn" href="/checkout">Upgrade to Pro</a>
+      {% else %}
+        <a class="btn" href="/pro">Open Pro app</a>
+      {% endif %}
+      <a class="btn ghost" href="/logout">Log out</a>
+    </div>
+  {% else %}
+    <p>You are not logged in.</p>
+    <a class="btn" href="/login">Log in</a>
+  {% endif %}
+</div>
+</body></html>

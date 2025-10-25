@@ -1,0 +1,18 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Sign up — Amazon Trend Finder AI</title>
+<link rel="stylesheet" href="/static/css/auth.css?v=1">
+</head><body>
+<div class="auth">
+  <h1>Create your account</h1>
+  {% if error %}<div class="err">{{ error }}</div>{% endif %}
+  <form method="post">
+    <label>Email</label>
+    <input name="email" type="email" required autocomplete="email" />
+    <label>Password</label>
+    <input name="password" type="password" required minlength="6" />
+    <button type="submit">Create account</button>
+  </form>
+  <p class="muted">Already have an account? <a href="/login">Log in</a></p>
+</div>
+</body></html>
