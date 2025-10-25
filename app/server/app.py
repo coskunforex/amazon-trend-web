@@ -20,15 +20,21 @@ app.logger.setLevel(logging.INFO)
 def health():
     return {"status": "ok"}
 
+from flask import render_template
+
 @app.get("/")
 def landing():
-    # Landing page (templates/landing.html)
     return render_template("landing.html")
 
+# DEMO (free)
 @app.get("/app")
-def app_ui():
-    # Eski UI (templates/index.html)
-    return send_from_directory(app.template_folder, "index.html")
+def app_demo():
+    return render_template("index.html", mode="demo")
+
+# PRO (full)
+@app.get("/pro")
+def app_pro():
+    return render_template("index.html", mode="pro")
 
 # ---------- API: Weeks ----------
 @app.get("/weeks")
