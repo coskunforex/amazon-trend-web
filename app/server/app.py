@@ -1,8 +1,10 @@
 # app/server/app.py
-from flask import Flask, jsonify, request, send_from_directory, render_template
+from flask import Flask, jsonify, request, send_from_directory, render_template, session, redirect, url_for
 import logging, os
 from pathlib import Path
 from app.core.db import get_conn, init_full, append_week
+# AUTH helpers (küçük auth modülü)
+from app.core.auth import ensure_users_table, create_user, verify_user, get_user
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -12,15 +14,20 @@ app = Flask(
     static_folder=str(PROJECT_ROOT / "app" / "web" / "static"),
 )
 
+# --- Session (SECRET_KEY olmadan login çalışmaz) ---
+app.secret_key = os.environ.get("SECRET_KEY", "dev-change-me")
+
+# --- DB & logs ---
 logging.basicConfig(level=logging.INFO)
 app.logger.setLevel(logging.INFO)
+
+# --- users tablosu garanti olsun ---
+ensure_users_table()
 
 # ---------- Health & UI ----------
 @app.get("/health")
 def health():
     return {"status": "ok"}
-
-from flask import render_template
 
 @app.get("/")
 def landing():
@@ -31,10 +38,55 @@ def landing():
 def app_demo():
     return render_template("index.html", mode="demo")
 
-# PRO (full)
+# PRO (full) — login + plan kontrolü
 @app.get("/pro")
 def app_pro():
+    email = session.get("user_email")
+    if not email:
+        # login'e gönder, sonra geri gelsin
+        return redirect(url_for("login", next="/pro"))
+    u = get_user(email)
+    if not u or u.get("plan") != "pro":
+        # hesabı var ama plan pro değil → dashboard
+        return redirect(url_for("dashboard"))
     return render_template("index.html", mode="pro")
+
+# ---------- AUTH ----------
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+    if request.method == "POST":
+        email = (request.form.get("email") or "").strip().lower()
+        password = request.form.get("password") or ""
+        ok = create_user(email, password, plan="demo")
+        if ok:
+            session["user_email"] = email
+            nxt = request.args.get("next") or url_for("dashboard")
+            return redirect(nxt)
+        return render_template("signup.html", error="Email already exists or invalid.")
+    return render_template("signup.html")
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        email = (request.form.get("email") or "").strip().lower()
+        password = request.form.get("password") or ""
+        if verify_user(email, password):
+            session["user_email"] = email
+            nxt = request.args.get("next") or url_for("dashboard")
+            return redirect(nxt)
+        return render_template("login.html", error="Invalid credentials.")
+    return render_template("login.html")
+
+@app.get("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("landing"))
+
+@app.get("/dashboard")
+def dashboard():
+    email = session.get("user_email")
+    user = get_user(email) if email else None
+    return render_template("dashboard.html", user=user)
 
 # ---------- API: Weeks ----------
 @app.get("/weeks")
@@ -81,6 +133,7 @@ def reindex():
         app.logger.exception("reindex failed")
         return jsonify({"error": "reindex_failed", "message": str(e)}), 500
 
+# ---------- API: Uptrends ----------
 @app.get("/uptrends")
 def uptrends():
     try:
@@ -198,8 +251,6 @@ def uptrends():
         app.logger.exception("uptrends failed")
         return jsonify({"error": "uptrends_failed", "message": str(e)}), 500
 
-
-
 # ---------- API: Series ----------
 @app.get("/series")
 def series():
@@ -249,7 +300,6 @@ def series():
         app.logger.exception("series failed")
         return jsonify({"error": "series_failed", "message": str(e)}), 500
 
-
 # ---------- API: Diagnostics ----------
 @app.get("/diag")
 def diag():
@@ -277,7 +327,6 @@ def diag():
     except Exception as e:
         app.logger.exception("diag failed")
         return jsonify({"error":"diag_failed","message":str(e)}), 500
-
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
