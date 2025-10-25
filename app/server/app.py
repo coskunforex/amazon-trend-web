@@ -200,7 +200,6 @@ def uptrends():
 
 
 
-
 # ---------- API: Series ----------
 @app.get("/series")
 def series():
@@ -209,19 +208,47 @@ def series():
         if not term:
             return jsonify({"error": "term required"}), 400
 
+        start_id = request.args.get("startWeekId", type=int)
+        end_id   = request.args.get("endWeekId", type=int)
+
         con = get_conn(read_only=True)
-        rows = con.execute("""
-            SELECT week, rank
-            FROM searches
-            WHERE LOWER(term) = LOWER(?)
-            ORDER BY week
-        """, [term]).fetchall()
+
+        # start/end geldiyse SEÇİLİ ARALIĞI getir
+        if start_id and end_id:
+            if end_id < start_id:
+                start_id, end_id = end_id, start_id
+            rows = con.execute("""
+                WITH all_weeks AS (
+                  SELECT DISTINCT week FROM searches ORDER BY week
+                ),
+                weeks_idx AS (
+                  SELECT week, ROW_NUMBER() OVER (ORDER BY week) AS week_id
+                  FROM all_weeks
+                )
+                SELECT w.week, s.rank
+                FROM searches s
+                JOIN weeks_idx w USING(week)
+                WHERE LOWER(s.term) = LOWER(?)
+                  AND w.week_id BETWEEN ? AND ?
+                ORDER BY w.week
+            """, [term, start_id, end_id]).fetchall()
+        else:
+            # aralık yoksa TAM TARİHÇE (eski davranış)
+            rows = con.execute("""
+                SELECT week, rank
+                FROM searches
+                WHERE LOWER(term) = LOWER(?)
+                ORDER BY week
+            """, [term]).fetchall()
+
         con.close()
 
-        return jsonify([{"week": r[0], "rank": int(r[1])} for r in rows])
+        # app.js grafikte weekLabel bekliyor; ikisini de gönderelim
+        return jsonify([{"week": r[0], "weekLabel": r[0], "rank": int(r[1])} for r in rows])
     except Exception as e:
         app.logger.exception("series failed")
         return jsonify({"error": "series_failed", "message": str(e)}), 500
+
 
 # ---------- API: Diagnostics ----------
 @app.get("/diag")
