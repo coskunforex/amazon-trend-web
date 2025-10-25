@@ -2,88 +2,148 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Amazon Trend Finder AI</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Amazon Trend Finder AI — Find rising Amazon search trends</title>
+  <meta name="description" content="Surface uptrends from 60+ weeks of Amazon search data. Smart include/exclude filters, fast scoring, and clean charts. Try the app — no setup.">
+  <link rel="stylesheet" href="/static/css/landing.css?v=1">
+  <link rel="icon" href="/static/img/app-screen.png" type="image/png">
 </head>
-<body class="landing">
-
-  <!-- NAV -->
-  <header class="nav">
-    <div class="nav__brand">Amazon Trend Finder AI</div>
-    <nav class="nav__links">
-      <a href="/app">Open App</a>
-      <a href="/diag" target="_blank">Diagnostics</a>
-    </nav>
-  </header>
-
-  <!-- HERO -->
-  <section class="hero">
-    <div class="hero__text">
-      <h1>Turn weekly Amazon search data into actionable trends.</h1>
-      <p>Pick a date range, add quick include/exclude keywords, and instantly see which queries are steadily climbing.</p>
-      <div class="hero__cta">
-        <a class="btn btn--primary" href="/app">Launch App</a>
-        <a class="btn btn--ghost" href="#screens">See Screens</a>
-      </div>
-
-      <ul class="hero__bullets">
-        <li>Strict, week-over-week uptrends</li>
-        <li>Fast filtering (include/exclude)</li>
-        <li>Lightweight charts with exact ranks</li>
+<body>
+  <!-- Navbar -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="logo">Amazon Trend Finder <span>AI</span></div>
+      <ul class="menu">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#how">How it works</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+        <li><a href="#faq">FAQ</a></li>
       </ul>
+      <a href="/app" class="btn small">Try the App</a>
     </div>
+  </nav>
 
-    <div class="hero__media">
-      <img src="{{ url_for('static', filename='img/app-screen.png') }}"
-           alt="App overview" loading="lazy">
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1>Spot rising Amazon searches<br>before the crowd.</h1>
+      <p>Analyze <strong>60+ weeks</strong> of Amazon search trends, apply <strong>smart keyword filters</strong>, and surface <strong>early uptrends</strong> in seconds — no setup, no spreadsheets.</p>
+      <div class="cta-group">
+        <a href="/app" class="btn">Try the App</a>
+        <a href="/app" class="btn ghost">See live demo</a>
+      </div>
+      <div class="badges">
+        <span>60+ weeks</span>
+        <span>Smart filters</span>
+        <span>Zero setup</span>
+      </div>
+    </div>
+    <div class="hero-image">
+      <img src="/static/img/app-screen.png" alt="Amazon Trend Finder dashboard" loading="lazy">
     </div>
   </section>
 
-  <!-- WHY SECTION -->
-  <section class="value">
-    <h2>Why Amazon Trend Finder AI?</h2>
-    <div class="value__grid">
+  <!-- Features -->
+  <section id="features" class="features">
+    <h2>Why sellers love it</h2>
+    <div class="grid">
       <div class="card">
-        <h3>Real weekly signals</h3>
-        <p>Based on raw Brand Analytics CSVs—no guessing, just rank deltas across chosen weeks.</p>
+        <h3>Early Trend Detection</h3>
+        <p>Find terms with meaningful rank improvement across your chosen weeks — quickly separate signal from noise.</p>
       </div>
       <div class="card">
-        <h3>Clear improvement scores</h3>
-        <p>Sort by total improvement to surface the most meaningful gains first.</p>
+        <h3>Smart Filters</h3>
+        <p>Include or exclude keywords (e.g., “iphone”, exclude “case”) to focus on the segments that matter.</p>
       </div>
       <div class="card">
-        <h3>Simple, robust UI</h3>
-        <p>Pick weeks, filter terms, click any row to see its time-series chart—done.</p>
+        <h3>60+ Weeks History</h3>
+        <p>Look back more than a year to validate seasonality and momentum, not just a single snapshot.</p>
+      </div>
+      <div class="card">
+        <h3>Lightweight & Fast</h3>
+        <p>Server-side optimized queries. No installs, no accounts required to test.</p>
       </div>
     </div>
   </section>
 
-  <!-- SCREENSHOTS -->
-  <section id="screens" class="screens">
-    <h2>Screenshots</h2>
-    <div class="screens__grid">
-      <figure>
-        <img src="{{ url_for('static', filename='img/app-screen.png') }}"
-             alt="Results table" loading="lazy">
-        <figcaption>Rank deltas table</figcaption>
-      </figure>
-      <figure>
-        <img src="{{ url_for('static', filename='img/sample1.png') }}"
-             alt="Trend chart" loading="lazy">
-        <figcaption>Trend chart modal</figcaption>
-      </figure>
-      <figure>
-        <img src="{{ url_for('static', filename='img/sample2.png') }}"
-             alt="Filters & weeks" loading="lazy">
-        <figcaption>Filters & week picker</figcaption>
-      </figure>
+  <!-- How it works -->
+  <section id="how" class="how">
+    <h2>How it works</h2>
+    <div class="steps">
+      <div class="step">
+        <img src="/static/img/sample1.png" alt="Pick weeks">
+        <h3>1. Pick weeks</h3>
+        <p>Choose start & end weeks — e.g., last 10–12 weeks.</p>
+      </div>
+      <div class="step">
+        <img src="/static/img/sample2.png" alt="Add filters">
+        <h3>2. Add filters</h3>
+        <p>Include or exclude keyword families to narrow scope.</p>
+      </div>
+      <div class="step">
+        <img src="/static/img/sample1.png" alt="See uptrends">
+        <h3>3. See uptrends</h3>
+        <p>Sort by <strong>Total improvement</strong> and open a term to view its weekly trajectory.</p>
+      </div>
     </div>
   </section>
 
+  <!-- Pricing -->
+  <section id="pricing" class="pricing">
+    <h2>Simple pricing</h2>
+    <div class="plans">
+      <div class="plan">
+        <h3>Starter</h3>
+        <p class="price">Free</p>
+        <ul>
+          <li>Up to 200 results per query</li>
+          <li>10–12 week lookback</li>
+          <li>Basic filters</li>
+        </ul>
+        <a href="/app" class="btn full">Try free</a>
+      </div>
+
+      <div class="plan highlight">
+        <h3>Pro</h3>
+        <p class="price">$29.90 / month</p>
+        <ul>
+          <li>Full 60+ week history</li>
+          <li>Advanced filtering</li>
+          <li>Trend chart export</li>
+          <li>Priority updates</li>
+        </ul>
+        <a href="/app" class="btn full">Start Pro</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="faq">
+    <h2>FAQ</h2>
+    <details><summary>Does it connect to my Amazon account?</summary><p>No. It’s a read-only analytics tool that never accesses your seller data.</p></details>
+    <details><summary>How many weeks of data are included?</summary><p>60+ weeks and growing, updated regularly.</p></details>
+    <details><summary>Do I need to upload any files?</summary><p>No uploads. Everything runs directly in your browser.</p></details>
+    <details><summary>Which browsers are supported?</summary><p>Latest versions of Chrome, Edge, Safari, and Firefox.</p></details>
+    <details><summary>Is there a refund policy?</summary><p>Yes — cancel Pro anytime within 7 days for a prorated refund.</p></details>
+    <details><summary>How fast does it process results?</summary><p>Starter: up to 200 results per query. Pro: higher limits and faster queries.</p></details>
+  </section>
+
+  <!-- CTA -->
+  <section class="final-cta">
+    <h2>Find your next winning product today</h2>
+    <p>No signup required. Get started in seconds.</p>
+    <a href="/app" class="btn">Try the App</a>
+  </section>
+
+  <!-- Footer -->
   <footer class="footer">
-    <span>© 2025 Amazon Trend Finder AI</span>
+    <p>© 2025 Amazon Trend Finder AI. All rights reserved.</p>
+    <div class="links">
+      <a href="#">Terms</a>
+      <a href="#">Privacy</a>
+      <a href="#">Contact</a>
+      <a href="https://github.com/coskunforex/amazon-trend-web" target="_blank">GitHub</a>
+    </div>
   </footer>
-
 </body>
 </html>
