@@ -81,6 +81,9 @@ xlsxwriter==3.2.9
   - ./daily_sync_full_20251019_113201.zip
   - ./daily_sync_full_20251019_122246.zip
   - ./daily_sync_full_20251020_142938.zip
+  - ./daily_sync_full_20251022_151429.zip
+  - ./daily_sync_full_20251022_202324.zip
+  - ./daily_sync_full_20251023_135206.zip
   - ./mvp-stable.zip
   - ./requirements.txt
   - ./roadmap.md
@@ -102,13 +105,20 @@ xlsxwriter==3.2.9
   - app\web/templates/
 - **app\web\static/**
   - app\web\static/css/
+  - app\web\static/img/
   - app\web\static/js/
 - **app\web\static\css/**
+  - app\web\static\css/landing.css
   - app\web\static\css/styles.css
+- **app\web\static\img/**
+  - app\web\static\img/app-screen.png
+  - app\web\static\img/sample1.png.png
+  - app\web\static\img/sample2.png
 - **app\web\static\js/**
   - app\web\static\js/app.js
 - **app\web\templates/**
   - app\web\templates/index.html
+  - app\web\templates/landing.html
 - **config/**
 - **data/**
   - data/raw/
@@ -207,25 +217,35 @@ def _sniff(path: Path):
     delim = '\t' if '\t' in header_line else ','
     return enc, header_line_idx, delim
 
-# app/core/db.py
-import os, duckdb
-
-DATA_DIR = os.getenv("DATA_DIR", "/app/storage")
+import duckdb, os
 
 def get_conn(read_only=False):
-    db_path = os.path.join(DATA_DIR, "trends.duckdb")
-    os.makedirs(DATA_DIR, exist_ok=True)
+    """
+    DuckDB bağlantısı (disk tabanlı mod)
+    - Bellek limiti: 2 GB
+    - Disk (temp) limiti: 10 GB
+    - Render diski /app/storage altında çalışır
+    """
+    data_dir = os.environ.get("DATA_DIR", "/app/storage")
+    db_path = os.path.join(data_dir, "trends.duckdb")
+    tmp_path = os.path.join(data_dir, "tmp")
+
+    # temp klasörü garantiye al
+    os.makedirs(tmp_path, exist_ok=True)
+
+    # bağlantı
     con = duckdb.connect(db_path, read_only=read_only)
 
-    tmp = os.path.join(DATA_DIR, "tmp")
-    os.makedirs(tmp, exist_ok=True)
-
-    con.execute(f"SET temp_directory='{tmp}';")
-    con.execute("SET max_temp_directory_size='4GB';")
-    con.execute("SET memory_limit='512MB';")
-    con.execute("SET threads=1;")
+    # sistem ayarları
+    con.execute(f"SET temp_directory='{tmp_path}';")
+    con.execute("SET max_temp_directory_size='10GB';")
+    con.execute("SET memory_limit='2GB';")
+    con.execute("SET threads=2;")
     con.execute("SET preserve_insertion_order=false;")
+
     return con
+
+
 
 
 
@@ -633,8 +653,8 @@ def query_series(
 
 ```py
 # app/server/app.py
-from flask import Flask, jsonify, request
-import os, logging
+from flask import Flask, jsonify, request, send_from_directory, render_template
+import logging, os
 from pathlib import Path
 from app.core.db import get_conn, init_full, append_week
 
@@ -649,18 +669,22 @@ app = Flask(
 logging.basicConfig(level=logging.INFO)
 app.logger.setLevel(logging.INFO)
 
+# ---------- Health & UI ----------
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
-from flask import send_from_directory
-
 @app.get("/")
-def home():
-    # templates klasöründeki index.html'i döndür
+def landing():
+    # Landing page (templates/landing.html)
+    return render_template("landing.html")
+
+@app.get("/app")
+def app_ui():
+    # Eski UI (templates/index.html)
     return send_from_directory(app.template_folder, "index.html")
 
-
+# ---------- API: Weeks ----------
 @app.get("/weeks")
 def weeks():
     try:
@@ -677,6 +701,7 @@ def weeks():
         app.logger.exception("weeks failed")
         return jsonify({"error": "weeks_failed", "message": str(e)}), 500
 
+# ---------- API: Reindex ----------
 @app.get("/reindex")
 def reindex():
     try:
@@ -692,7 +717,6 @@ def reindex():
             init_full(PROJECT_ROOT)
             return jsonify({"status": "ok", "mode": "full"})
 
-        # append mode
         week = request.args.get("week")
         if not week:
             return jsonify({"error": "week required for append"}), 400
@@ -701,7 +725,6 @@ def reindex():
             return jsonify({"error": f"csv not found: {csv_path.name}"}), 404
         append_week(csv_path.as_posix(), week)
         return jsonify({"status": "ok", "mode": "append", "week": week})
-
     except Exception as e:
         app.logger.exception("reindex failed")
         return jsonify({"error": "reindex_failed", "message": str(e)}), 500
@@ -715,17 +738,27 @@ def uptrends():
         exclude  = (request.args.get("exclude") or "").strip().lower()
         limit    = request.args.get("limit", 200, type=int)
         offset   = request.args.get("offset", 0, type=int)
-        if not (start_id and end_id): return jsonify({"error":"Provide startWeekId and endWeekId"}), 400
-        if end_id < start_id: start_id, end_id = end_id, start_id
+        # YÜKSEK DEFAULT: büyük farklar gözüksün
+        max_rank = request.args.get("maxRank", 1_500_000, type=int)
 
-        # virgül+boşluk normalize
-        def split_terms(s): 
-            return [t.strip() for t in s.replace(",", " ").split() if t.strip()]
-        inc_terms = split_terms(include)
-        exc_terms = split_terms(exclude)
+        if not (start_id and end_id):
+            return jsonify({"error": "Provide startWeekId and endWeekId"}), 400
+        if end_id < start_id:
+            start_id, end_id = end_id, start_id
 
         con = get_conn(read_only=True)
-        base_sql = """
+        try:
+            tmp_root = os.environ.get("DATA_DIR", "/app/storage")
+            os.makedirs(os.path.join(tmp_root, "tmp"), exist_ok=True)
+            con.execute(f"SET temp_directory='{os.path.join(tmp_root, 'tmp')}';")
+            con.execute("SET max_temp_directory_size='10GB';")
+            con.execute("SET memory_limit='2GB';")
+            con.execute("SET threads=2;")
+            con.execute("SET preserve_insertion_order=false;")
+        except Exception:
+            pass
+
+        sql = """
         WITH all_weeks AS (
           SELECT DISTINCT week FROM searches ORDER BY week
         ),
@@ -733,71 +766,97 @@ def uptrends():
           SELECT week, ROW_NUMBER() OVER (ORDER BY week) AS week_id
           FROM all_weeks
         ),
-        clean AS (
+        filtered AS (
           SELECT s.term, s.rank, w.week_id
           FROM searches s
           JOIN weeks_idx w USING(week)
           WHERE w.week_id BETWEEN ? AND ?
             AND s.rank IS NOT NULL
-            AND NOT (
-              s.term LIKE '#%%'
-              OR REGEXP_MATCHES(s.term, '^[0-9.eE+\\-]+$')
-              OR LENGTH(TRIM(s.term)) < 2
-              OR NOT REGEXP_MATCHES(s.term, '[A-Za-z]')
-            )
-        )
+            AND s.rank <= ?
+            AND LENGTH(TRIM(s.term)) >= 2
+            AND LOWER(s.term) <> UPPER(s.term)
+        ),
+        filt2 AS (
+          SELECT * FROM filtered WHERE 1=1
         """
-        params = [start_id, end_id]
-        extra = ""
-        for w in inc_terms:
-            extra += " AND LOWER(s.term) LIKE ?"; params.append(f"%{w}%")
-        for w in exc_terms:
-            extra += " AND LOWER(s.term) NOT LIKE ?"; params.append(f"%{w}%")
+        params = [start_id, end_id, max_rank]
 
-        q = f"""
-        {base_sql}
-        , filtered AS ( SELECT * FROM clean s WHERE 1=1 {extra} )
-        , agg AS (
-          SELECT
-            term,
-            MIN(CASE WHEN week_id = ? THEN rank END) AS start_rank,
-            MIN(CASE WHEN week_id = ? THEN rank END) AS end_rank,
-            COUNT(DISTINCT week_id) AS weeks
-          FROM filtered
+        # include/exclude: boşluk ile
+        def _parts_space(s: str):
+            return [p.strip().lower() for p in s.split() if p.strip()]
+
+        if include:
+            for w in _parts_space(include):
+                sql += " AND LOWER(term) LIKE ?"
+                params.append(f"%{w}%")
+        if exclude:
+            for w in _parts_space(exclude):
+                sql += " AND LOWER(term) NOT LIKE ?"
+                params.append(f"%{w}%")
+
+        sql += """
+        ),
+        term_bounds AS (
+          SELECT term,
+                 MIN(week_id) AS min_w,
+                 MAX(week_id) AS max_w,
+                 COUNT(*)     AS cnt
+          FROM filt2
           GROUP BY term
+          HAVING COUNT(*) >= 2
+        ),
+        start_end AS (
+          SELECT f.term,
+                 MAX(CASE WHEN f.week_id = tb.min_w THEN f.rank END) AS start_rank,
+                 MAX(CASE WHEN f.week_id = tb.max_w THEN f.rank END) AS end_rank,
+                 tb.cnt AS weeks
+          FROM filt2 f
+          JOIN term_bounds tb USING(term)
+          GROUP BY f.term, tb.cnt
         )
-        SELECT
-          term,
-          CAST(start_rank AS INTEGER) AS start_rank,
-          CAST(end_rank   AS INTEGER) AS end_rank,
-          CAST(start_rank - end_rank AS INTEGER) AS total_improvement,
-          weeks
-        FROM agg
-        WHERE start_rank IS NOT NULL AND end_rank IS NOT NULL
-          AND (start_rank - end_rank) > 0
-        ORDER BY total_improvement DESC
+        SELECT se.term,
+               se.start_rank::BIGINT,
+               se.end_rank::BIGINT,
+               (se.start_rank - se.end_rank)::BIGINT AS total_improvement,
+               se.weeks::BIGINT
+        FROM start_end se
+        WHERE se.start_rank IS NOT NULL
+          AND se.end_rank   IS NOT NULL
+          AND se.start_rank > se.end_rank
+        ORDER BY total_improvement DESC, se.end_rank ASC
         LIMIT ? OFFSET ?;
         """
-        params.extend([start_id, end_id, limit, offset])
-        rows = con.execute(q, params).fetchall()
+
+        params.extend([limit, offset])
+
+        rows = con.execute(sql, params).fetchall()
         con.close()
+
         return jsonify([
-          {"term": r[0], "start_rank": int(r[1]), "end_rank": int(r[2]),
-           "total_improvement": int(r[3]), "weeks": int(r[4])}
-          for r in rows
+            {
+                "term": r[0],
+                "start_rank": int(r[1]) if r[1] is not None else None,
+                "end_rank":   int(r[2]) if r[2] is not None else None,
+                "total_improvement": int(r[3]) if r[3] is not None else None,
+                "weeks": int(r[4]) if r[4] is not None else None,
+            } for r in rows
         ])
+
     except Exception as e:
         app.logger.exception("uptrends failed")
-        return jsonify({"error":"uptrends_failed","message":str(e)}), 500
+        return jsonify({"error": "uptrends_failed", "message": str(e)}), 500
 
 
 
+
+# ---------- API: Series ----------
 @app.get("/series")
 def series():
     try:
         term = (request.args.get("term") or "").strip()
         if not term:
-            return jsonify({"error":"term required"}), 400
+            return jsonify({"error": "term required"}), 400
+
         con = get_conn(read_only=True)
         rows = con.execute("""
             SELECT week, rank
@@ -806,11 +865,13 @@ def series():
             ORDER BY week
         """, [term]).fetchall()
         con.close()
-        return jsonify([{"weekLabel": r[0], "rank": int(r[1])} for r in rows])
+
+        return jsonify([{"week": r[0], "rank": int(r[1])} for r in rows])
     except Exception as e:
         app.logger.exception("series failed")
-        return jsonify({"error":"series_failed","message":str(e)}), 500
+        return jsonify({"error": "series_failed", "message": str(e)}), 500
 
+# ---------- API: Diagnostics ----------
 @app.get("/diag")
 def diag():
     try:
@@ -845,33 +906,224 @@ if __name__ == "__main__":
 
 ```
 
+### app\web\static\css\landing.css
+
+```css
+body {
+  margin: 0;
+  font-family: "Inter", sans-serif;
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+
+.container {
+  width: 90%;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.hero {
+  text-align: center;
+  padding: 80px 20px;
+  background: linear-gradient(180deg, #0f172a, #1e293b);
+}
+
+.hero h1 {
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.hero .ai {
+  color: #38bdf8;
+}
+
+.subtitle {
+  margin-top: 12px;
+  font-size: 1.2rem;
+  color: #94a3b8;
+}
+
+.cta {
+  display: inline-block;
+  margin-top: 24px;
+  background: #38bdf8;
+  color: #0f172a;
+  padding: 14px 28px;
+  border-radius: 10px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: 0.2s;
+}
+.cta:hover {
+  background: #0ea5e9;
+  color: white;
+}
+
+.how {
+  padding: 80px 0;
+}
+
+.how h2,
+.samples h2 {
+  font-size: 2rem;
+  color: #f1f5f9;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.how-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  align-items: center;
+}
+
+.how-grid ol {
+  font-size: 1.1rem;
+  line-height: 1.8;
+}
+
+.how-grid img {
+  width: 100%;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.samples {
+  background: #1e293b;
+  padding: 80px 0;
+}
+
+.sample-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+}
+
+.card {
+  background: #0f172a;
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+  transition: 0.2s;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+.card:hover {
+  transform: scale(1.03);
+}
+.card img {
+  width: 100%;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+footer {
+  text-align: center;
+  padding: 40px;
+  color: #64748b;
+  font-size: 0.9rem;
+  border-top: 1px solid #1e293b;
+}
+
+```
+
 ### app\web\static\css\styles.css
 
 ```css
-:root{--bg:#0b0d10;--fg:#e9eef3;--muted:#9fb0c0;--card:#131821;--border:#233042}
-*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.4 system-ui,Segoe UI,Arial}
-header{padding:16px 20px;border-bottom:1px solid var(--border)}
-h1{margin:0;font-size:18px}
-.controls{display:flex;gap:12px;flex-wrap:wrap;padding:12px 20px;border-bottom:1px solid var(--border)}
-.controls label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
-.controls input,.controls select{padding:8px 10px;background:var(--card);border:1px solid var(--border);color:var(--fg);border-radius:8px;min-width:180px}
-button{padding:10px 14px;background:#3558ff;color:#fff;border:0;border-radius:8px;cursor:pointer}
-button:hover{filter:brightness(1.05)}
-#tbl{width:100%;border-collapse:collapse;margin:12px 20px}
-#tbl th,#tbl td{border-bottom:1px solid var(--border);padding:10px}
-#tbl tbody tr{cursor:pointer}
-#tbl tbody tr:hover{background:#141c27}
-.summary{padding:6px 20px;color:var(--muted)}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center}
-.hidden{display:none}
-.modal-card{background:var(--card);border:1px solid var(--border);border-radius:12px;min-width:320px;max-width:720px;width:90%}
-.modal-header{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border)}
-.chart{padding:10px 14px}
-svg{width:100%;height:260px;background:transparent}
-.axis text{fill:var(--muted);font-size:12px}
-.axis line,.axis path{stroke:var(--border)}
-.line{fill:none;stroke:#5cc8ff;stroke-width:2}
-.dot{fill:#5cc8ff}
+:root{
+  --bg:#0f1720;
+  --panel:#121a24;
+  --text:#e6edf3;
+  --muted:#9fb0c3;
+  --brand:#1976ff;
+  --brand-ghost:#243346;
+  --stroke:#1f2a37;
+  --radius:14px;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;
+}
+
+/* NAVIGATION */
+.nav{
+  max-width:1200px; margin:0 auto; padding:18px 20px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.nav__brand{font-weight:700; letter-spacing:.2px}
+.nav__links a{color:var(--muted); margin-left:18px; text-decoration:none}
+.nav__links a:hover{color:var(--text)}
+
+/* HERO */
+.hero{
+  max-width:1200px; margin:0 auto; padding:48px 20px 24px;
+  display:grid; grid-template-columns:1.2fr 1fr; gap:40px; align-items:center;
+}
+.hero__text h1{font-size:40px; line-height:1.2; margin:0 0 10px}
+.hero__text p{color:var(--muted); margin:0 0 16px}
+.hero__cta{display:flex; gap:12px; margin:16px 0 10px}
+.btn{
+  display:inline-block; padding:10px 16px; border-radius:999px; text-decoration:none;
+  border:1px solid transparent; font-weight:600;
+}
+.btn--primary{background:var(--brand); color:#fff}
+.btn--primary:hover{filter:brightness(1.06)}
+.btn--ghost{background:var(--brand-ghost); color:#cfe0ff; border-color:#2b3a4e}
+.btn--ghost:hover{filter:brightness(1.06)}
+.hero__bullets{margin:14px 0 0; padding-left:18px; color:var(--muted)}
+.hero__bullets li{margin:6px 0}
+.hero__media img{
+  width:100%; height:auto; border-radius:var(--radius);
+  display:block; box-shadow:0 6px 30px rgba(0,0,0,.35);
+  border:1px solid var(--stroke);
+}
+
+/* VALUE SECTION */
+.value{max-width:1200px; margin:20px auto 0; padding:0 20px}
+.value h2{margin:14px 0 18px}
+.value__grid{
+  display:grid; gap:16px; grid-template-columns:repeat(3,1fr);
+}
+.card{
+  background:var(--panel); border:1px solid var(--stroke); border-radius:var(--radius);
+  padding:18px;
+}
+.card h3{margin:6px 0 8px}
+.card p{margin:0; color:var(--muted)}
+
+/* SCREENSHOTS */
+.screens{max-width:1200px; margin:26px auto 60px; padding:0 20px}
+.screens h2{margin:10px 0 12px}
+.screens__grid{
+  display:grid; gap:16px; grid-template-columns:repeat(3,1fr);
+}
+figure{margin:0}
+figure img{
+  width:100%; height:auto; display:block; border-radius:12px;
+  border:1px solid var(--stroke); background:#0b1219;
+}
+figcaption{color:var(--muted); font-size:13px; margin-top:6px}
+
+/* FOOTER */
+.footer{
+  border-top:1px solid var(--stroke); color:var(--muted);
+  max-width:1200px; margin:20px auto 30px; padding:16px 20px;
+}
+
+/* RESPONSIVE */
+@media (max-width: 1024px){
+  .hero{grid-template-columns:1fr; gap:26px}
+  .hero__text h1{font-size:34px}
+  .value__grid, .screens__grid{grid-template-columns:1fr 1fr}
+}
+@media (max-width: 640px){
+  .value__grid, .screens__grid{grid-template-columns:1fr}
+  .hero__text h1{font-size:28px}
+}
 
 ```
 
@@ -1232,7 +1484,16 @@ loadWeeks().then(runQuery).catch(console.error);
 </head>
 <body>
 <header>
-  <h1>Amazon Trend Finder AI</h1>
+  <!-- Logo: dots üstte, A hizasından başlar -->
+<div class="logo-container">
+  <div class="ai-dots" aria-hidden="true">
+    <span>.</span><span>.</span><span>.</span>
+  </div>
+  <h1 class="app-title">Amazon Trend Finder AI</h1>
+</div>
+
+
+
 </header>
 
 <section class="controls" aria-labelledby="filtersTitle">
@@ -1305,6 +1566,101 @@ loadWeeks().then(runQuery).catch(console.error);
 <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 
 <script src="/static/js/app.js" defer></script>
+</body>
+</html>
+
+```
+
+### app\web\templates\landing.html
+
+```html
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Amazon Trend Finder AI</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body class="landing">
+
+  <!-- NAV -->
+  <header class="nav">
+    <div class="nav__brand">Amazon Trend Finder AI</div>
+    <nav class="nav__links">
+      <a href="/app">Open App</a>
+      <a href="/diag" target="_blank">Diagnostics</a>
+    </nav>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero__text">
+      <h1>Turn weekly Amazon search data into actionable trends.</h1>
+      <p>Pick a date range, add quick include/exclude keywords, and instantly see which queries are steadily climbing.</p>
+      <div class="hero__cta">
+        <a class="btn btn--primary" href="/app">Launch App</a>
+        <a class="btn btn--ghost" href="#screens">See Screens</a>
+      </div>
+
+      <ul class="hero__bullets">
+        <li>Strict, week-over-week uptrends</li>
+        <li>Fast filtering (include/exclude)</li>
+        <li>Lightweight charts with exact ranks</li>
+      </ul>
+    </div>
+
+    <div class="hero__media">
+      <img src="{{ url_for('static', filename='img/app-screen.png') }}"
+           alt="App overview" loading="lazy">
+    </div>
+  </section>
+
+  <!-- WHY SECTION -->
+  <section class="value">
+    <h2>Why Amazon Trend Finder AI?</h2>
+    <div class="value__grid">
+      <div class="card">
+        <h3>Real weekly signals</h3>
+        <p>Based on raw Brand Analytics CSVs—no guessing, just rank deltas across chosen weeks.</p>
+      </div>
+      <div class="card">
+        <h3>Clear improvement scores</h3>
+        <p>Sort by total improvement to surface the most meaningful gains first.</p>
+      </div>
+      <div class="card">
+        <h3>Simple, robust UI</h3>
+        <p>Pick weeks, filter terms, click any row to see its time-series chart—done.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREENSHOTS -->
+  <section id="screens" class="screens">
+    <h2>Screenshots</h2>
+    <div class="screens__grid">
+      <figure>
+        <img src="{{ url_for('static', filename='img/app-screen.png') }}"
+             alt="Results table" loading="lazy">
+        <figcaption>Rank deltas table</figcaption>
+      </figure>
+      <figure>
+        <img src="{{ url_for('static', filename='img/sample1.png') }}"
+             alt="Trend chart" loading="lazy">
+        <figcaption>Trend chart modal</figcaption>
+      </figure>
+      <figure>
+        <img src="{{ url_for('static', filename='img/sample2.png') }}"
+             alt="Filters & weeks" loading="lazy">
+        <figcaption>Filters & week picker</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <span>© 2025 Amazon Trend Finder AI</span>
+  </footer>
+
 </body>
 </html>
 
