@@ -309,6 +309,23 @@ def series():
         app.logger.exception("series failed")
         return jsonify({"error": "series_failed", "message": str(e)}), 500
 
+# ---------- CHECKOUT (placeholder) ----------
+@app.get("/checkout")
+def checkout():
+    email = session.get("user_email")
+    user = get_user(email) if email else None
+    return render_template("checkout.html", user=user)
+
+# Geçici: ödeme simülasyonu (sadece login kullanıcı)
+@app.post("/checkout/simulate")
+def checkout_simulate():
+    email = session.get("user_email")
+    if not email:
+        return redirect(url_for("login", next="/checkout"))
+    # burada normalde Stripe/Paddle webhook set_plan('pro') yapar
+    set_plan(email, "pro")
+    return redirect(url_for("dashboard"))
+
 # ---------- API: Diagnostics ----------
 @app.get("/diag")
 def diag():
