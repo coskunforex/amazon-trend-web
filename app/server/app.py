@@ -34,6 +34,19 @@ def health():
 def landing():
     return render_template("landing.html")
 
+@app.get("/terms")
+def terms():
+    return render_template("terms.html")
+
+@app.get("/privacy")
+def privacy():
+    return render_template("privacy.html")
+
+@app.get("/refund")
+def refund():
+    return render_template("refund.html")
+
+
 # ---------- APP (demo/pro) ----------
 @app.get("/app")
 def app_demo():
