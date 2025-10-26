@@ -1,0 +1,32 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Checkout — Amazon Trend Finder AI</title>
+<link rel="stylesheet" href="/static/css/auth.css?v=2">
+</head><body>
+<div class="auth">
+  <h1>Upgrade to Pro</h1>
+  <p class="muted">Unlock full 60+ weeks, advanced filters, and priority charts.</p>
+
+  {% if user %}
+    <p><b>Signed in as:</b> {{ user.email }}</p>
+    {% if user.plan == 'pro' %}
+      <div class="err" style="background:#10241a;border-color:#1f6a3a;color:#b7f0c9">
+        You already have <b>PRO</b>. <a class="btn" href="/pro" style="margin-top:10px">Open Pro App</a>
+      </div>
+    {% else %}
+      <!-- Geçici ödeme simülasyonu: Stripe/Paddle gelene kadar -->
+      <form method="post" action="/checkout/simulate">
+        <button type="submit">Complete payment (temporary simulation)</button>
+      </form>
+      <p class="muted">This is a temporary button. We’ll replace it with Stripe/Paddle Checkout.</p>
+    {% endif %}
+  {% else %}
+    <p>Please log in to continue.</p>
+    <a class="btn" href="/login?next=/checkout">Log in</a>
+    <a class="btn ghost" href="/signup?next=/checkout">Create account</a>
+  {% endif %}
+
+  <hr style="margin:16px 0;border:0;border-top:1px solid #1f2a3d">
+  <p class="muted">Questions? Contact sales: hello@yourdomain.com</p>
+</div>
+</body></html>
