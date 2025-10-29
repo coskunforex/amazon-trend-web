@@ -84,6 +84,7 @@ xlsxwriter==3.2.9
   - ./daily_sync_full_20251022_151429.zip
   - ./daily_sync_full_20251022_202324.zip
   - ./daily_sync_full_20251023_135206.zip
+  - ./daily_sync_full_20251024_183757.zip
   - ./mvp-stable.zip
   - ./requirements.txt
   - ./roadmap.md
@@ -112,8 +113,9 @@ xlsxwriter==3.2.9
   - app\web\static\css/styles.css
 - **app\web\static\img/**
   - app\web\static\img/app-screen.png
-  - app\web\static\img/sample1.png.png
+  - app\web\static\img/sample1.png
   - app\web\static\img/sample2.png
+  - app\web\static\img/sample3.png
 - **app\web\static\js/**
   - app\web\static\js/app.js
 - **app\web\templates/**
@@ -909,121 +911,241 @@ if __name__ == "__main__":
 ### app\web\static\css\landing.css
 
 ```css
+/* Amazon Trend Finder AI — Landing Page Styles */
+:root {
+  --bg: #0b1120;
+  --text: #e5edf5;
+  --muted: #93a4b8;
+  --brand: #0ea5e9;
+  --panel: #0f172a;
+  --radius: 14px;
+  --maxw: 1080px;
+  font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
 body {
+  background: var(--bg);
+  color: var(--text);
   margin: 0;
-  font-family: "Inter", sans-serif;
-  background-color: #0f172a;
-  color: #e2e8f0;
 }
 
-.container {
-  width: 90%;
-  max-width: 1100px;
-  margin: 0 auto;
+/* NAVBAR */
+.nav {
+  position: sticky;
+  top: 0;
+  background: rgba(11,17,32,0.85);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid #1f2937;
+  z-index: 100;
 }
-
-.hero {
-  text-align: center;
-  padding: 80px 20px;
-  background: linear-gradient(180deg, #0f172a, #1e293b);
+.nav-inner {
+  max-width: var(--maxw);
+  margin: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
 }
-
-.hero h1 {
-  font-size: 2.8rem;
+.logo {
   font-weight: 700;
-  color: #f1f5f9;
+  font-size: 18px;
 }
-
-.hero .ai {
-  color: #38bdf8;
+.logo span { color: var(--brand); }
+.menu {
+  list-style: none;
+  display: flex;
+  gap: 22px;
+  margin: 0;
+  padding: 0;
 }
-
-.subtitle {
-  margin-top: 12px;
-  font-size: 1.2rem;
-  color: #94a3b8;
+.menu a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 14px;
 }
-
-.cta {
-  display: inline-block;
-  margin-top: 24px;
-  background: #38bdf8;
-  color: #0f172a;
-  padding: 14px 28px;
+.menu a:hover { color: var(--brand); }
+.btn {
+  background: var(--brand);
+  color: #041320;
+  padding: 10px 16px;
   border-radius: 10px;
+  border: none;
   font-weight: 600;
   text-decoration: none;
   transition: 0.2s;
 }
-.cta:hover {
-  background: #0ea5e9;
-  color: white;
+.btn:hover { opacity: 0.9; }
+.btn.ghost {
+  background: transparent;
+  border: 1px solid var(--brand);
+  color: var(--brand);
 }
+.btn.small { font-size: 13px; padding: 8px 12px; }
+.btn.full { display: block; text-align: center; margin-top: 10px; }
 
-.how {
-  padding: 80px 0;
-}
-
-.how h2,
-.samples h2 {
-  font-size: 2rem;
-  color: #f1f5f9;
-  margin-bottom: 30px;
-  text-align: center;
-}
-
-.how-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 40px;
+/* HERO */
+.hero {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-}
-
-.how-grid ol {
-  font-size: 1.1rem;
-  line-height: 1.8;
-}
-
-.how-grid img {
-  width: 100%;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-}
-
-.samples {
-  background: #1e293b;
-  padding: 80px 0;
-}
-
-.sample-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  justify-content: space-between;
+  max-width: var(--maxw);
+  margin: 60px auto;
+  padding: 0 20px;
   gap: 40px;
 }
-
-.card {
-  background: #0f172a;
-  padding: 20px;
+.hero-content { flex: 1 1 450px; }
+.hero-content h1 {
+  font-size: 38px;
+  line-height: 1.2;
+  margin-bottom: 16px;
+}
+.hero-content p {
+  color: var(--muted);
+  font-size: 17px;
+  margin-bottom: 24px;
+}
+.cta-group { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+.badges { display: flex; gap: 10px; flex-wrap: wrap; color: var(--muted); font-size: 13px; }
+.hero-image img {
+  width: 480px;
+  max-width: 100%;
   border-radius: 10px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+}
+
+/* FEATURES */
+.features {
+  max-width: var(--maxw);
+  margin: 80px auto;
+  padding: 0 20px;
   text-align: center;
-  transition: 0.2s;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
-.card:hover {
-  transform: scale(1.03);
+.features h2 { font-size: 28px; margin-bottom: 30px; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
 }
-.card img {
+.card {
+  background: var(--panel);
+  border-radius: var(--radius);
+  padding: 24px;
+  text-align: left;
+  border: 1px solid #1f2a3d;
+}
+.card h3 { color: var(--brand); margin-top: 0; font-size: 18px; }
+.card p { color: var(--muted); font-size: 14px; }
+
+/* HOW IT WORKS */
+.how {
+  max-width: var(--maxw);
+  margin: 100px auto;
+  padding: 0 20px;
+  text-align: center;
+}
+.how h2 { font-size: 28px; margin-bottom: 40px; }
+.steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px,1fr));
+  gap: 30px;
+}
+.step img {
   width: 100%;
-  border-radius: 8px;
+  border-radius: var(--radius);
+  border: 1px solid #1f2a3d;
+  margin-bottom: 12px;
+}
+.step h3 { color: var(--brand); margin: 0 0 8px; }
+.step p { color: var(--muted); font-size: 14px; }
+
+/* PRICING */
+.pricing {
+  background: #0f172a;
+  padding: 80px 20px;
+  text-align: center;
+}
+.pricing h2 { font-size: 28px; margin-bottom: 40px; }
+.plans {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 30px;
+  max-width: var(--maxw);
+  margin: auto;
+}
+.plan {
+  background: var(--panel);
+  border-radius: var(--radius);
+  border: 1px solid #1f2a3d;
+  padding: 30px;
+  width: 280px;
+}
+.plan.highlight {
+  border: 1px solid var(--brand);
+  box-shadow: 0 0 30px rgba(14,165,233,0.2);
+}
+.plan h3 { font-size: 20px; margin-top: 0; color: var(--brand); }
+.price { font-size: 24px; margin: 10px 0; color: var(--text); }
+.plan ul { list-style: none; padding: 0; margin: 0 0 10px; }
+.plan ul li { color: var(--muted); font-size: 14px; margin: 6px 0; }
+
+/* FAQ */
+.faq {
+  max-width: var(--maxw);
+  margin: 80px auto;
+  padding: 0 20px;
+}
+.faq h2 { text-align: center; font-size: 28px; margin-bottom: 40px; }
+details {
+  background: var(--panel);
+  border-radius: var(--radius);
+  border: 1px solid #1f2a3d;
+  padding: 16px 20px;
   margin-bottom: 10px;
 }
+summary {
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--brand);
+}
+details p { color: var(--muted); font-size: 14px; margin-top: 10px; }
 
-footer {
+/* FINAL CTA */
+.final-cta {
   text-align: center;
-  padding: 40px;
-  color: #64748b;
-  font-size: 0.9rem;
-  border-top: 1px solid #1e293b;
+  padding: 100px 20px;
+}
+.final-cta h2 { font-size: 30px; margin-bottom: 10px; }
+.final-cta p { color: var(--muted); margin-bottom: 20px; }
+
+/* FOOTER */
+.footer {
+  border-top: 1px solid #1f2a3d;
+  text-align: center;
+  padding: 20px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.footer .links {
+  margin-top: 6px;
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+.footer a {
+  color: var(--muted);
+  text-decoration: none;
+}
+.footer a:hover { color: var(--brand); }
+
+/* Responsive */
+@media(max-width:768px){
+  .hero{flex-direction:column;}
+  .hero-content{text-align:center;}
+  .hero-image img{width:100%;}
+  .nav-inner{flex-wrap:wrap;gap:10px;}
+  .menu{flex-wrap:wrap;justify-content:center;}
 }
 
 ```
@@ -1031,98 +1153,178 @@ footer {
 ### app\web\static\css\styles.css
 
 ```css
-:root{
-  --bg:#0f1720;
-  --panel:#121a24;
-  --text:#e6edf3;
-  --muted:#9fb0c3;
-  --brand:#1976ff;
-  --brand-ghost:#243346;
-  --stroke:#1f2a37;
-  --radius:14px;
+/* Amazon Trend Finder AI — APP Styles (dark theme, final) */
+:root {
+  --bg: #0b1120;
+  --panel: #0f172a;
+  --text: #e5edf5;
+  --muted: #93a4b8;
+  --stroke: #1e293b;
+  --brand: #0ea5e9;
+  --radius: 12px;
 }
 
-*{box-sizing:border-box}
-html,body{height:100%}
-body{
-  margin:0; background:var(--bg); color:var(--text);
-  font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Inter", "Segoe UI", Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
 }
 
-/* NAVIGATION */
-.nav{
-  max-width:1200px; margin:0 auto; padding:18px 20px;
-  display:flex; align-items:center; justify-content:space-between;
+/* --- Top 3 blue dots (static horizontal) --- */
+.top-dots{
+  display:flex;
+  gap:6px;
+  padding:10px 18px 6px;
 }
-.nav__brand{font-weight:700; letter-spacing:.2px}
-.nav__links a{color:var(--muted); margin-left:18px; text-decoration:none}
-.nav__links a:hover{color:var(--text)}
+.top-dots span{
+  width:8px; height:8px; border-radius:50%;
+  background: linear-gradient(180deg, #38bdf8, #0ea5e9);
+  box-shadow: 0 0 10px rgba(56,189,248,.65), 0 0 2px rgba(56,189,248,.6) inset;
+}
 
-/* HERO */
-.hero{
-  max-width:1200px; margin:0 auto; padding:48px 20px 24px;
-  display:grid; grid-template-columns:1.2fr 1fr; gap:40px; align-items:center;
+/* Header */
+header{
+  padding:12px 18px;
+  border-top:1px solid var(--stroke);
+  border-bottom:1px solid var(--stroke);
+  display:flex; align-items:center; gap:10px;
 }
-.hero__text h1{font-size:40px; line-height:1.2; margin:0 0 10px}
-.hero__text p{color:var(--muted); margin:0 0 16px}
-.hero__cta{display:flex; gap:12px; margin:16px 0 10px}
+header h1{
+  margin:0; font-size:16px; font-weight:700; letter-spacing:.2px;
+}
+
+/* Controls (filters) */
+.controls{
+  display:grid; gap:12px;
+  grid-template-columns: repeat(auto-fit, minmax(200px,1fr));
+  padding:14px 18px;
+}
+.controls label{
+  display:block; font-size:12px; color:var(--muted); margin-bottom:4px;
+}
+.controls input,.controls select{
+  width:100%; padding:10px; border-radius:10px;
+  border:1px solid var(--stroke); background:#0b1220; color:var(--text);
+}
+.actions{ display:flex; align-items:end; gap:8px; }
 .btn{
-  display:inline-block; padding:10px 16px; border-radius:999px; text-decoration:none;
-  border:1px solid transparent; font-weight:600;
+  padding:10px 14px; border-radius:10px; border:1px solid #134e6f;
+  background:var(--brand); color:#041320; font-weight:700; cursor:pointer;
+  transition:opacity .2s ease;
 }
-.btn--primary{background:var(--brand); color:#fff}
-.btn--primary:hover{filter:brightness(1.06)}
-.btn--ghost{background:var(--brand-ghost); color:#cfe0ff; border-color:#2b3a4e}
-.btn--ghost:hover{filter:brightness(1.06)}
-.hero__bullets{margin:14px 0 0; padding-left:18px; color:var(--muted)}
-.hero__bullets li{margin:6px 0}
-.hero__media img{
-  width:100%; height:auto; border-radius:var(--radius);
-  display:block; box-shadow:0 6px 30px rgba(0,0,0,.35);
-  border:1px solid var(--stroke);
+.btn:disabled{ opacity:.6; cursor:not-allowed; }
+
+/* Summary */
+.summary{
+  padding:6px 18px; display:flex; gap:10px; align-items:center; color:var(--muted);
+}
+.pill{
+  padding:3px 10px; border-radius:999px; background:#0a192f;
+  border:1px solid var(--stroke); color:#c8d7ea; font-size:13px;
 }
 
-/* VALUE SECTION */
-.value{max-width:1200px; margin:20px auto 0; padding:0 20px}
-.value h2{margin:14px 0 18px}
-.value__grid{
-  display:grid; gap:16px; grid-template-columns:repeat(3,1fr);
+/* Inline loading (table fetch) — animated, unrelated to top dots */
+.loading{ display:inline-flex; align-items:center; gap:7px; }
+.loading .dot{
+  width:6px; height:6px; border-radius:999px; background:var(--brand);
+  animation:b 1s infinite alternate;
 }
-.card{
-  background:var(--panel); border:1px solid var(--stroke); border-radius:var(--radius);
-  padding:18px;
-}
-.card h3{margin:6px 0 8px}
-.card p{margin:0; color:var(--muted)}
+.loading .dot:nth-child(2){ animation-delay:.2s; }
+.loading .dot:nth-child(3){ animation-delay:.4s; }
+@keyframes b{ from{transform:translateY(0)} to{transform:translateY(-4px)} }
 
-/* SCREENSHOTS */
-.screens{max-width:1200px; margin:26px auto 60px; padding:0 20px}
-.screens h2{margin:10px 0 12px}
-.screens__grid{
-  display:grid; gap:16px; grid-template-columns:repeat(3,1fr);
+/* Table */
+table{ width:100%; border-collapse:collapse; }
+thead th{
+  text-align:left; font-weight:700; font-size:13px; color:#c7d2df;
+  border-bottom:1px solid var(--stroke); padding:10px 14px; user-select:none; cursor:pointer;
 }
-figure{margin:0}
-figure img{
-  width:100%; height:auto; display:block; border-radius:12px;
-  border:1px solid var(--stroke); background:#0b1219;
+tbody td{
+  border-bottom:1px solid #0e1a2b; padding:12px 14px; font-size:14px; color:#e2e8f0;
 }
-figcaption{color:var(--muted); font-size:13px; margin-top:6px}
+tbody tr{ transition:background .12s; }
+tbody tr:hover{ background:#0d1728; }
 
-/* FOOTER */
-.footer{
-  border-top:1px solid var(--stroke); color:var(--muted);
-  max-width:1200px; margin:20px auto 30px; padding:16px 20px;
+/* Empty state */
+#empty{ padding:12px 18px; color:var(--muted); }
+
+/* Modal */
+.modal{
+  position:fixed; inset:0; background:rgba(3,12,24,.55);
+  display:flex; align-items:center; justify-content:center; padding:16px;
+}
+.modal-card{
+  background:#0a1424; border:1px solid var(--stroke); border-radius:16px;
+  width:min(820px,96vw); max-height:92vh; display:flex; flex-direction:column;
+  box-shadow:0 20px 60px rgba(0,0,0,.45);
+}
+.modal-header{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 14px; border-bottom:1px solid var(--stroke);
+}
+.modal-header h3{ margin:0; font-size:15px; }
+.modal-header .btn{ background:#0b1220; color:#e5edf5; border:1px solid var(--stroke); }
+.chart{ padding:10px 12px 16px; overflow:auto; }
+.hidden{ display:none!important; }
+
+/* Chart SVG */
+svg .axis line{ stroke:#2a3b52; stroke-width:1; }
+svg .axis text{ fill:#96a8bd; font-size:11px; }
+svg .line{ fill:none; stroke:#38bdf8; stroke-width:2; }
+svg .dot{ fill:#38bdf8; }
+
+/* Toast */
+.toast{
+  position:fixed; right:12px; bottom:12px; background:#0b1220; color:#e5edf5;
+  padding:10px 12px; border-radius:10px; font-size:13px; border:1px solid var(--stroke);
 }
 
-/* RESPONSIVE */
-@media (max-width: 1024px){
-  .hero{grid-template-columns:1fr; gap:26px}
-  .hero__text h1{font-size:34px}
-  .value__grid, .screens__grid{grid-template-columns:1fr 1fr}
+/* --------- TOP DOTS: tek kaynak (A harfine kilitli) --------- */
+
+/* Eski kuralları tamamen etkisiz kıl (özellikle padding/gap kalıntıları) */
+.top-dots { all: unset; }
+.top-dots span { all: unset; }
+
+/* Başlık kutusu */
+.app-header{
+  position: relative;
+  /* soldaki 18px padding genel layout’unla aynı; üstte 22px alan bırakıyoruz */
+  padding: 22px 18px 12px 18px;
 }
-@media (max-width: 640px){
-  .value__grid, .screens__grid{grid-template-columns:1fr}
-  .hero__text h1{font-size:28px}
+
+.app-title{
+  position: relative;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: .2px;
+}
+
+/* Noktalar artık H1’in içinde; sol kenarı A ile birebir aynı */
+.app-title .top-dots{
+  position: absolute;
+  top: -6px;   /* yükseklik (gerekirse -13 / -15 deneyebilirsin) */
+  left: 0;      /* A harfinin tam başlangıcı */
+  display: flex;
+  gap: 6px;
+  padding: 0;
+  margin: 0;
+}
+
+.app-title .top-dots > span{
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #3abef8, #139be3);
+  box-shadow: 0 0 4px rgba(56,189,248,.55), 0 0 1px rgba(56,189,248,.40) inset;
+  opacity: .95;
 }
 
 ```
@@ -1434,138 +1636,105 @@ loadWeeks().then(runQuery).catch(console.error);
 ### app\web\templates\index.html
 
 ```html
-<<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Amazon Trend Finder AI</title>
-  <link rel="stylesheet" href="/static/css/styles.css">
-  <style>
-    /* light UX tweaks */
-    :root { --pad: 12px; }
-    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
-    header { padding: var(--pad) 16px; display:flex; align-items:center; gap:12px; }
-    header h1 { margin: 0; font-size: 20px; }
-    .controls { display:grid; gap:12px; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); padding: 12px 16px; }
-    .controls label { display:block; font-size: 12px; color:#566; margin-bottom:4px; }
-    .controls input, .controls select { width:100%; padding:8px; border:1px solid #ccd6e0; border-radius:8px; }
-    .controls .actions { display:flex; align-items:end; gap:8px; }
-    .summary { padding: 6px 16px; font-size: 13px; color:#234; display:flex; gap:12px; align-items:center; }
-    .summary .pill { padding:2px 8px; border-radius:999px; background:#eef3f8; border:1px solid #d9e4ee; }
-    table { width:100%; border-collapse:collapse; }
-    thead th { text-align:left; font-weight:600; font-size:13px; color:#355; border-bottom:1px solid #e5ecf2; padding:10px 12px; user-select:none; cursor:pointer; }
-    tbody td { border-bottom:1px solid #f1f4f7; padding:10px 12px; font-size:14px; }
-    tbody tr { transition: background .15s; }
-    tbody tr:hover { background:#fafcff; }
-    .hidden { display:none !important; }
-    .modal { position:fixed; inset:0; background:rgba(9,25,50,.35); display:flex; align-items:center; justify-content:center; padding:16px; }
-    .modal-card { background:#fff; border-radius:14px; width:min(820px, 96vw); max-height:92vh; display:flex; flex-direction:column; box-shadow:0 10px 30px rgba(0,0,0,.15); }
-    .modal-header { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid #eef2f7; }
-    .modal-header h3 { margin:0; font-size:16px; color:#111; }
-    .chart { padding:10px 12px 16px; overflow:auto; }
-    .btn { padding:9px 12px; border-radius:10px; border:1px solid #cdd9e5; background:#fff; cursor:pointer; }
-    .btn.primary { background:#0b74ff; color:#fff; border-color:#0b74ff; }
-    .btn:disabled { opacity:.6; cursor:not-allowed; }
-    .toast { position:fixed; right:12px; bottom:12px; background:#0b1220; color:#fff; padding:10px 12px; border-radius:10px; font-size:13px; box-shadow:0 8px 24px rgba(0,0,0,.25); }
-    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0; }
-    .loading { display:inline-flex; align-items:center; gap:8px; }
-    .loading .dot { width:6px; height:6px; border-radius:50%; background:#0b74ff; animation: b 1s infinite alternate; }
-    .loading .dot:nth-child(2){ animation-delay:.2s } .loading .dot:nth-child(3){ animation-delay:.4s }
-    @keyframes b { from{ transform:translateY(0)} to{ transform:translateY(-4px)} }
-    svg .axis line { stroke:#c8d4e0; stroke-width:1; }
-    svg .axis text { fill:#5a6b7c; font-size:11px; }
-    svg .line { fill:none; stroke:#0b74ff; stroke-width:2; }
-    svg .dot { fill:#0b74ff; }
-    /* modal close button better contrast */
-    .modal-header button { color:#111; background:#fff; border:1px solid #cbd5e1; border-radius:8px; padding:4px 8px; }
-    .modal-header button:hover { background:#f1f5f9; }
-  </style>
+  <title>Amazon Trend Finder AI — App</title>
+
+  <!-- Dış CSS (koyu tema) -->
+ <link rel="stylesheet" href="/static/css/styles.css?v=app-final-4">
+
 </head>
 <body>
-<header>
-  <!-- Logo: dots üstte, A hizasından başlar -->
-<div class="logo-container">
-  <div class="ai-dots" aria-hidden="true">
-    <span>.</span><span>.</span><span>.</span>
-  </div>
-  <h1 class="app-title">Amazon Trend Finder AI</h1>
-</div>
 
 
-
+ <header class="app-header">
+  <h1 class="app-title">
+    <span class="top-dots" aria-hidden="true">
+      <span></span><span></span><span></span>
+    </span>
+    Amazon Trend Finder AI
+  </h1>
 </header>
 
-<section class="controls" aria-labelledby="filtersTitle">
-  <h2 id="filtersTitle" class="sr-only">Filters</h2>
 
-  <div>
-    <label for="start">Start week</label>
-    <select id="start" name="start"></select>
-  </div>
 
-  <div>
-    <label for="end">End week</label>
-    <select id="end" name="end"></select>
-  </div>
+  <!-- Filtreler -->
+  <section class="controls" aria-labelledby="filtersTitle">
+    <h2 id="filtersTitle" class="hidden">Filters</h2>
 
-  <div>
-    <label for="include">Include (comma-separated)</label>
-    <input id="include" name="include" placeholder="iphone, crocs…" autocomplete="off"/>
-  </div>
-
-  <div>
-    <label for="exclude">Exclude (comma-separated)</label>
-    <input id="exclude" name="exclude" placeholder="case, charger…" autocomplete="off"/>
-  </div>
-
-  <div class="actions">
-    <button id="run" class="btn primary" aria-label="Find uptrends">Find uptrends</button>
-    <!-- removed: reindex button -->
-  </div>
-</section>
-
-<section class="summary" aria-live="polite">
-  <span id="found" class="pill">Found: 0</span>
-  <span id="range" class="pill"></span>
-  <span id="status" class="loading hidden" aria-hidden="true">
-    <span class="dot"></span><span class="dot"></span><span class="dot"></span> Loading…
-  </span>
-</section>
-
-<section aria-labelledby="resultsTitle">
-  <h2 id="resultsTitle" class="sr-only">Results</h2>
-  <table id="tbl">
-    <thead>
-      <tr>
-        <th data-key="term">Term</th>
-        <th data-key="start_rank">Start rank</th>
-        <th data-key="end_rank">End rank</th>
-        <th data-key="total_improvement">Total improvement</th>
-        <th data-key="weeks">Weeks</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-  <div id="empty" class="hidden" style="padding:12px 16px; color:#566;">
-    No results. Try relaxing your filters.
-  </div>
-</section>
-
-<!-- Modal -->
-<div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-  <div class="modal-card">
-    <div class="modal-header">
-      <h3 id="modalTitle">Trend</h3>
-      <button id="closeModal" class="btn" aria-label="Close">✕</button>
+    <div>
+      <label for="start">Start week</label>
+      <select id="start" name="start"></select>
     </div>
-    <div id="chart" class="chart"></div>
+
+    <div>
+      <label for="end">End week</label>
+      <select id="end" name="end"></select>
+    </div>
+
+    <div>
+      <label for="include">Include (comma-separated)</label>
+      <input id="include" name="include" placeholder="iphone, crocs..." autocomplete="off"/>
+    </div>
+
+    <div>
+      <label for="exclude">Exclude (comma-separated)</label>
+      <input id="exclude" name="exclude" placeholder="case, charger..." autocomplete="off"/>
+    </div>
+
+    <div class="actions">
+      <button id="run" class="btn" aria-label="Find uptrends">Find uptrends</button>
+    </div>
+  </section>
+
+  <!-- Özet -->
+  <section class="summary" aria-live="polite">
+    <span id="found" class="pill">Found: 0</span>
+    <span id="range" class="pill"></span>
+
+    <!-- (tablo yüklenirken) -->
+    <span id="status" class="loading hidden" aria-hidden="true">
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span> Loading…
+    </span>
+  </section>
+
+  <!-- Sonuç Tablosu -->
+  <section aria-labelledby="resultsTitle">
+    <h2 id="resultsTitle" class="hidden">Results</h2>
+    <table id="tbl">
+      <thead>
+        <tr>
+          <th data-key="term">Term</th>
+          <th data-key="start_rank">Start rank</th>
+          <th data-key="end_rank">End rank</th>
+          <th data-key="total_improvement">Total improvement</th>
+          <th data-key="weeks">Weeks</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <div id="empty" class="hidden">No results. Try relaxing your filters.</div>
+  </section>
+
+  <!-- Modal (grafik) -->
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modalTitle">Trend</h3>
+        <button id="closeModal" class="btn" aria-label="Close">✕</button>
+      </div>
+      <div id="chart" class="chart"></div>
+    </div>
   </div>
-</div>
 
-<div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <!-- Toast -->
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 
-<script src="/static/js/app.js" defer></script>
+  <!-- App JS -->
+  <script src="/static/js/app.js" defer></script>
 </body>
 </html>
 
@@ -1578,89 +1747,149 @@ loadWeeks().then(runQuery).catch(console.error);
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Amazon Trend Finder AI</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Amazon Trend Finder AI — Find rising Amazon search trends</title>
+  <meta name="description" content="Surface uptrends from 60+ weeks of Amazon search data. Smart include/exclude filters, fast scoring, and clean charts. Try the app — no setup.">
+  <link rel="stylesheet" href="/static/css/landing.css?v=1">
+  <link rel="icon" href="/static/img/app-screen.png" type="image/png">
 </head>
-<body class="landing">
-
-  <!-- NAV -->
-  <header class="nav">
-    <div class="nav__brand">Amazon Trend Finder AI</div>
-    <nav class="nav__links">
-      <a href="/app">Open App</a>
-      <a href="/diag" target="_blank">Diagnostics</a>
-    </nav>
-  </header>
-
-  <!-- HERO -->
-  <section class="hero">
-    <div class="hero__text">
-      <h1>Turn weekly Amazon search data into actionable trends.</h1>
-      <p>Pick a date range, add quick include/exclude keywords, and instantly see which queries are steadily climbing.</p>
-      <div class="hero__cta">
-        <a class="btn btn--primary" href="/app">Launch App</a>
-        <a class="btn btn--ghost" href="#screens">See Screens</a>
-      </div>
-
-      <ul class="hero__bullets">
-        <li>Strict, week-over-week uptrends</li>
-        <li>Fast filtering (include/exclude)</li>
-        <li>Lightweight charts with exact ranks</li>
+<body>
+  <!-- Navbar -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="logo">Amazon Trend Finder <span>AI</span></div>
+      <ul class="menu">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#how">How it works</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+        <li><a href="#faq">FAQ</a></li>
       </ul>
+      <a href="/app" class="btn small">Try the App</a>
     </div>
+  </nav>
 
-    <div class="hero__media">
-      <img src="{{ url_for('static', filename='img/app-screen.png') }}"
-           alt="App overview" loading="lazy">
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1>Spot rising Amazon searches<br>before the crowd.</h1>
+      <p>Analyze <strong>60+ weeks</strong> of Amazon search trends, apply <strong>smart keyword filters</strong>, and surface <strong>early uptrends</strong> in seconds — no setup, no spreadsheets.</p>
+      <div class="cta-group">
+        <a href="/app" class="btn">Try the App</a>
+        <a href="/app" class="btn ghost">See live demo</a>
+      </div>
+      <div class="badges">
+        <span>60+ weeks</span>
+        <span>Smart filters</span>
+        <span>Zero setup</span>
+      </div>
+    </div>
+    <div class="hero-image">
+      <img src="/static/img/app-screen.png" alt="Amazon Trend Finder dashboard" loading="lazy">
     </div>
   </section>
 
-  <!-- WHY SECTION -->
-  <section class="value">
-    <h2>Why Amazon Trend Finder AI?</h2>
-    <div class="value__grid">
+  <!-- Features -->
+  <section id="features" class="features">
+    <h2>Why sellers love it</h2>
+    <div class="grid">
       <div class="card">
-        <h3>Real weekly signals</h3>
-        <p>Based on raw Brand Analytics CSVs—no guessing, just rank deltas across chosen weeks.</p>
+        <h3>Early Trend Detection</h3>
+        <p>Find terms with meaningful rank improvement across your chosen weeks — quickly separate signal from noise.</p>
       </div>
       <div class="card">
-        <h3>Clear improvement scores</h3>
-        <p>Sort by total improvement to surface the most meaningful gains first.</p>
+        <h3>Smart Filters</h3>
+        <p>Include or exclude keywords (e.g., “iphone”, exclude “case”) to focus on the segments that matter.</p>
       </div>
       <div class="card">
-        <h3>Simple, robust UI</h3>
-        <p>Pick weeks, filter terms, click any row to see its time-series chart—done.</p>
+        <h3>60+ Weeks History</h3>
+        <p>Look back more than a year to validate seasonality and momentum, not just a single snapshot.</p>
+      </div>
+      <div class="card">
+        <h3>Lightweight & Fast</h3>
+        <p>Server-side optimized queries. No installs, no accounts required to test.</p>
       </div>
     </div>
   </section>
 
-  <!-- SCREENSHOTS -->
-  <section id="screens" class="screens">
-    <h2>Screenshots</h2>
-    <div class="screens__grid">
-      <figure>
-        <img src="{{ url_for('static', filename='img/app-screen.png') }}"
-             alt="Results table" loading="lazy">
-        <figcaption>Rank deltas table</figcaption>
-      </figure>
-      <figure>
-        <img src="{{ url_for('static', filename='img/sample1.png') }}"
-             alt="Trend chart" loading="lazy">
-        <figcaption>Trend chart modal</figcaption>
-      </figure>
-      <figure>
-        <img src="{{ url_for('static', filename='img/sample2.png') }}"
-             alt="Filters & weeks" loading="lazy">
-        <figcaption>Filters & week picker</figcaption>
-      </figure>
+  <!-- How it works -->
+  <section id="how" class="how">
+    <h2>How it works</h2>
+    <div class="steps">
+      <div class="step">
+        <img src="/static/img/sample1.png" alt="Pick weeks">
+        <h3>1. Pick weeks</h3>
+        <p>Choose start & end weeks — e.g., last 10–12 weeks.</p>
+      </div>
+      <div class="step">
+        <img src="/static/img/sample2.png" alt="Add filters">
+        <h3>2. Add filters</h3>
+        <p>Include or exclude keyword families to narrow scope.</p>
+      </div>
+      <div class="step">
+        <img src="/static/img/sample3.png" alt="See uptrends">
+        <h3>3. See uptrends</h3>
+        <p>Sort by <strong>Total improvement</strong> and open a term to view its weekly trajectory.</p>
+      </div>
     </div>
   </section>
 
+  <!-- Pricing -->
+  <section id="pricing" class="pricing">
+    <h2>Simple pricing</h2>
+    <div class="plans">
+      <div class="plan">
+        <h3>Starter</h3>
+        <p class="price">Free</p>
+        <ul>
+          <li>Up to 200 results per query</li>
+          <li>10–12 week lookback</li>
+          <li>Basic filters</li>
+        </ul>
+        <a href="/app" class="btn full">Try free</a>
+      </div>
+
+      <div class="plan highlight">
+        <h3>Pro</h3>
+        <p class="price">$29.90 / month</p>
+        <ul>
+          <li>Full 60+ week history</li>
+          <li>Advanced filtering</li>
+          <li>Trend chart export</li>
+          <li>Priority updates</li>
+        </ul>
+        <a href="/app" class="btn full">Start Pro</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="faq">
+    <h2>FAQ</h2>
+    <details><summary>Does it connect to my Amazon account?</summary><p>No. It’s a read-only analytics tool that never accesses your seller data.</p></details>
+    <details><summary>How many weeks of data are included?</summary><p>60+ weeks and growing, updated regularly.</p></details>
+    <details><summary>Do I need to upload any files?</summary><p>No uploads. Everything runs directly in your browser.</p></details>
+    <details><summary>Which browsers are supported?</summary><p>Latest versions of Chrome, Edge, Safari, and Firefox.</p></details>
+    <details><summary>Is there a refund policy?</summary><p>Yes — cancel Pro anytime within 7 days for a prorated refund.</p></details>
+    <details><summary>How fast does it process results?</summary><p>Starter: up to 200 results per query. Pro: higher limits and faster queries.</p></details>
+  </section>
+
+  <!-- CTA -->
+  <section class="final-cta">
+    <h2>Find your next winning product today</h2>
+    <p>No signup required. Get started in seconds.</p>
+    <a href="/app" class="btn">Try the App</a>
+  </section>
+
+  <!-- Footer -->
   <footer class="footer">
-    <span>© 2025 Amazon Trend Finder AI</span>
+    <p>© 2025 Amazon Trend Finder AI. All rights reserved.</p>
+    <div class="links">
+      <a href="#">Terms</a>
+      <a href="#">Privacy</a>
+      <a href="#">Contact</a>
+      <a href="https://github.com/coskunforex/amazon-trend-web" target="_blank">GitHub</a>
+    </div>
   </footer>
-
 </body>
 </html>
 
