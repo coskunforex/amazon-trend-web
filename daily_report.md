@@ -85,6 +85,7 @@ xlsxwriter==3.2.9
   - ./daily_sync_full_20251022_202324.zip
   - ./daily_sync_full_20251023_135206.zip
   - ./daily_sync_full_20251024_183757.zip
+  - ./daily_sync_full_20251025_145328.zip
   - ./mvp-stable.zip
   - ./requirements.txt
   - ./roadmap.md
@@ -96,6 +97,7 @@ xlsxwriter==3.2.9
   - app/__init__.py
 - **app\core/**
   - app\core/__init__.py
+  - app\core/auth.py
   - app\core/db.py
   - app\core/trend_core.py
 - **app\server/**
@@ -109,6 +111,7 @@ xlsxwriter==3.2.9
   - app\web\static/img/
   - app\web\static/js/
 - **app\web\static\css/**
+  - app\web\static\css/auth.css
   - app\web\static\css/landing.css
   - app\web\static\css/styles.css
 - **app\web\static\img/**
@@ -119,8 +122,15 @@ xlsxwriter==3.2.9
 - **app\web\static\js/**
   - app\web\static\js/app.js
 - **app\web\templates/**
+  - app\web\templates/checkout.html
+  - app\web\templates/dashboard.html
   - app\web\templates/index.html
   - app\web\templates/landing.html
+  - app\web\templates/login.html
+  - app\web\templates/privacy.html
+  - app\web\templates/refund.html
+  - app\web\templates/signup.html
+  - app\web\templates/terms.html
 - **config/**
 - **data/**
   - data/raw/
@@ -171,6 +181,57 @@ US_Top_Search_Terms_Simple_Week_2025_09_13.csv
 ### app\core\__init__.py
 
 ```py
+
+```
+
+### app\core\auth.py
+
+```py
+from app.core.db import get_conn
+from werkzeug.security import generate_password_hash, check_password_hash
+
+def ensure_users_table():
+    con = get_conn()
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS users(
+          email TEXT PRIMARY KEY,
+          password_hash TEXT NOT NULL,
+          plan TEXT NOT NULL DEFAULT 'demo',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    con.close()
+
+def create_user(email: str, password: str, plan: str='demo') -> bool:
+    email = (email or '').strip().lower()
+    if not email or not password:
+        return False
+    ph = generate_password_hash(password)
+    con = get_conn()
+    try:
+        con.execute("INSERT INTO users(email, password_hash, plan) VALUES (?, ?, ?)", [email, ph, plan])
+        return True
+    except Exception:
+        return False
+    finally:
+        con.close()
+
+def get_user(email: str):
+    if not email: return None
+    con = get_conn(read_only=True)
+    row = con.execute("SELECT email, password_hash, plan FROM users WHERE email = ?", [email.strip().lower()]).fetchone()
+    con.close()
+    if not row: return None
+    return {"email": row[0], "password_hash": row[1], "plan": row[2]}
+
+def verify_user(email: str, password: str) -> bool:
+    u = get_user(email)
+    return bool(u and check_password_hash(u["password_hash"], password))
+
+def set_plan(email: str, plan: str):
+    con = get_conn()
+    con.execute("UPDATE users SET plan=? WHERE email=?", [plan, (email or '').strip().lower()])
+    con.close()
 
 ```
 
@@ -655,10 +716,14 @@ def query_series(
 
 ```py
 # app/server/app.py
-from flask import Flask, jsonify, request, send_from_directory, render_template
+from flask import Flask, jsonify, request, render_template, session, redirect, url_for
 import logging, os
 from pathlib import Path
+
 from app.core.db import get_conn, init_full, append_week
+from app.core.auth import (
+    ensure_users_table, create_user, verify_user, get_user, set_plan
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -668,23 +733,103 @@ app = Flask(
     static_folder=str(PROJECT_ROOT / "app" / "web" / "static"),
 )
 
+# ---------- Secrets / Logs / DB bootstrap ----------
+app.secret_key = os.environ.get("SECRET_KEY", "dev-change-me")
+
 logging.basicConfig(level=logging.INFO)
 app.logger.setLevel(logging.INFO)
 
-# ---------- Health & UI ----------
+# users tablosu hazır olsun
+ensure_users_table()
+
+# ---------- Health & Landing ----------
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
 @app.get("/")
 def landing():
-    # Landing page (templates/landing.html)
     return render_template("landing.html")
 
+@app.get("/terms")
+def terms():
+    return render_template("terms.html")
+
+@app.get("/privacy")
+def privacy():
+    return render_template("privacy.html")
+
+@app.get("/refund")
+def refund():
+    return render_template("refund.html")
+
+
+# ---------- APP (demo/pro) ----------
 @app.get("/app")
-def app_ui():
-    # Eski UI (templates/index.html)
-    return send_from_directory(app.template_folder, "index.html")
+def app_demo():
+    # Demo: include/exclude kapalı, 8 hafta UI limiti (JS tarafında uygulanıyor)
+    return render_template("index.html", mode="demo")
+
+@app.get("/pro")
+def app_pro():
+    # Pro: login + plan kontrolü
+    email = session.get("user_email")
+    if not email:
+        return redirect(url_for("login", next="/pro"))
+    u = get_user(email)
+    if not u or u.get("plan") != "pro":
+        return redirect(url_for("dashboard"))
+    return render_template("index.html", mode="pro")
+
+# ---------- AUTH ----------
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+    if request.method == "POST":
+        email = (request.form.get("email") or "").strip().lower()
+        password = request.form.get("password") or ""
+        ok = create_user(email, password, plan="demo")
+        if ok:
+            session["user_email"] = email
+            nxt = request.args.get("next") or url_for("dashboard")
+            return redirect(nxt)
+        return render_template("signup.html", error="Email already exists or invalid.")
+    return render_template("signup.html")
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        email = (request.form.get("email") or "").strip().lower()
+        password = request.form.get("password") or ""
+        if verify_user(email, password):
+            session["user_email"] = email
+            nxt = request.args.get("next") or url_for("dashboard")
+            return redirect(nxt)
+        return render_template("login.html", error="Invalid credentials.")
+    return render_template("login.html")
+
+@app.get("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("landing"))
+
+@app.get("/dashboard")
+def dashboard():
+    email = session.get("user_email")
+    user = get_user(email) if email else None
+    return render_template("dashboard.html", user=user)
+
+# ---------- TEMP ADMIN (payment gelene kadar) ----------
+@app.post("/admin/setpro")
+def admin_setpro():
+    admin_key_env = os.environ.get("ADMIN_KEY")
+    key = request.form.get("key") or request.args.get("key")
+    email = (request.form.get("email") or request.args.get("email") or "").strip().lower()
+    if not admin_key_env or key != admin_key_env:
+        return jsonify({"error": "forbidden"}), 403
+    if not email:
+        return jsonify({"error": "email required"}), 400
+    set_plan(email, "pro")
+    return jsonify({"status": "ok", "email": email, "plan": "pro"})
 
 # ---------- API: Weeks ----------
 @app.get("/weeks")
@@ -731,6 +876,7 @@ def reindex():
         app.logger.exception("reindex failed")
         return jsonify({"error": "reindex_failed", "message": str(e)}), 500
 
+# ---------- API: Uptrends ----------
 @app.get("/uptrends")
 def uptrends():
     try:
@@ -783,7 +929,6 @@ def uptrends():
         """
         params = [start_id, end_id, max_rank]
 
-        # include/exclude: boşluk ile
         def _parts_space(s: str):
             return [p.strip().lower() for p in s.split() if p.strip()]
 
@@ -848,10 +993,7 @@ def uptrends():
         app.logger.exception("uptrends failed")
         return jsonify({"error": "uptrends_failed", "message": str(e)}), 500
 
-
-
-
-# ---------- API: Series ----------
+# ---------- API: Series (range-aware) ----------
 @app.get("/series")
 def series():
     try:
@@ -859,19 +1001,60 @@ def series():
         if not term:
             return jsonify({"error": "term required"}), 400
 
+        start_id = request.args.get("startWeekId", type=int)
+        end_id   = request.args.get("endWeekId", type=int)
+
         con = get_conn(read_only=True)
-        rows = con.execute("""
-            SELECT week, rank
-            FROM searches
-            WHERE LOWER(term) = LOWER(?)
-            ORDER BY week
-        """, [term]).fetchall()
+
+        if start_id and end_id:
+            if end_id < start_id:
+                start_id, end_id = end_id, start_id
+            rows = con.execute("""
+                WITH all_weeks AS (
+                  SELECT DISTINCT week FROM searches ORDER BY week
+                ),
+                weeks_idx AS (
+                  SELECT week, ROW_NUMBER() OVER (ORDER BY week) AS week_id
+                  FROM all_weeks
+                )
+                SELECT w.week, s.rank
+                FROM searches s
+                JOIN weeks_idx w USING(week)
+                WHERE LOWER(s.term) = LOWER(?)
+                  AND w.week_id BETWEEN ? AND ?
+                ORDER BY w.week
+            """, [term, start_id, end_id]).fetchall()
+        else:
+            rows = con.execute("""
+                SELECT week, rank
+                FROM searches
+                WHERE LOWER(term) = LOWER(?)
+                ORDER BY week
+            """, [term]).fetchall()
+
         con.close()
 
-        return jsonify([{"week": r[0], "rank": int(r[1])} for r in rows])
+        return jsonify([{"week": r[0], "weekLabel": r[0], "rank": int(r[1])} for r in rows])
     except Exception as e:
         app.logger.exception("series failed")
         return jsonify({"error": "series_failed", "message": str(e)}), 500
+
+# ---------- CHECKOUT (placeholder) ----------
+@app.get("/checkout")
+def checkout():
+    email = session.get("user_email")
+    user = get_user(email) if email else None
+    return render_template("checkout.html", user=user)
+
+# Geçici: ödeme simülasyonu (sadece login kullanıcı)
+@app.post("/checkout/simulate")
+def checkout_simulate():
+    email = session.get("user_email")
+    if not email:
+        return redirect(url_for("login", next="/checkout"))
+    # burada normalde Stripe/Paddle webhook set_plan('pro') yapar
+    set_plan(email, "pro")
+    return redirect(url_for("dashboard"))
 
 # ---------- API: Diagnostics ----------
 @app.get("/diag")
@@ -901,10 +1084,28 @@ def diag():
         app.logger.exception("diag failed")
         return jsonify({"error":"diag_failed","message":str(e)}), 500
 
-
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
     app.run(host="0.0.0.0", port=port, debug=False)
+
+```
+
+### app\web\static\css\auth.css
+
+```css
+:root{--bg:#0b1120;--panel:#0f172a;--brand:#0ea5e9;--text:#e5edf5;--muted:#9fb0c6;
+font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+body{background:var(--bg);color:var(--text);margin:0;display:grid;place-items:center;min-height:100vh}
+.auth{background:var(--panel);width:min(520px,92vw);padding:28px;border-radius:14px;border:1px solid #1f2a3d}
+h1{margin:0 0 12px;font-size:22px}
+label{display:block;font-size:13px;color:var(--muted);margin:14px 0 6px}
+input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #22324a;background:#0b1324;color:var(--text)}
+button,.btn{margin-top:16px;width:100%;padding:10px 14px;border-radius:10px;border:1px solid #1476b8;
+background:var(--brand);color:#041320;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;display:inline-block}
+.btn.ghost{background:transparent;color:var(--brand);border-color:#224a66}
+.err{background:#26131a;border:1px solid #5a1321;color:#ffb3c0;padding:10px 12px;border-radius:10px;margin-bottom:8px;font-size:13px}
+.muted{color:var(--muted);font-size:13px;text-align:center;margin-top:8px}
+.row{display:flex;gap:10px;margin-top:12px}
 
 ```
 
@@ -1327,11 +1528,63 @@ svg .dot{ fill:#38bdf8; }
   opacity: .95;
 }
 
+/* Demo banner */
+.upgrade-banner{
+  margin: 10px 18px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px dashed #1e293b;
+  background: #0b1220;
+  color: #c8d7ea;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+.upgrade-banner .btn.small{
+  padding: 8px 10px;
+  font-size: 13px;
+  background: #0ea5e9;
+  color:#041320;
+  border-radius: 8px;
+  text-decoration: none;
+}
+
 ```
 
 ### app\web\static\js\app.js
 
 ```js
+// DEMO / PRO ayrımı
+const MODE = document.body.dataset.mode || 'demo';
+
+function applyDemoLimits() {
+  if (MODE !== 'demo') return; // sadece demo'da çalışır
+
+  // include/exclude kapat
+  const inc = document.querySelector('#include');
+  const exc = document.querySelector('#exclude');
+  if (inc) { inc.disabled = true; inc.placeholder = "Available in Pro"; }
+  if (exc) { exc.disabled = true; exc.placeholder = "Available in Pro"; }
+
+  // hafta sayısını 8 ile sınırla
+  const limitWeeks = () => {
+    const startSel = document.querySelector('#start');
+    const endSel = document.querySelector('#end');
+    const trim = (sel, keepLastN = 8) => {
+      if (!sel) return;
+      const opts = Array.from(sel.querySelectorAll('option'));
+      const toRemove = opts.slice(0, Math.max(0, opts.length - keepLastN));
+      toRemove.forEach(o => o.remove());
+    };
+    trim(startSel, 8);
+    trim(endSel, 8);
+  };
+
+  setTimeout(limitWeeks, 0);
+}
+
+
 // app/web/static/js/app.js
 
 const $ = (sel)=>document.querySelector(sel);
@@ -1629,7 +1882,79 @@ document.querySelectorAll("#tbl thead th").forEach(th=>{
 });
 
 /* init */
-loadWeeks().then(runQuery).catch(console.error);
+loadWeeks()
+  .then(() => { applyDemoLimits(); })
+  .then(runQuery)
+  .catch(console.error);
+
+
+```
+
+### app\web\templates\checkout.html
+
+```html
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Checkout — Amazon Trend Finder AI</title>
+<link rel="stylesheet" href="/static/css/auth.css?v=2">
+</head><body>
+<div class="auth">
+  <h1>Upgrade to Pro</h1>
+  <p class="muted">Unlock full 60+ weeks, advanced filters, and priority charts.</p>
+
+  {% if user %}
+    <p><b>Signed in as:</b> {{ user.email }}</p>
+    {% if user.plan == 'pro' %}
+      <div class="err" style="background:#10241a;border-color:#1f6a3a;color:#b7f0c9">
+        You already have <b>PRO</b>. <a class="btn" href="/pro" style="margin-top:10px">Open Pro App</a>
+      </div>
+    {% else %}
+      <!-- Geçici ödeme simülasyonu: Stripe/Paddle gelene kadar -->
+      <form method="post" action="/checkout/simulate">
+        <button type="submit">Complete payment (temporary simulation)</button>
+      </form>
+      <p class="muted">This is a temporary button. We’ll replace it with Stripe/Paddle Checkout.</p>
+    {% endif %}
+  {% else %}
+    <p>Please log in to continue.</p>
+    <a class="btn" href="/login?next=/checkout">Log in</a>
+    <a class="btn ghost" href="/signup?next=/checkout">Create account</a>
+  {% endif %}
+
+  <hr style="margin:16px 0;border:0;border-top:1px solid #1f2a3d">
+  <p class="muted">Questions? Contact sales: hello@yourdomain.com</p>
+</div>
+</body></html>
+
+```
+
+### app\web\templates\dashboard.html
+
+```html
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Dashboard — Amazon Trend Finder AI</title>
+<link rel="stylesheet" href="/static/css/auth.css?v=1">
+</head><body>
+<div class="auth">
+  <h1>Account</h1>
+  {% if user %}
+    <p><b>Email:</b> {{ user.email }}</p>
+    <p><b>Plan:</b> {{ user.plan|upper }}</p>
+    <div class="row">
+      {% if user.plan != 'pro' %}
+        <a class="btn" href="/checkout">Upgrade to Pro</a>
+      {% else %}
+        <a class="btn" href="/pro">Open Pro app</a>
+      {% endif %}
+      <a class="btn ghost" href="/logout">Log out</a>
+    </div>
+  {% else %}
+    <p>You are not logged in.</p>
+    <a class="btn" href="/login">Log in</a>
+  {% endif %}
+</div>
+</body></html>
 
 ```
 
@@ -1644,10 +1969,12 @@ loadWeeks().then(runQuery).catch(console.error);
   <title>Amazon Trend Finder AI — App</title>
 
   <!-- Dış CSS (koyu tema) -->
- <link rel="stylesheet" href="/static/css/styles.css?v=app-final-4">
+<link rel="stylesheet" href="/static/css/styles.css?v=app-final-7">
+
 
 </head>
-<body>
+<body data-mode="{{ mode or 'demo' }}">
+
 
 
  <header class="app-header">
@@ -1655,9 +1982,17 @@ loadWeeks().then(runQuery).catch(console.error);
     <span class="top-dots" aria-hidden="true">
       <span></span><span></span><span></span>
     </span>
-    Amazon Trend Finder AI
+     Uptrend Hunter AI
   </h1>
 </header>
+
+{% if mode == 'demo' %}
+  <div class="upgrade-banner" role="status">
+    You’re using the free demo. Last 6 weeks only, advanced filters disabled.
+    <a href="/checkout" class="btn small">Upgrade to Pro</a>
+
+  </div>
+{% endif %}
 
 
 
@@ -1748,8 +2083,8 @@ loadWeeks().then(runQuery).catch(console.error);
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Amazon Trend Finder AI — Find rising Amazon search trends</title>
-  <meta name="description" content="Surface uptrends from 60+ weeks of Amazon search data. Smart include/exclude filters, fast scoring, and clean charts. Try the app — no setup.">
+  <title>UpTrend Hunter AI — Find rising marketplace search trends</title>
+  <meta name="description" content="Surface uptrends from 60+ weeks of search data. Smart include/exclude filters, fast scoring, and clean charts. Try the app — no setup.">
   <link rel="stylesheet" href="/static/css/landing.css?v=1">
   <link rel="icon" href="/static/img/app-screen.png" type="image/png">
 </head>
@@ -1757,7 +2092,7 @@ loadWeeks().then(runQuery).catch(console.error);
   <!-- Navbar -->
   <nav class="nav">
     <div class="nav-inner">
-      <div class="logo">Amazon Trend Finder <span>AI</span></div>
+      <div class="logo">Uptrend Hunter <span>AI</span></div>
       <ul class="menu">
         <li><a href="#features">Features</a></li>
         <li><a href="#how">How it works</a></li>
@@ -1869,7 +2204,7 @@ loadWeeks().then(runQuery).catch(console.error);
     <details><summary>How many weeks of data are included?</summary><p>60+ weeks and growing, updated regularly.</p></details>
     <details><summary>Do I need to upload any files?</summary><p>No uploads. Everything runs directly in your browser.</p></details>
     <details><summary>Which browsers are supported?</summary><p>Latest versions of Chrome, Edge, Safari, and Firefox.</p></details>
-    <details><summary>Is there a refund policy?</summary><p>Yes — cancel Pro anytime within 7 days for a prorated refund.</p></details>
+    <details><summary>Is there a refund policy?</summary><p>Yes — cancel Pro anytime within 30 days of purchase for a full refund.</p></details>
     <details><summary>How fast does it process results?</summary><p>Starter: up to 200 results per query. Pro: higher limits and faster queries.</p></details>
   </section>
 
@@ -1881,17 +2216,193 @@ loadWeeks().then(runQuery).catch(console.error);
   </section>
 
   <!-- Footer -->
-  <footer class="footer">
-    <p>© 2025 Amazon Trend Finder AI. All rights reserved.</p>
-    <div class="links">
-      <a href="#">Terms</a>
-      <a href="#">Privacy</a>
-      <a href="#">Contact</a>
-      <a href="https://github.com/coskunforex/amazon-trend-web" target="_blank">GitHub</a>
+    <!-- Footer -->
+  <footer class="footer" style="text-align:center; padding:30px 0; border-top:1px solid #1e293b;">
+    <p>© 2025 Uptrend Hunter by Erkan Ecom LLC. All rights reserved.</p>
+    <div class="links" style="margin-top:10px;">
+      <a href="/terms" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Terms & Conditions</a> |
+      <a href="/privacy" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Privacy Policy</a> |
+      <a href="/refund" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Refund Policy</a> |
+      <a href="mailto:erkanecomll@gmail.com" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Contact</a> |
+      <a href="https://github.com/coskunforex/amazon-trend-web" target="_blank" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">GitHub</a>
     </div>
   </footer>
+
 </body>
 </html>
+
+```
+
+### app\web\templates\login.html
+
+```html
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Log in — Amazon Trend Finder AI</title>
+<link rel="stylesheet" href="/static/css/auth.css?v=1">
+</head><body>
+<div class="auth">
+  <h1>Welcome back</h1>
+  {% if error %}<div class="err">{{ error }}</div>{% endif %}
+  <form method="post">
+    <label>Email</label>
+    <input name="email" type="email" required autocomplete="email" />
+    <label>Password</label>
+    <input name="password" type="password" required />
+    <button type="submit">Log in</button>
+  </form>
+  <p class="muted">New here? <a href="/signup">Create an account</a></p>
+</div>
+</body></html>
+
+```
+
+### app\web\templates\privacy.html
+
+```html
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Privacy Policy — UpTrend Hunter AI</title>
+<link rel="stylesheet" href="/static/css/auth.css?v=3">
+</head><body>
+<div class="auth">
+<h1>Privacy Policy</h1>
+<p><em>Last updated: October 2025</em></p>
+
+<p>This Privacy Policy explains how Uptrend Hunter (“we,” “our,” “us”) collects, uses, and protects your information.</p>
+
+<h2>Information We Collect</h2>
+<ul>
+  <li>Account data (name, email) you provide when signing up.</li>
+  <li>Usage data (logs, device info) to maintain and improve the Service.</li>
+  <li>Payment data collected and processed by our Payment Partners to complete transactions.</li>
+</ul>
+
+<h2>How We Use Information</h2>
+<ul>
+  <li>To provide and maintain the Service.</li>
+  <li>To communicate updates, billing, and support.</li>
+  <li>To prevent abuse, secure accounts, and comply with legal obligations.</li>
+</ul>
+
+<h2>Data Sharing</h2>
+<p>We do not sell your personal data. We share only the minimum necessary information with service providers (e.g., hosting, analytics, Payment Partners) to operate the Service and fulfill purchases, subject to appropriate safeguards.</p>
+
+<h2>Data Protection</h2>
+<p>We apply reasonable technical and organizational measures to protect your data and comply with applicable data protection laws (e.g., GDPR where applicable).</p>
+
+<h2>Cookies</h2>
+<p>We use essential cookies to maintain sessions and improve functionality. You can disable cookies in your browser settings; some features may not function correctly.</p>
+
+<h2>Your Rights</h2>
+<p>Where applicable, you may request access, correction, deletion, or portability of your personal data. Contact us to exercise these rights.</p>
+
+<h2>Contact</h2>
+<p>Privacy questions? Email <a href="mailto:support@uptrendhunter.com">support@uptrendhunter.com</a>.</p>
+
+
+<p style="margin-top:20px"><a class="btn" href="/">← Back to Home</a></p>
+</div></body></html>
+
+```
+
+### app\web\templates\refund.html
+
+```html
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Refund Policy (30-Day Money Back Guarantee) — Amazon Trend Finder AI</title>
+<link rel="stylesheet" href="/static/css/auth.css?v=3">
+</head><body>
+<div class="auth">
+<h1>Refund Policy (30-Day Money Back Guarantee)</h1>
+<p>Last updated: October 2025</p>
+
+<h1>Refund Policy (30-Day Money Back Guarantee)</h1>
+<p><em>Last updated: October 2025</em></p>
+
+<p>All purchases are processed securely by our authorized Payment Partners and/or an authorized reseller acting as Merchant of Record.</p>
+
+<h2>Refund Window</h2>
+<p>We offer a <strong>30-day refund window</strong> for new purchases. If you experience a technical issue that prevents normal use of the Service, contact us within 30 days of purchase.</p>
+
+<h2>How to Request a Refund</h2>
+<p>Email your request to <a href="mailto:erkanecomllc@gmail.com">erkanecomllc@gmail.com</a> (or <a href="mailto:support@uptrendhunter.com">support@uptrendhunter.com</a>) with your order reference and reason for the refund. We may ask for additional details to verify and resolve the issue.</p>
+
+<h2>Exclusions</h2>
+<ul>
+  <li>Refunds are not granted for repeated violations of our Terms or misuse of the Service.</li>
+  <li>Where a Payment Partner or reseller’s policy imposes specific rules (e.g., tax handling, chargeback windows), those rules may apply.</li>
+</ul>
+
+
+<p style="margin-top:20px"><a class="btn" href="/">← Back to Home</a></p>
+</div></body></html>
+
+```
+
+### app\web\templates\signup.html
+
+```html
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Sign up — Amazon Trend Finder AI</title>
+<link rel="stylesheet" href="/static/css/auth.css?v=1">
+</head><body>
+<div class="auth">
+  <h1>Create your account</h1>
+  {% if error %}<div class="err">{{ error }}</div>{% endif %}
+  <form method="post">
+    <label>Email</label>
+    <input name="email" type="email" required autocomplete="email" />
+    <label>Password</label>
+    <input name="password" type="password" required minlength="6" />
+    <button type="submit">Create account</button>
+  </form>
+  <p class="muted">Already have an account? <a href="/login">Log in</a></p>
+</div>
+</body></html>
+
+```
+
+### app\web\templates\terms.html
+
+```html
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Terms and Conditions — UpTrend Hunter AI</title>
+<link rel="stylesheet" href="/static/css/auth.css?v=3">
+</head><body>
+<div class="auth">
+<h1>Terms and Conditions</h1>
+<p>Last updated: October 2025</p>
+
+<h1>Terms and Conditions</h1>
+<p><em>Last updated: October 2025</em></p>
+
+<p>These Terms of Service (“Terms”) govern your access to and use of Uptrend Hunter (the “Service”). “Company,” “we,” “us,” or “our” refers to Erkan Ecom LLC. By accessing or using the Service, you agree to be bound by these Terms.</p>
+
+<h2>Use of Service</h2>
+<p>You may use the Service only for lawful purposes and in accordance with these Terms. You are responsible for maintaining the confidentiality of your account.</p>
+
+<h2>Subscriptions &amp; Payments</h2>
+<p>Paid plans are billed in advance. We use trusted third-party payment processors and/or an authorized reseller acting as Merchant of Record (“Payment Partners”) to process transactions securely. By purchasing, you authorize our Payment Partners to charge your selected payment method. Prices may change with prior notice.</p>
+
+<h2>Cancellation &amp; Termination</h2>
+<p>You can cancel your subscription anytime from your account/dashboard. Access remains active until the end of the current billing cycle. We may suspend or terminate access for violations of these Terms or misuse of the Service.</p>
+
+<h2>Refunds</h2>
+<p>Refunds are handled under our <a href="/refund-policy">Refund Policy</a>.</p>
+
+<h2>Modifications</h2>
+<p>We may update these Terms from time to time. Continued use of the Service after changes become effective constitutes acceptance of the revised Terms.</p>
+
+<h2>Contact</h2>
+<p>Questions about these Terms? Email <a href="mailto:support@uptrendhunter.com">support@uptrendhunter.com</a>.</p>
+
+
+<p style="margin-top:20px"><a class="btn" href="/">← Back to Home</a></p>
+</div></body></html>
 
 ```
 
