@@ -6,11 +6,6 @@ STORE_ID = os.getenv("LEMON_STORE_ID")
 VARIANT_ID = os.getenv("LEMON_VARIANT_ID")
 
 def create_checkout(email: str) -> str:
-    """
-    Verilen e-posta adresi için Lemon Squeezy checkout linki oluşturur.
-    """
-    assert API_KEY and STORE_ID and VARIANT_ID, "LEMON_* environment variables missing"
-
     headers = {
         "Authorization": f"Bearer {API_KEY}",
         "Accept": "application/json",
@@ -24,14 +19,12 @@ def create_checkout(email: str) -> str:
                 "checkout_data": {"email": email}
             },
             "relationships": {
-                "store":   {"data": {"type": "stores",   "id": STORE_ID}},
                 "variant": {"data": {"type": "variants", "id": VARIANT_ID}},
             }
         }
     }
 
-    response = requests.post(f"{BASE_URL}/checkouts", headers=headers, json=payload, timeout=30)
-    response.raise_for_status()
-
-    data = response.json()
-    return data["data"]["attributes"]["url"]
+    r = requests.post(f"{BASE_URL}/stores/{STORE_ID}/checkouts", headers=headers, json=payload, timeout=30)
+    r.raise_for_status()
+    d = r.json()
+    return d["data"]["attributes"]["url"]
