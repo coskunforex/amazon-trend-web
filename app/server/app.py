@@ -2,6 +2,7 @@
 from flask import Flask, jsonify, request, render_template, session, redirect, url_for
 import logging, os
 from pathlib import Path
+from app.core.payments import create_checkout
 
 from app.core.db import get_conn, init_full, append_week
 from app.core.auth import (
@@ -120,16 +121,17 @@ def weeks():
     try:
         con = get_conn(read_only=True)
         rows = con.execute("""
-            SELECT
-              ROW_NUMBER() OVER (ORDER BY week) AS weekId,
-              week AS label
-            FROM (SELECT DISTINCT week FROM searches ORDER BY week)
+            SELECT DISTINCT week
+            FROM searches
+            ORDER BY week
         """).fetchall()
         con.close()
-        return jsonify([{"weekId": int(r[0]), "label": r[1]} for r in rows])
+        return jsonify([r[0] for r in rows])
     except Exception as e:
-        app.logger.exception("weeks failed")
-        return jsonify({"error": "weeks_failed", "message": str(e)}), 500
+        app.logger.error("weeks failed: %s", e)
+        # Boş DB durumunda boş liste dön, frontend kırılmasın:
+        return jsonify([])
+
 
 # ---------- API: Reindex ----------
 @app.get("/reindex")
@@ -338,6 +340,19 @@ def checkout_simulate():
     # burada normalde Stripe/Paddle webhook set_plan('pro') yapar
     set_plan(email, "pro")
     return redirect(url_for("dashboard"))
+
+@app.post("/checkout/start")
+def checkout_start():
+    email = session.get("user_email")
+    if not email:
+        return redirect(url_for("login", next="/checkout"))
+    try:
+        url = create_checkout(email)
+        return redirect(url)
+    except Exception as e:
+        app.logger.exception("checkout_start failed")
+        return render_template("checkout.html", user=get_user(email), error=str(e)), 500
+
 
 # ---------- API: Diagnostics ----------
 @app.get("/diag")
