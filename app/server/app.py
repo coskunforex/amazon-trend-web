@@ -385,3 +385,25 @@ def diag():
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
     app.run(host="0.0.0.0", port=port, debug=False)
+
+# --- DIAGNOSTIC ENDPOINT ---
+from app.core.payments import ls_get
+import os
+from flask import jsonify
+
+@app.get("/diag/lemon")
+def diag_lemon():
+    """Lemon Squeezy store ve variant ID'lerini test eder."""
+    store_id = os.getenv("LEMON_STORE_ID", "").strip()
+    variant_id = os.getenv("LEMON_VARIANT_ID", "").strip()
+
+    results = {"store_id": store_id, "variant_id": variant_id}
+
+    sc1, st1 = ls_get(f"stores/{store_id}")
+    results["GET /stores/{id}"] = {"status": sc1, "body": st1[:400]}
+
+    sc2, st2 = ls_get(f"variants/{variant_id}")
+    results["GET /variants/{id}"] = {"status": sc2, "body": st2[:400]}
+
+    return jsonify(results)
+# --- END OF DIAGNOSTIC ENDPOINT ---
