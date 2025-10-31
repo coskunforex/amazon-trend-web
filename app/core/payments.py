@@ -1,15 +1,20 @@
+# app/core/payments.py
 import os, requests
 
 BASE_URL = "https://api.lemonsqueezy.com/v1"
-API_KEY = os.getenv("LEMON_API_KEY")
-STORE_ID = os.getenv("LEMON_STORE_ID")
-VARIANT_ID = os.getenv("LEMON_VARIANT_ID")
+
+API_KEY   = os.getenv("LEMON_API_KEY")
+STORE_ID  = os.getenv("LEMON_STORE_ID")
+VARIANT_ID= os.getenv("LEMON_VARIANT_ID")
 
 def create_checkout(email: str) -> str:
+    assert API_KEY and STORE_ID and VARIANT_ID, "LEMON_* env vars missing"
+
     headers = {
         "Authorization": f"Bearer {API_KEY}",
-        "Accept": "application/json",
-        "Content-Type": "application/json",
+        "Accept": "application/vnd.api+json",
+        "Content-Type": "application/vnd.api+json",
+        "X-Api-Version": "2022-11-16",
     }
 
     payload = {
@@ -19,12 +24,18 @@ def create_checkout(email: str) -> str:
                 "checkout_data": {"email": email}
             },
             "relationships": {
-                "variant": {"data": {"type": "variants", "id": VARIANT_ID}},
+                "store":   {"data": {"type": "stores",   "id": str(STORE_ID)}},
+                "variant": {"data": {"type": "variants", "id": str(VARIANT_ID)}},
             }
         }
     }
 
-    r = requests.post(f"{BASE_URL}/stores/{STORE_ID}/checkouts", headers=headers, json=payload, timeout=30)
-    r.raise_for_status()
+    r = requests.post(f"{BASE_URL}/checkouts", headers=headers, json=payload, timeout=30)
+    # Hata durumunda anlamak için metni de gösterelim
+    try:
+        r.raise_for_status()
+    except Exception:
+        raise RuntimeError(f"{r.status_code} error: {r.text}")
+
     d = r.json()
     return d["data"]["attributes"]["url"]
