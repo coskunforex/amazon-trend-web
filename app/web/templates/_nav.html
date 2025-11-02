@@ -1,0 +1,20 @@
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="{{ url_for('landing') }}" class="logo">Uptrend Hunter</a>
+
+    <div class="nav-links">
+      <a href="{{ url_for('app_demo') }}">Demo</a>
+      <a href="{{ url_for('dashboard') }}">Dashboard</a>
+      <a href="{{ url_for('checkout') }}">Pricing</a>
+      <a href="{{ url_for('privacy') }}">Privacy</a>
+      <a href="{{ url_for('terms') }}">Terms</a>
+
+      {% if session.user_email %}
+        <span class="user-info">Hi, {{ session.user_email }}</span>
+        <a href="{{ url_for('logout') }}" class="btn small outline">Log out</a>
+      {% else %}
+        <a href="{{ url_for('login', next=request.path) }}" class="btn small">Log in</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
