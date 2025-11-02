@@ -16,7 +16,7 @@
     position:fixed; inset:0; display:flex; flex-direction:column;
     align-items:center; justify-content:center;
     background:rgba(2,6,23,.94); backdrop-filter:blur(2px);
-    z-index:10000; transition:opacity .25s ease; opacity:1;
+    z-index:10000; transition:opacity .25s ease; opacity:.6s ease;
   ">
     <div style="
       width:42px; height:42px; border-radius:50%;
@@ -30,13 +30,19 @@
   <style>@keyframes atfspin{to{transform:rotate(360deg)}}</style>
   <script>
     // KAPATMA: app.js yoksa bile 5 sn sonra kapat (test amaçlı)
-    window.preloaderHide = function(){
-      var el = document.getElementById('preloader');
-      if (!el) return;
-      el.style.opacity = '0';
-      el.style.pointerEvents = 'none';
-      setTimeout(function(){ try{ el.remove(); }catch(e){ el.style.display='none'; } }, 260);
-    };
+   window.preloaderHide = function(){
+  var el = document.getElementById('preloader');
+  if (!el) return;
+  // preloader hemen kapanmasın, 1 saniye ek bekleme süresi
+  setTimeout(function() {
+    el.style.opacity = '0';
+    el.style.pointerEvents = 'none';
+    setTimeout(function(){ 
+      try{ el.remove(); }catch(e){ el.style.display='none'; } 
+    }, 400);
+  }, 1000); // 👈 1 saniye bekle, sonra yavaşça kapat
+};
+
     // Güvence: sayfa tam yüklenince de kapatmayı dene
     window.addEventListener('load', window.preloaderHide);
     // Test fallback: 5 sn sonra mutlaka kapat (ilk kurulumu doğrulamak için)
