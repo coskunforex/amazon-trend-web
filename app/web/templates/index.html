@@ -11,7 +11,18 @@
 </head>
 
 <body data-mode="{{ mode or 'demo' }}">
+
+  <!-- FULLSCREEN PRELOADER -->
+  <div id="preloader" class="preloader">
+    <div class="spinner" aria-hidden="true"></div>
+    <p class="preloader-text">
+      {{ 'Loading Pro…' if (mode=='pro') else 'Loading demo…' }}
+    </p>
+  </div>
+
   {% include "_nav.html" %}
+  <!-- ... kalan içerik ... -->
+
 
   {# Demo bilgilendirme şeridi — CTA sadece burada #}
   {% if mode == 'demo' %}

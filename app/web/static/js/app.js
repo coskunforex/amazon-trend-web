@@ -348,5 +348,13 @@ loadWeeks()
   .then(runQuery)
   .catch(console.error);
 
-// ---------------- NEW: ekstra güvence (tam sayfa yüklendiğinde de kapat) -------------
-window.addEventListener('load', hidePreloader);
+// preloader'ı her ihtimale karşı kapat: DOM hazır olduğunda ve tam yükte
+document.addEventListener('DOMContentLoaded', ()=> {
+  // eğer haftalar çok hızlı dönerse zaten loadWeeks içinde kapanır
+  const el = document.getElementById('preloader');
+  if (el && weeks.length > 0) el.classList.add('hidden');
+});
+window.addEventListener('load', ()=> {
+  const el = document.getElementById('preloader');
+  if (el) el.classList.add('hidden');
+});
