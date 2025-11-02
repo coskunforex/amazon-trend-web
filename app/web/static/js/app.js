@@ -27,6 +27,13 @@ function applyDemoLimits() {
   setTimeout(limitWeeks, 0);
 }
 
+// ---------------- NEW: Preloader helper ----------------
+function hidePreloader() {
+  const el = document.getElementById('preloader');
+  if (el && !el.classList.contains('hidden')) {
+    el.classList.add('hidden');
+  }
+}
 
 // app/web/static/js/app.js
 
@@ -109,9 +116,15 @@ async function loadWeeks(){
       endSel.value = weeks[weeks.length-1].weekId;
     }
     restoreFilters();
+
+    // ---------------- NEW: weeks başarıyla yüklendi -> preloader'ı kapat ----------------
+    hidePreloader();
+
   }catch(err){
     showToast("Failed to load weeks.");
     console.error(err);
+    // hata durumunda da kullanıcı kilitlenmesin diye:
+    hidePreloader();
   }finally{
     setLoading(false);
   }
@@ -147,9 +160,14 @@ async function runQuery(){
     const sorted = sortRows(rows, currentSort.key, currentSort.dir);
     renderTable(sorted, s, e);
     persistFilters();
+
+    // (opsiyonel) ilk sorgu da bitince kapatmayı garanti altına al
+    hidePreloader();
+
   }catch(err){
     showToast(err.message);
     console.error(err);
+    hidePreloader();
   }finally{
     setLoading(false);
   }
@@ -330,3 +348,5 @@ loadWeeks()
   .then(runQuery)
   .catch(console.error);
 
+// ---------------- NEW: ekstra güvence (tam sayfa yüklendiğinde de kapat) -------------
+window.addEventListener('load', hidePreloader);
