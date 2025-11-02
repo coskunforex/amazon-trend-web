@@ -123,21 +123,23 @@ def admin_setpro():
     set_plan(email, "pro")
     return jsonify({"status": "ok", "email": email, "plan": "pro"})
 
-# ---------- API: Weeks ----------
 @app.get("/weeks")
 def weeks():
     try:
         con = get_conn(read_only=True)
         rows = con.execute("""
-            SELECT DISTINCT week
-            FROM searches
-            ORDER BY week
+            WITH all_weeks AS (
+              SELECT DISTINCT week FROM searches ORDER BY week
+            )
+            SELECT
+              ROW_NUMBER() OVER (ORDER BY week)   AS week_id,
+              week                                 AS label
+            FROM all_weeks
         """).fetchall()
         con.close()
-        return jsonify([r[0] for r in rows])
+        return jsonify([{"weekId": int(r[0]), "label": r[1]} for r in rows])
     except Exception as e:
         app.logger.error("weeks failed: %s", e)
-        # Boş DB durumunda boş liste dön, frontend kırılmasın:
         return jsonify([])
 
 

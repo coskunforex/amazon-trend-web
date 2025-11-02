@@ -4,56 +4,37 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Amazon Trend Finder AI — App</title>
-<link rel="stylesheet" href="/static/css/landing.css?v=1">
 
-  <!-- Dış CSS (koyu tema) -->
-<link rel="stylesheet" href="/static/css/styles.css?v=app-final-7">
-
-
+  <!-- Ortak stiller -->
+  <link rel="stylesheet" href="/static/css/landing.css?v=1">
+  <link rel="stylesheet" href="/static/css/styles.css?v=app-final-7">
 </head>
-<body data-mode="{{ mode or 'demo' }}">
 
-{% include "_nav.html" %}
-
-
- <header class="app-header">
-  <h1 class="app-title">
-    <span class="top-dots" aria-hidden="true">
-      <span></span><span></span><span></span>
-    </span>
-     Uptrend Hunter AI
-  </h1>
 <body data-mode="{{ mode or 'demo' }}">
   {% include "_nav.html" %}
 
+  <!-- Uygulama üst başlığı -->
   <header class="app-header">
     <h1 class="app-title">
-      <span class="top-dots" aria-hidden="true">●●●</span>
+      <span class="top-dots" aria-hidden="true"><span></span><span></span><span></span></span>
       Uptrend Hunter AI
     </h1>
 
-    {# SADECE DEMO modda ve PRO olmayan kullanıcıda göster #}
-    {% if mode != 'pro' %}
-      {% if not current_user or current_user.plan != 'pro' %}
-        <a href="{{ url_for('checkout') }}" class="btn small" style="margin-left:auto">
-          Upgrade to Pro
-        </a>
-      {% endif %}
+    {# Sadece DEMO modda ve PRO olmayan kullanıcıda göster #}
+    {% if mode != 'pro' and (not current_user or current_user.plan != 'pro') %}
+      <a href="{{ url_for('checkout') }}" class="btn small" style="margin-left:auto">
+        Upgrade to Pro
+      </a>
     {% endif %}
   </header>
 
-  <!-- ... sayfanın geri kalanı ... -->
-
-
-{% if mode == 'demo' %}
-  <div class="upgrade-banner" role="status">
-    You’re using the free demo. Last 6 weeks only, advanced filters disabled.
-    <a href="/checkout" class="btn small">Upgrade to Pro</a>
-
-  </div>
-{% endif %}
-
-
+  {# Demo bilgilendirme şeridi #}
+  {% if mode == 'demo' %}
+    <div class="upgrade-banner" role="status">
+      You’re using the free demo. Last 6 weeks only, advanced filters disabled.
+      <a href="/checkout" class="btn small">Upgrade to Pro</a>
+    </div>
+  {% endif %}
 
   <!-- Filtreler -->
   <section class="controls" aria-labelledby="filtersTitle">
@@ -89,7 +70,6 @@
     <span id="found" class="pill">Found: 0</span>
     <span id="range" class="pill"></span>
 
-    <!-- (tablo yüklenirken) -->
     <span id="status" class="loading hidden" aria-hidden="true">
       <span class="dot"></span><span class="dot"></span><span class="dot"></span> Loading…
     </span>
