@@ -17,6 +17,14 @@ app = Flask(
     static_folder=str(PROJECT_ROOT / "app" / "web" / "static"),
 )
 
+# Tüm şablonlarda current_user kullanabilelim
+@app.context_processor
+def inject_current_user():
+    email = session.get("user_email")
+    u = get_user(email) if email else None
+    return {"current_user": u}
+
+
 # ---------- Secrets / Logs / DB bootstrap ----------
 app.secret_key = os.environ.get("SECRET_KEY", "dev-change-me")
 

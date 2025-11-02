@@ -23,7 +23,27 @@
     </span>
      Uptrend Hunter AI
   </h1>
-</header>
+<body data-mode="{{ mode or 'demo' }}">
+  {% include "_nav.html" %}
+
+  <header class="app-header">
+    <h1 class="app-title">
+      <span class="top-dots" aria-hidden="true">●●●</span>
+      Uptrend Hunter AI
+    </h1>
+
+    {# SADECE DEMO modda ve PRO olmayan kullanıcıda göster #}
+    {% if mode != 'pro' %}
+      {% if not current_user or current_user.plan != 'pro' %}
+        <a href="{{ url_for('checkout') }}" class="btn small" style="margin-left:auto">
+          Upgrade to Pro
+        </a>
+      {% endif %}
+    {% endif %}
+  </header>
+
+  <!-- ... sayfanın geri kalanı ... -->
+
 
 {% if mode == 'demo' %}
   <div class="upgrade-banner" role="status">
