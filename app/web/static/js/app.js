@@ -1,3 +1,15 @@
+/* ================== PRELOADER (global) ================== */
+// index.html'deki inline preloader ile uyumlu kapatma fonksiyonu.
+// (app.js yüklenir yüklenmez hazır olsun diye en üstte tanımlı)
+window.preloaderHide = window.preloaderHide || function () {
+  const el = document.getElementById('preloader');
+  if (!el) return;
+  el.style.opacity = '0';
+  el.style.pointerEvents = 'none';
+  setTimeout(() => { try { el.remove(); } catch (_) { el.style.display = 'none'; } }, 260);
+};
+/* ======================================================== */
+
 // DEMO / PRO ayrımı
 const MODE = document.body.dataset.mode || 'demo';
 
@@ -27,17 +39,13 @@ function applyDemoLimits() {
   setTimeout(limitWeeks, 0);
 }
 
-// ---------------- NEW: Preloader helper ----------------
+// ---------------- Preloader helper (yerel) ----------------
 function hidePreloader() {
-  const el = document.getElementById('preloader');
-  if (el && !el.classList.contains('hidden')) {
-    el.classList.add('hidden');
-  }
+  // hem yerel fonksiyonu hem de global fallback'i tetikle
+  window.preloaderHide && window.preloaderHide();
 }
-// global fallback (index.html içindeki inline script bu ismi çağırıyor olabilir)
-window.preloaderHide = hidePreloader;
 
-// app/web/static/js/app.js
+// ----------------------------------------------------------
 
 const $ = (sel)=>document.querySelector(sel);
 
@@ -119,16 +127,14 @@ async function loadWeeks(){
     }
     restoreFilters();
 
-    // ✅ Haftalar geldi, preloader'ı kapat (iki isimle de çağır)
+    // ✅ Haftalar geldi, preloader'ı kapat
     hidePreloader();
-    window.preloaderHide && window.preloaderHide();
 
   }catch(err){
     showToast("Failed to load weeks.");
     console.error(err);
     // ✅ Hata bile olsa preloader'ı kapat
     hidePreloader();
-    window.preloaderHide && window.preloaderHide();
   }finally{
     setLoading(false);
   }
@@ -165,15 +171,13 @@ async function runQuery(){
     renderTable(sorted, s, e);
     persistFilters();
 
-    // ✅ Sorgu tamamlandı, preloader'ı yine kapat
+    // ✅ İlk sorgu bitti, preloader'ı yine kapat
     hidePreloader();
-    window.preloaderHide && window.preloaderHide();
 
   }catch(err){
     showToast(err.message);
     console.error(err);
     hidePreloader();
-    window.preloaderHide && window.preloaderHide();
   }finally{
     setLoading(false);
   }
@@ -354,11 +358,6 @@ loadWeeks()
   .then(runQuery)
   .catch(console.error);
 
-// preloader'ı her ihtimale karşı kapat: DOM hazır olduğunda ve tam yükte
-document.addEventListener('DOMContentLoaded', ()=> {
-  // eğer haftalar çok hızlı dönerse zaten loadWeeks içinde kapanır
-  window.preloaderHide && window.preloaderHide();
-});
-window.addEventListener('load', ()=> {
-  window.preloaderHide && window.preloaderHide();
-});
+// preloader'ı ekstra güvenceyle kapat
+document.addEventListener('DOMContentLoaded', ()=> window.preloaderHide && window.preloaderHide());
+window.addEventListener('load', ()=> window.preloaderHide && window.preloaderHide());

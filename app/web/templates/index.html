@@ -11,17 +11,47 @@
 </head>
 
 <body data-mode="{{ mode or 'demo' }}">
-
-  <!-- FULLSCREEN PRELOADER -->
-  <div id="preloader" class="preloader">
-    <div class="spinner" aria-hidden="true"></div>
-    <p class="preloader-text">
+  <!-- ===== SELF-CONTAINED PRELOADER (shows no matter what) ===== -->
+  <div id="preloader" style="
+    position:fixed; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    background:rgba(2,6,23,.94); backdrop-filter:blur(2px);
+    z-index:10000; transition:opacity .25s ease; opacity:1;
+  ">
+    <div style="
+      width:42px; height:42px; border-radius:50%;
+      border:3px solid rgba(148,163,184,.28);
+      border-top-color:#38bdf8; animation:atfspin .9s linear infinite;
+    "></div>
+    <p id="preloaderText" style="margin-top:12px; font-size:14px; color:#9ca3af;">
       {{ 'Loading Pro…' if (mode=='pro') else 'Loading demo…' }}
     </p>
   </div>
+  <style>@keyframes atfspin{to{transform:rotate(360deg)}}</style>
+  <script>
+    // KAPATMA: app.js yoksa bile 5 sn sonra kapat (test amaçlı)
+    window.preloaderHide = function(){
+      var el = document.getElementById('preloader');
+      if (!el) return;
+      el.style.opacity = '0';
+      el.style.pointerEvents = 'none';
+      setTimeout(function(){ try{ el.remove(); }catch(e){ el.style.display='none'; } }, 260);
+    };
+    // Güvence: sayfa tam yüklenince de kapatmayı dene
+    window.addEventListener('load', window.preloaderHide);
+    // Test fallback: 5 sn sonra mutlaka kapat (ilk kurulumu doğrulamak için)
+    setTimeout(function(){
+      if (document.getElementById('preloader')) {
+        console.log('[preloader] fallback timeout fired -> hide');
+        window.preloaderHide();
+      }
+    }, 5000);
+  </script>
+  <!-- ===== /SELF-CONTAINED PRELOADER ===== -->
 
   {% include "_nav.html" %}
-  <!-- ... kalan içerik ... -->
+  <!-- ... geri kalan içerik ... -->
+
 
 
   {# Demo bilgilendirme şeridi — CTA sadece burada #}
