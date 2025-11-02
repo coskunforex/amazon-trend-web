@@ -1,9 +1,24 @@
+<style>
+/* --- Embedded navbar styles (works on every page) --- */
+.nav{background:#0b0e17;border-bottom:1px solid rgba(255,255,255,.06)}
+.nav .nav-inner{max-width:1200px;margin:0 auto;padding:18px 8%;
+  display:flex;align-items:center;justify-content:space-between}
+.nav .logo,.nav .nav-links a{color:#e8ecf0;text-decoration:none;font-size:15px}
+.nav .logo .ai{color:#6aa8ff}
+.nav .nav-links a{margin-left:20px;opacity:.95}
+.nav .nav-links a:hover{opacity:.75}
+.btn.small{padding:6px 14px;border-radius:8px;font-size:14px;font-weight:600;
+  background:#007aff;color:#fff;display:inline-block}
+.btn.small:hover{background:#005fcc}
+.btn.small.outline{background:transparent;color:#e8ecf0;border:1px solid rgba(255,255,255,.15)}
+.btn.small.outline:hover{background:rgba(255,255,255,.06)}
+</style>
+
 <nav class="nav">
   <div class="nav-inner">
     <a href="{{ url_for('landing') }}" class="logo">
       <span class="brand">Uptrend Hunter <span class="ai">AI</span></span>
     </a>
-
     <div class="nav-links">
       {% if current_user %}
         <a href="{{ url_for('dashboard') }}">Dashboard</a>
