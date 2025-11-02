@@ -34,6 +34,8 @@ function hidePreloader() {
     el.classList.add('hidden');
   }
 }
+// global fallback (index.html içindeki inline script bu ismi çağırıyor olabilir)
+window.preloaderHide = hidePreloader;
 
 // app/web/static/js/app.js
 
@@ -117,14 +119,16 @@ async function loadWeeks(){
     }
     restoreFilters();
 
-    // ---------------- NEW: weeks başarıyla yüklendi -> preloader'ı kapat ----------------
+    // ✅ Haftalar geldi, preloader'ı kapat (iki isimle de çağır)
     hidePreloader();
+    window.preloaderHide && window.preloaderHide();
 
   }catch(err){
     showToast("Failed to load weeks.");
     console.error(err);
-    // hata durumunda da kullanıcı kilitlenmesin diye:
+    // ✅ Hata bile olsa preloader'ı kapat
     hidePreloader();
+    window.preloaderHide && window.preloaderHide();
   }finally{
     setLoading(false);
   }
@@ -161,13 +165,15 @@ async function runQuery(){
     renderTable(sorted, s, e);
     persistFilters();
 
-    // (opsiyonel) ilk sorgu da bitince kapatmayı garanti altına al
+    // ✅ Sorgu tamamlandı, preloader'ı yine kapat
     hidePreloader();
+    window.preloaderHide && window.preloaderHide();
 
   }catch(err){
     showToast(err.message);
     console.error(err);
     hidePreloader();
+    window.preloaderHide && window.preloaderHide();
   }finally{
     setLoading(false);
   }
@@ -351,10 +357,8 @@ loadWeeks()
 // preloader'ı her ihtimale karşı kapat: DOM hazır olduğunda ve tam yükte
 document.addEventListener('DOMContentLoaded', ()=> {
   // eğer haftalar çok hızlı dönerse zaten loadWeeks içinde kapanır
-  const el = document.getElementById('preloader');
-  if (el && weeks.length > 0) el.classList.add('hidden');
+  window.preloaderHide && window.preloaderHide();
 });
 window.addEventListener('load', ()=> {
-  const el = document.getElementById('preloader');
-  if (el) el.classList.add('hidden');
+  window.preloaderHide && window.preloaderHide();
 });
