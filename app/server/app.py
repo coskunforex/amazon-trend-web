@@ -382,6 +382,35 @@ def diag():
         app.logger.exception("diag failed")
         return jsonify({"error":"diag_failed","message":str(e)}), 500
 
+# --- Lemon Squeezy Webhook (ödeme -> PRO) ---
+import hmac, hashlib
+
+LEMON_SECRET = os.getenv("LEMON_WEBHOOK_SECRET", "")
+
+@app.post("/webhooks/lemon")
+def lemon_webhook():
+    raw = request.get_data()
+    sig = request.headers.get("X-Signature", "")
+
+    if not LEMON_SECRET:
+        return "secret-missing", 500
+
+    mac = hmac.new(LEMON_SECRET.encode(), raw, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(mac, sig or ""):
+        return "invalid-signature", 400
+
+    payload = request.get_json(silent=True) or {}
+    event = (payload.get("meta") or {}).get("event_name", "")
+    attrs = (payload.get("data") or {}).get("attributes") or {}
+    email = (attrs.get("user_email") or attrs.get("email") or "").strip().lower()
+
+    if email and event in ("order_created", "subscription_created", "subscription_payment_success"):
+        set_plan(email, "pro")
+
+    return "ok", 200
+# --- /Webhook ---
+
+
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
     app.run(host="0.0.0.0", port=port, debug=False)
