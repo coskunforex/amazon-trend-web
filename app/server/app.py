@@ -10,12 +10,12 @@ from app.core.auth import (
 )
 
 # ---- Pricing / Plan text (used by dashboard & checkout) ----
-PRICE_TEXT = os.environ.get("PRICE_TEXT", "$29.99 / month")
+PRICE_TEXT = os.environ.get("PRICE_TEXT", "$29.99/month")
 PLAN_NAME  = os.environ.get("PLAN_NAME", "Uptrend Hunter Pro")
 PLAN_BENEFITS = [
-    "60+ hafta geçmiş veriye tam erişim",
-    "Include / Exclude akıllı filtreler",
-    "Öncelikli grafikler ve hızlı sorgular",
+    "Full access to 60+ weeks of data",
+    "Smart include/exclude filters",
+    "Priority charts and faster queries",
 ]
 
 

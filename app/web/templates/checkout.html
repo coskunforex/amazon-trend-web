@@ -9,19 +9,25 @@
 <body>
   {% include "_nav.html" %}
 
-  <main class="container" style="max-width:720px;margin:48px auto;">
-    <section class="card" style="padding:24px 28px; text-align:center;">
+  <!-- nav'dan boşluk: yapışmasın -->
+  <main class="container" style="max-width:720px;margin:96px auto 56px;">
+    <section class="card" style="padding:28px 28px; text-align:center;">
       <h1 style="margin:0 0 6px;">{{ plan_name }}</h1>
       <p class="muted" style="margin:0 0 16px;">{{ price_text }}</p>
 
       {% if user %}
-        <p class="muted" style="margin:0 0 16px;">Signed in as: <strong>{{ user.email }}</strong></p>
+        <p class="muted" style="margin:0 0 16px;">Signed in as <strong>{{ user.email }}</strong></p>
       {% else %}
-        <p class="muted" style="margin:0 0 16px;">Önce giriş yapmalısınız.</p>
-        <a class="btn" href="{{ url_for('login', next='/checkout') }}">Log in</a>
+        <p class="muted" style="margin:0 20px 18px;">
+          To upgrade, please create an account or log in.
+        </p>
+        <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-bottom:18px;">
+          <a class="btn" href="{{ url_for('signup', next='/checkout') }}">Create account</a>
+          <a class="btn outline" href="{{ url_for('login',  next='/checkout') }}">Log in</a>
+        </div>
       {% endif %}
 
-      <ul style="text-align:left; max-width:480px; margin:0 auto 16px; line-height:1.5;">
+      <ul style="text-align:left; max-width:520px; margin:0 auto 16px; line-height:1.55;">
         {% for b in benefits %}<li>{{ b }}</li>{% endfor %}
       </ul>
 
@@ -32,7 +38,7 @@
         {% if error %}
           <p style="color:#ff8383; margin-top:12px;">{{ error }}</p>
         {% endif %}
-        <p class="muted" style="margin-top:8px;">Ödeme Lemon Squeezy ile güvenli şekilde alınacaktır.</p>
+        <p class="muted" style="margin-top:8px;">You’ll be redirected to a secure Lemon Squeezy checkout.</p>
       {% endif %}
     </section>
   </main>
