@@ -3,54 +3,38 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Checkout — Amazon Trend Finder AI</title>
+  <title>Checkout — Uptrend Hunter</title>
   <link rel="stylesheet" href="/static/css/landing.css?v=1">
-
-  <link rel="stylesheet" href="/static/css/auth.css?v=2">
 </head>
 <body>
   {% include "_nav.html" %}
 
-  <div class="auth">
-    <h1>Upgrade to Pro</h1>
-    <p class="muted">Unlock full 60+ weeks, advanced filters, and priority charts.</p>
+  <main class="container" style="max-width:720px;margin:48px auto;">
+    <section class="card" style="padding:24px 28px; text-align:center;">
+      <h1 style="margin:0 0 6px;">{{ plan_name }}</h1>
+      <p class="muted" style="margin:0 0 16px;">{{ price_text }}</p>
 
-   {% if user %}
-  <p class="muted">Signed in as: {{ user.email }}</p>
-{% endif %}
-
-
-    {% if user %}
-      <p><b>Signed in as:</b> {{ user.email }}</p>
-
-      {% if user.plan == 'pro' %}
-        <div class="err" style="background:#10241a;border-color:#1f6a3a;color:#b7f0c9">
-          You already have <b>PRO</b>.
-          <a class="btn" href="/pro" style="margin-top:10px">Open Pro App</a>
-        </div>
+      {% if user %}
+        <p class="muted" style="margin:0 0 16px;">Signed in as: <strong>{{ user.email }}</strong></p>
       {% else %}
-        {% if error %}
-          <div class="err">{{ error }}</div>
-        {% endif %}
-        {% if success %}
-          <div class="err" style="background:#10241a;border-color:#1f6a3a;color:#b7f0c9">
-            Payment successful. If your plan is not PRO yet, it will update shortly.
-          </div>
-        {% endif %}
-        {% if canceled %}
-          <div class="err">Payment canceled.</div>
-        {% endif %}
-
-        <form method="post" action="/checkout/start">
-          <button type="submit">Proceed to secure payment</button>
-        </form>
-        <p class="muted">You'll be redirected to a secure Lemon Squeezy checkout.</p>
+        <p class="muted" style="margin:0 0 16px;">Önce giriş yapmalısınız.</p>
+        <a class="btn" href="{{ url_for('login', next='/checkout') }}">Log in</a>
       {% endif %}
-    {% else %}
-      <p>Please log in to continue.</p>
-      <a class="btn" href="/login?next=/checkout">Log in</a>
-      <a class="btn ghost" href="/signup?next=/checkout">Create account</a>
-    {% endif %}
-  </div>
+
+      <ul style="text-align:left; max-width:480px; margin:0 auto 16px; line-height:1.5;">
+        {% for b in benefits %}<li>{{ b }}</li>{% endfor %}
+      </ul>
+
+      {% if user %}
+        <form method="post" action="/checkout/start" style="margin-top:12px;">
+          <button class="btn" type="submit">Proceed to secure payment</button>
+        </form>
+        {% if error %}
+          <p style="color:#ff8383; margin-top:12px;">{{ error }}</p>
+        {% endif %}
+        <p class="muted" style="margin-top:8px;">Ödeme Lemon Squeezy ile güvenli şekilde alınacaktır.</p>
+      {% endif %}
+    </section>
+  </main>
 </body>
 </html>

@@ -1,28 +1,40 @@
-<!doctype html><html lang="en"><head>
-<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Dashboard — Amazon Trend Finder AI</title>
-<link rel="stylesheet" href="/static/css/landing.css?v=1">
-
-<link rel="stylesheet" href="/static/css/auth.css?v=1">
-</head><body>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Dashboard — Uptrend Hunter</title>
+  <link rel="stylesheet" href="/static/css/landing.css?v=1">
+</head>
+<body>
   {% include "_nav.html" %}
 
-<div class="auth">
-  <h1>Account</h1>
-  {% if user %}
-    <p><b>Email:</b> {{ user.email }}</p>
-    <p><b>Plan:</b> {{ user.plan|upper }}</p>
-    <div class="row">
-      {% if user.plan != 'pro' %}
-        <a class="btn" href="/checkout">Upgrade to Pro</a>
+  <main class="container" style="max-width:860px;margin:48px auto;">
+    <section class="card" style="padding:24px 28px;">
+      <h2 style="margin:0 0 8px;">Account</h2>
+      <p style="margin:0 0 16px;">
+        <strong>Email:</strong> {{ user.email if user else '—' }}<br>
+        <strong>Plan:</strong> {{ (user.plan|upper) if user else '—' }}
+      </p>
+
+      {% if user and user.plan != 'pro' %}
+        <div class="card" style="padding:20px; margin-top:12px;">
+          <h3 style="margin:0 0 8px;">{{ plan_name }} — <span>{{ price_text }}</span></h3>
+          <ul style="margin:0 0 16px 18px;">
+            {% for b in benefits %}<li>{{ b }}</li>{% endfor %}
+          </ul>
+          <div style="display:flex; gap:12px;">
+            <a class="btn" href="/checkout">Upgrade to Pro</a>
+            <a class="btn outline" href="/app">Try Demo</a>
+          </div>
+        </div>
       {% else %}
-        <a class="btn" href="/pro">Open Pro app</a>
+        <div class="card" style="padding:20px; margin-top:12px;">
+          <h3 style="margin:0 0 8px;">You’re on {{ plan_name }}</h3>
+          <p style="margin:0;">Tam erişim aktif. İyi analizler! 🚀</p>
+        </div>
       {% endif %}
-      <a class="btn ghost" href="/logout">Log out</a>
-    </div>
-  {% else %}
-    <p>You are not logged in.</p>
-    <a class="btn" href="/login">Log in</a>
-  {% endif %}
-</div>
-</body></html>
+    </section>
+  </main>
+</body>
+</html>

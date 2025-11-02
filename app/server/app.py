@@ -9,6 +9,16 @@ from app.core.auth import (
     ensure_users_table, create_user, verify_user, get_user, set_plan
 )
 
+# ---- Pricing / Plan text (used by dashboard & checkout) ----
+PRICE_TEXT = os.environ.get("PRICE_TEXT", "$29.99 / month")
+PLAN_NAME  = os.environ.get("PLAN_NAME", "Uptrend Hunter Pro")
+PLAN_BENEFITS = [
+    "60+ hafta geçmiş veriye tam erişim",
+    "Include / Exclude akıllı filtreler",
+    "Öncelikli grafikler ve hızlı sorgular",
+]
+
+
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 app = Flask(
@@ -119,7 +129,14 @@ def logout():
 def dashboard():
     email = session.get("user_email")
     user = get_user(email) if email else None
-    return render_template("dashboard.html", user=user)
+    return render_template(
+        "dashboard.html",
+        user=user,
+        plan_name=PLAN_NAME,
+        price_text=PRICE_TEXT,
+        benefits=PLAN_BENEFITS,
+    )
+
 
 # ---------- TEMP ADMIN (payment gelene kadar) ----------
 @app.post("/admin/setpro")
@@ -349,10 +366,15 @@ def series():
 @app.get("/checkout")
 def checkout():
     email = session.get("user_email")
-    if not email:
-        return redirect(url_for("login", next="/checkout"))  # önce giriş
-    user = get_user(email)
-    return render_template("checkout.html", user=user)
+    user = get_user(email) if email else None
+    return render_template(
+        "checkout.html",
+        user=user,
+        plan_name=PLAN_NAME,
+        price_text=PRICE_TEXT,
+        benefits=PLAN_BENEFITS,
+    )
+
 
 
 # Geçici: ödeme simülasyonu (sadece login kullanıcı)
