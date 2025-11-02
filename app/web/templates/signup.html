@@ -1,22 +1,61 @@
-<!doctype html><html lang="en"><head>
-<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Sign up — Amazon Trend Finder AI</title>
-<link rel="stylesheet" href="/static/css/landing.css?v=1">
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Create account — Uptrend Hunter AI</title>
+  <link rel="stylesheet" href="/static/css/auth.css?v=2">
+  <style>
+    /* sağ üst back link */
+    .top-right { position: absolute; top: 18px; right: 18px; }
+    .top-right a { padding: 8px 12px; border-radius: 8px; background:#0b5; color:#fff; text-decoration:none; font-weight:600; }
+    .top-right a:hover { opacity:.9; }
+  </style>
+</head>
+<body class="auth-page">
 
-<link rel="stylesheet" href="/static/css/auth.css?v=1">
-</head><body>
-  {% include "_nav.html" %}
+  <!-- NAVBAR YOK; sadece back-to-home -->
+  <div class="top-right">
+    <a href="{{ url_for('landing') }}">← Back to Home</a>
+  </div>
 
-<div class="auth">
-  <h1>Create your account</h1>
-  {% if error %}<div class="err">{{ error }}</div>{% endif %}
-  <form method="post">
-    <label>Email</label>
-    <input name="email" type="email" required autocomplete="email" />
-    <label>Password</label>
-    <input name="password" type="password" required minlength="6" />
-    <button type="submit">Create account</button>
-  </form>
-  <p class="muted">Already have an account? <a href="/login">Log in</a></p>
-</div>
-</body></html>
+  <div class="auth">
+    <h1>Create your account</h1>
+
+    {% if error %}
+      <div class="error">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" id="signupForm" novalidate>
+      <label>Email</label>
+      <input type="email" name="email" required autocomplete="email"/>
+
+      <label>Password</label>
+      <input type="password" name="password" required minlength="6" autocomplete="new-password"/>
+
+      <label>Confirm password</label>
+      <input type="password" name="password2" required minlength="6" autocomplete="new-password"/>
+
+      <button class="btn" type="submit">Create account</button>
+    </form>
+
+    <p class="muted">Already have an account? <a href="{{ url_for('login') }}">Log in</a></p>
+  </div>
+
+  <script>
+    // Basit frontend doğrulama
+    document.getElementById('signupForm').addEventListener('submit', function (e) {
+      const p1 = this.password.value.trim();
+      const p2 = this.password2.value.trim();
+      if (p1.length < 6) {
+        alert('Password must be at least 6 characters.');
+        e.preventDefault(); return;
+      }
+      if (p1 !== p2) {
+        alert('Passwords do not match.');
+        e.preventDefault();
+      }
+    });
+  </script>
+</body>
+</html>

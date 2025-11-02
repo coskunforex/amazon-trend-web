@@ -79,13 +79,24 @@ def signup():
     if request.method == "POST":
         email = (request.form.get("email") or "").strip().lower()
         password = request.form.get("password") or ""
+        password2 = request.form.get("password2") or ""
+
+        # Basit doğrulamalar
+        if len(password) < 6:
+            return render_template("signup.html", error="Password must be at least 6 characters.")
+        if password != password2:
+            return render_template("signup.html", error="Passwords do not match.")
+
         ok = create_user(email, password, plan="demo")
         if ok:
             session["user_email"] = email
             nxt = request.args.get("next") or url_for("dashboard")
             return redirect(nxt)
+
         return render_template("signup.html", error="Email already exists or invalid.")
+
     return render_template("signup.html")
+
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
