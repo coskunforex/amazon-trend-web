@@ -1,6 +1,11 @@
 <nav class="nav">
   <div class="nav-inner">
-    <a href="{{ url_for('landing') }}" class="logo">Uptrend Hunter AI</a>
+    <!-- LOGO -->
+    <a href="{{ url_for('landing') }}" class="logo">
+      <!-- Eğer logo görselin varsa alttaki img satırını aç, metni silebilirsin -->
+      <!-- <img src="/static/img/logo.svg" alt="Uptrend Hunter" class="logo-img"> -->
+      <span class="brand">Uptrend Hunter <span class="ai">AI</span></span>
+    </a>
 
     <div class="nav-links">
       <a href="{{ url_for('app_demo') }}">Try Demo</a>
