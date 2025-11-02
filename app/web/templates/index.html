@@ -12,48 +12,58 @@
 
 <body data-mode="{{ mode or 'demo' }}">
   <!-- ===== SELF-CONTAINED PRELOADER (shows no matter what) ===== -->
-  <div id="preloader" style="
-    position:fixed; inset:0; display:flex; flex-direction:column;
-    align-items:center; justify-content:center;
-    background:rgba(2,6,23,.94); backdrop-filter:blur(2px);
-    z-index:10000; transition:opacity .25s ease; opacity:.6s ease;
-  ">
-    <div style="
-      width:42px; height:42px; border-radius:50%;
-      border:3px solid rgba(148,163,184,.28);
-      border-top-color:#38bdf8; animation:atfspin .9s linear infinite;
-    "></div>
-    <p id="preloaderText" style="margin-top:12px; font-size:14px; color:#9ca3af;">
-      {{ 'Loading Pro…' if (mode=='pro') else 'Loading demo…' }}
-    </p>
+ <!-- ===== PRELOADER (modern 3-dot animation) ===== -->
+<div id="preloader" style="
+  position:fixed; inset:0;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  background:rgba(2,6,23,.94); backdrop-filter:blur(3px);
+  z-index:10000; transition:opacity .6s ease; opacity:1;
+">
+  <div style="display:flex; gap:10px;">
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
   </div>
-  <style>@keyframes atfspin{to{transform:rotate(360deg)}}</style>
-  <script>
-    // KAPATMA: app.js yoksa bile 5 sn sonra kapat (test amaçlı)
-   window.preloaderHide = function(){
-  var el = document.getElementById('preloader');
-  if (!el) return;
-  // preloader hemen kapanmasın, 1 saniye ek bekleme süresi
-  setTimeout(function() {
-    el.style.opacity = '0';
-    el.style.pointerEvents = 'none';
-    setTimeout(function(){ 
-      try{ el.remove(); }catch(e){ el.style.display='none'; } 
-    }, 400);
-  }, 1000); // 👈 1 saniye bekle, sonra yavaşça kapat
-};
+  <p id="preloaderText" style="margin-top:14px; font-size:15px; color:#9ca3af;">
+    {{ 'Loading Pro…' if (mode=='pro') else 'Loading Demo…' }}
+  </p>
+</div>
 
-    // Güvence: sayfa tam yüklenince de kapatmayı dene
-    window.addEventListener('load', window.preloaderHide);
-    // Test fallback: 5 sn sonra mutlaka kapat (ilk kurulumu doğrulamak için)
+<style>
+  .dot {
+    width:14px; height:14px; border-radius:50%;
+    background-color:#38bdf8;
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+  .dot:nth-child(1){ animation-delay:0s; }
+  .dot:nth-child(2){ animation-delay:0.2s; }
+  .dot:nth-child(3){ animation-delay:0.4s; }
+
+  @keyframes pulse {
+    0%, 80%, 100% { transform:scale(0.6); opacity:0.5; }
+    40% { transform:scale(1); opacity:1; }
+  }
+</style>
+
+<script>
+  // ✅ Preloader hide (1 saniye daha uzun bekle)
+  window.preloaderHide = function(){
+    const el = document.getElementById('preloader');
+    if (!el) return;
     setTimeout(function(){
-      if (document.getElementById('preloader')) {
-        console.log('[preloader] fallback timeout fired -> hide');
-        window.preloaderHide();
-      }
-    }, 5000);
-  </script>
-  <!-- ===== /SELF-CONTAINED PRELOADER ===== -->
+      el.style.opacity = '0';
+      el.style.pointerEvents = 'none';
+      setTimeout(()=>{ try{ el.remove(); }catch(e){ el.style.display='none'; } }, 600);
+    }, 2000); // 2 saniye bekle (önceden 1 saniyeydi)
+  };
+
+  // güvence: sayfa yüklenince de gizle
+  window.addEventListener('load', window.preloaderHide);
+  // fallback: 6 saniye sonra mutlaka gizle
+  setTimeout(()=>{ if(document.getElementById('preloader')) window.preloaderHide(); }, 6000);
+</script>
+<!-- ===== /PRELOADER ===== -->
+
 
   {% include "_nav.html" %}
   <!-- ... geri kalan içerik ... -->
