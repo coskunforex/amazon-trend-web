@@ -328,8 +328,11 @@ def series():
 @app.get("/checkout")
 def checkout():
     email = session.get("user_email")
-    user = get_user(email) if email else None
+    if not email:
+        return redirect(url_for("login", next="/checkout"))  # önce giriş
+    user = get_user(email)
     return render_template("checkout.html", user=user)
+
 
 # Geçici: ödeme simülasyonu (sadece login kullanıcı)
 @app.post("/checkout/simulate")

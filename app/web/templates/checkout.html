@@ -11,6 +11,11 @@
     <h1>Upgrade to Pro</h1>
     <p class="muted">Unlock full 60+ weeks, advanced filters, and priority charts.</p>
 
+   {% if user %}
+  <p class="muted">Signed in as: {{ user.email }}</p>
+{% endif %}
+
+
     {% if user %}
       <p><b>Signed in as:</b> {{ user.email }}</p>
 
