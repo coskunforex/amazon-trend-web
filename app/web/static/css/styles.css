@@ -228,6 +228,17 @@ svg .dot{ fill:#38bdf8; }
 }
 .btn.small:hover { background:#005fcc; }
 
+/* --- Legal pages spacing under navbar --- */
+.page.legal {
+  max-width: 860px;
+  margin: 32px auto;
+  padding: 0 20px;
+}
+.page.legal h1 {
+  margin-top: 12px;
+}
+
+
 /* outline versiyon (Log out) */
 .btn.small.outline {
   background: transparent;
@@ -237,3 +248,12 @@ svg .dot{ fill:#38bdf8; }
 .btn.small.outline:hover {
   background: rgba(255,255,255,.06);
 }
+.navbar {
+  display: flex; justify-content: space-between; align-items: center;
+  background:#0b0e17; padding:18px 8%;
+  border-bottom:1px solid rgba(255,255,255,.05);
+}
+.navbar a { color:#e8ecf0; text-decoration:none; margin-left:20px; font-size:15px; }
+.navbar a:hover { opacity:.75; }
+.navbar .btn { padding:6px 14px; border-radius:6px; background:#007aff; color:#fff; font-weight:500; font-size:14px; }
+.navbar .btn:hover { background:#005fcc; }
