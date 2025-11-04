@@ -5,39 +5,28 @@
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Uptrend Hunter AI — Discover rising Amazon product trends early</title>
   <meta name="description" content="AI tool for Amazon sellers. Analyze 60+ weeks of Amazon search data, apply include/exclude filters, and surface early uptrends. No setup — try the live demo.">
-
-  <!-- Performance & assets -->
-  <link rel="preload" as="image" href="/static/img/app-screen.webp" imagesrcset="/static/img/app-screen.webp 1x" />
-  <link rel="icon" href="/static/img/app-screen.png" type="image/png">
   <link rel="stylesheet" href="/static/css/landing.css?v=2">
-
-  <!-- Open Graph / Twitter -->
-  <meta property="og:title" content="Uptrend Hunter AI — Find rising Amazon search trends">
-  <meta property="og:description" content="60+ weeks of Amazon search data with smart filters and scoring. Try the live demo — no signup.">
-  <meta property="og:image" content="/static/img/og-landing.png">
-  <meta property="og:type" content="website">
-  <meta name="twitter:card" content="summary_large_image">
-  <link rel="canonical" href="https://www.uptrendhunter.com/">
+  <link rel="icon" href="/static/img/app-screen.png" type="image/png">
 </head>
-<body>
 
+<body>
   {% include "_nav.html" %}
 
   <!-- Hero -->
-  <section class="hero" aria-labelledby="hero-title">
+  <section class="hero">
     <div class="hero-content">
-      <h1 id="hero-title">Discover rising Amazon products — weeks before others notice</h1>
+      <h1>Discover rising Amazon products — weeks before others notice</h1>
       <p>
         AI-powered trend detector for Amazon sellers. Analyze <strong>60+ weeks</strong> of search momentum,
         apply <strong>include/exclude</strong> filters, and surface <strong>early uptrends</strong> in seconds —
         no setup, no spreadsheets.
       </p>
-      <div class="cta-group" role="group" aria-label="Primary actions">
-        <a href="/app" class="btn" aria-label="Open live demo">🔍 Try Free Demo</a>
-        <a href="/checkout" class="btn ghost" aria-label="Upgrade to Pro plan">Upgrade to Pro</a>
+      <div class="cta-group">
+        <a href="/app" class="btn">🔍 Try Free Demo</a>
+        <a href="/checkout" class="btn ghost">Upgrade to Pro</a>
       </div>
 
-      <ul class="badges" aria-label="Key capabilities">
+      <ul class="badges">
         <li>60+ week history</li>
         <li>Rising-keyword scoring</li>
         <li>Include / Exclude filters</li>
@@ -45,21 +34,15 @@
     </div>
 
     <div class="hero-image">
-      <!-- Better LCP: eager + width/height + WebP -->
-      <picture>
-        <source srcset="/static/img/app-screen.webp" type="image/webp">
-        <img
-          src="/static/img/app-screen.png"
-          alt="Uptrend Hunter — Amazon trend dashboard preview"
-          width="960" height="600"
-          loading="eager" decoding="async" fetchpriority="high">
-      </picture>
+      <img src="/static/img/app-screen.png" 
+           alt="Uptrend Hunter — Amazon trend dashboard preview" 
+           width="960" height="600" loading="eager" decoding="async">
     </div>
   </section>
 
   <!-- Features -->
-  <section id="features" class="features" aria-labelledby="features-title">
-    <h2 id="features-title">Why Amazon sellers choose Uptrend Hunter</h2>
+  <section id="features" class="features">
+    <h2>Why Amazon sellers choose Uptrend Hunter</h2>
     <div class="grid">
       <div class="card">
         <h3>Early trend detection</h3>
@@ -81,224 +64,81 @@
   </section>
 
   <!-- Use Cases -->
-  <section id="usecases" class="features" style="margin-top:60px;" aria-labelledby="usecases-title">
-    <h2 id="usecases-title">What you can do with it</h2>
+  <section id="usecases" class="features" style="margin-top:60px;">
+    <h2>What you can do with it</h2>
     <div class="grid">
-      <div class="card">
-        <h3>🎁 Seasonal wins</h3>
-        <p>Catch gift trends before they peak; plan inventory and creatives with confidence.</p>
-      </div>
-      <div class="card">
-        <h3>🔎 Idea validation</h3>
-        <p>Confirm sustained momentum — avoid chasing one-week spikes.</p>
-      </div>
-      <div class="card">
-        <h3>💸 Smarter PPC</h3>
-        <p>Allocate budget to queries gaining rank; reduce waste on flattening terms.</p>
-      </div>
+      <div class="card"><h3>🎁 Seasonal wins</h3><p>Catch gift trends before they peak; plan inventory and creatives with confidence.</p></div>
+      <div class="card"><h3>🔎 Idea validation</h3><p>Confirm sustained momentum — avoid chasing one-week spikes.</p></div>
+      <div class="card"><h3>💸 Smarter PPC</h3><p>Allocate budget to queries gaining rank; reduce waste on flattening terms.</p></div>
     </div>
   </section>
 
-  <!-- Why it works (real app view) -->
+  <!-- Why it works -->
   <div style="display:flex;justify-content:center;align-items:center;flex-direction:column;">
-    <picture>
-      <source srcset="/static/img/trend-graph.webp" type="image/webp">
-      <img
-        src="/static/img/trend-graph.png"
-        alt="Keyword momentum chart from the app UI: 12-week uptrend"
-        style="max-width:800px; width:100%; border-radius:12px; box-shadow:0 0 20px rgba(0,0,0,0.2);"
-        width="800" height="420"
-        loading="lazy" decoding="async">
-    </picture>
-    <p style="color:#9ca3af; font-size:14px; margin-top:12px;">
-      Real app view — consistent upward momentum gets flagged; noisy zig-zags are filtered out.
-    </p>
+    <img src="/static/img/trend-graph.png" 
+         alt="Keyword momentum chart from the app UI" 
+         style="max-width:800px; width:100%; border-radius:12px; box-shadow:0 0 20px rgba(0,0,0,0.2);" 
+         width="800" height="420" loading="lazy">
+    <p style="color:#9ca3af; font-size:14px; margin-top:12px;">Real app view — consistent upward momentum gets flagged; noisy zig-zags are filtered out.</p>
   </div>
 
   <!-- How it works -->
-  <section id="how" class="how" aria-labelledby="how-title">
-    <h2 id="how-title">How it works</h2>
-    <div class="steps" role="list">
-      <div class="step" role="listitem">
-        <img src="/static/img/sample1.png" alt="Pick start and end weeks">
-        <h3>1) Pick weeks</h3>
-        <p>Select a window (e.g., last 10–12 weeks) to measure momentum.</p>
-      </div>
-      <div class="step" role="listitem">
-        <img src="/static/img/sample2.png" alt="Add Include/Exclude filters">
-        <h3>2) Add filters</h3>
-        <p>Use Include/Exclude to target keyword families that matter.</p>
-      </div>
-      <div class="step" role="listitem">
-        <img src="/static/img/sample3.png" alt="See uptrends and open details">
-        <h3>3) See uptrends</h3>
-        <p>Sort by <strong>Total Improvement</strong> and open a term to view its weekly trajectory.</p>
-      </div>
+  <section id="how" class="how">
+    <h2>How it works</h2>
+    <div class="steps">
+      <div class="step"><img src="/static/img/sample1.png" alt="Pick start and end weeks"><h3>1) Pick weeks</h3><p>Select a window (e.g., last 10–12 weeks) to measure momentum.</p></div>
+      <div class="step"><img src="/static/img/sample2.png" alt="Add Include/Exclude filters"><h3>2) Add filters</h3><p>Use Include/Exclude to target keyword families that matter.</p></div>
+      <div class="step"><img src="/static/img/sample3.png" alt="See uptrends and open details"><h3>3) See uptrends</h3><p>Sort by <strong>Total Improvement</strong> and open a term to view its weekly trajectory.</p></div>
     </div>
   </section>
 
   <!-- Pricing -->
-  <section id="pricing" class="pricing" aria-labelledby="pricing-title">
-    <h2 id="pricing-title">Simple pricing</h2>
-    <div class="plans" role="list">
-      <div class="plan" role="listitem">
+  <section id="pricing" class="pricing">
+    <h2>Simple pricing</h2>
+    <div class="plans">
+      <div class="plan">
         <h3>Starter</h3>
         <p class="price">Free</p>
-        <ul>
-          <li>Up to 200 results per query</li>
-          <li>10–12 week lookback</li>
-          <li>Basic filters</li>
-        </ul>
+        <ul><li>Up to 200 results per query</li><li>10–12 week lookback</li><li>Basic filters</li></ul>
         <p class="tiny-note">No signup required. Demo data included.</p>
-        <a href="/app" class="btn full" aria-label="Start free demo now">Start Demo</a>
+        <a href="/app" class="btn full">Start Demo</a>
       </div>
-
-      <div class="plan highlight" role="listitem" aria-label="Pro plan">
+      <div class="plan highlight">
         <h3>Pro</h3>
         <p class="price">$29.99 / month</p>
-        <ul>
-          <li>Full 60+ week history</li>
-          <li>Advanced Include/Exclude</li>
-          <li>Trend chart export</li>
-          <li>Priority updates & support</li>
-        </ul>
+        <ul><li>Full 60+ week history</li><li>Advanced Include/Exclude</li><li>Trend chart export</li><li>Priority updates & support</li></ul>
         <p class="tiny-note">30-day full refund. Cancel anytime.</p>
-        <a href="/checkout" class="btn full" aria-label="Upgrade to Pro and checkout">Start Pro</a>
+        <a href="/checkout" class="btn full">Start Pro</a>
       </div>
     </div>
   </section>
 
   <!-- FAQ -->
-  <section id="faq" class="faq" aria-labelledby="faq-title">
-    <h2 id="faq-title">FAQ</h2>
-
-    <details>
-      <summary>Does it connect to my Amazon account?</summary>
-      <p>No. It’s a read-only analytics tool and never accesses your seller data.</p>
-    </details>
-
-    <details>
-      <summary>How many weeks of data are included?</summary>
-      <p>60+ weeks and growing, updated regularly.</p>
-    </details>
-
-    <details>
-      <summary>Do I need to upload any files?</summary>
-      <p>No uploads for the demo. Everything runs directly in your browser. Pro unlocks the full history and advanced features.</p>
-    </details>
-
-    <details>
-      <summary>Which browsers are supported?</summary>
-      <p>Latest versions of Chrome, Edge, Safari, and Firefox.</p>
-    </details>
-
-    <details>
-      <summary>Is there a refund policy?</summary>
-      <p>Yes — cancel Pro anytime within 30 days for a <strong>full refund</strong>.</p>
-    </details>
-
-    <details>
-      <summary>How fast does it process results?</summary>
-      <p>Starter: up to 200 results per query. Pro: higher limits and faster queries.</p>
-    </details>
+  <section id="faq" class="faq">
+    <h2>FAQ</h2>
+    <details><summary>Does it connect to my Amazon account?</summary><p>No. It’s a read-only analytics tool and never accesses your seller data.</p></details>
+    <details><summary>How many weeks of data are included?</summary><p>60+ weeks and growing, updated regularly.</p></details>
+    <details><summary>Do I need to upload any files?</summary><p>No uploads for the demo. Everything runs directly in your browser. Pro unlocks the full history and advanced features.</p></details>
+    <details><summary>Is there a refund policy?</summary><p>Yes — cancel Pro anytime within 30 days for a <strong>full refund</strong>.</p></details>
   </section>
 
   <!-- Final CTA -->
-  <section class="final-cta" aria-labelledby="cta-title">
-    <h2 id="cta-title">Find your next winning product today</h2>
+  <section class="final-cta">
+    <h2>Find your next winning product today</h2>
     <p>No signup required. Get started in seconds.</p>
-    <a href="/app" class="btn" aria-label="Open live demo">Try Free Demo</a>
-  </section>
-
-  <!-- Built by sellers block -->
-  <section class="builtby" style="text-align:center; padding:80px 20px;" aria-labelledby="builtby-title">
-    <h2 id="builtby-title">Made by Amazon sellers, for Amazon sellers</h2>
-    <p style="max-width:720px; margin:10px auto; color:#93a4b8; font-size:15px;">
-      Uptrend Hunter is built by real FBA operators. Our mission: give every seller the same data edge big players use.
-    </p>
-    <div style="margin-top:18px;">
-      <a href="/app" class="btn" aria-label="Open live demo">Open live demo</a>
-    </div>
+    <a href="/app" class="btn">Try Free Demo</a>
   </section>
 
   <!-- Footer -->
   <footer class="footer" style="text-align:center; padding:30px 0; border-top:1px solid #1e293b;">
     <p>© 2025 Uptrend Hunter by <strong>Erkan Ecom LLC</strong>. All rights reserved.</p>
     <div class="links" style="margin-top:10px;">
-      <a href="/terms" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Terms & Conditions</a> |
-      <a href="/privacy" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Privacy Policy</a> |
-      <a href="/refund" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Refund Policy</a> |
-      <a href="mailto:support@uptrendhunter.com" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Contact</a> |
-      <a href="https://github.com/coskunforex/amazon-trend-web" target="_blank" rel="noopener" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">GitHub</a>
+      <a href="/terms" style="color:#9aa0a6; margin:0 10px;">Terms</a> |
+      <a href="/privacy" style="color:#9aa0a6; margin:0 10px;">Privacy</a> |
+      <a href="/refund" style="color:#9aa0a6; margin:0 10px;">Refund</a> |
+      <a href="mailto:support@uptrendhunter.com" style="color:#9aa0a6; margin:0 10px;">Contact</a>
     </div>
   </footer>
-
-  <!-- Organization Schema -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    "name": "Uptrend Hunter",
-    "url": "https://www.uptrendhunter.com/",
-    "logo": "https://www.uptrendhunter.com/static/img/app-screen.png",
-    "email": "support@uptrendhunter.com",
-    "parentOrganization": {
-      "@type": "Organization",
-      "name": "Erkan Ecom LLC"
-    }
-  }
-  </script>
-
-  <!-- FAQ Schema -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": [{
-      "@type": "Question",
-      "name": "Does it connect to my Amazon account?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "No. It’s a read-only analytics tool and never accesses your seller data."
-      }
-    },{
-      "@type": "Question",
-      "name": "How many weeks of data are included?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "60+ weeks and growing, updated regularly."
-      }
-    },{
-      "@type": "Question",
-      "name": "Do I need to upload any files?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "No uploads for the demo. Everything runs directly in your browser. Pro unlocks the full history and advanced features."
-      }
-    },{
-      "@type": "Question",
-      "name": "Which browsers are supported?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Latest versions of Chrome, Edge, Safari, and Firefox."
-      }
-    },{
-      "@type": "Question",
-      "name": "Is there a refund policy?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Yes — cancel Pro anytime within 30 days for a full refund."
-      }
-    },{
-      "@type": "Question",
-      "name": "How fast does it process results?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Starter: up to 200 results per query. Pro: higher limits and faster queries."
-      }
-    }]
-  }
-  </script>
 
 </body>
 </html>
