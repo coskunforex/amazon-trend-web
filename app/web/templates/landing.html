@@ -12,33 +12,43 @@
 <body>
   {% include "_nav.html" %}
 
-  <!-- Hero -->
-  <section class="hero">
-    <div class="hero-content">
-      <h1>Discover rising Amazon products — weeks before others notice</h1>
-      <p>
-        AI-powered trend detector for Amazon sellers. Analyze <strong>60+ weeks</strong> of search momentum,
-        apply <strong>include/exclude</strong> filters, and surface <strong>early uptrends</strong> in seconds —
-        no setup, no spreadsheets.
-      </p>
-      <div class="cta-group">
-        <a href="/app" class="btn">🔍 Try Free Demo</a>
-        <a href="/checkout" class="btn ghost">Upgrade to Pro</a>
-      </div>
+  <!-- Hero (eski yapıya sadık, kozmetik iyileştirme inline) -->
+<section class="hero">
+  <div class="hero-content">
+    <h1>Find your next winning product — weeks before others notice.</h1>
+    <p>
+      AI-powered trend detector for Amazon sellers. Analyze <strong>60+ weeks</strong>
+      of search momentum and reveal <strong>early uptrends</strong> in seconds —
+      no setup, no spreadsheets.
+    </p>
 
-      <ul class="badges">
-        <li>60+ week history</li>
-        <li>Rising-keyword scoring</li>
-        <li>Include / Exclude filters</li>
-      </ul>
+    <div class="cta-group">
+      <a href="/app" class="btn">Try Free Demo</a>
+      <a href="/checkout" class="btn ghost">Upgrade to Pro</a>
     </div>
 
-    <div class="hero-image">
-      <img src="/static/img/app-screen.png" 
-           alt="Uptrend Hunter — Amazon trend dashboard preview" 
-           width="960" height="600" loading="eager" decoding="async">
+    <!-- IMPORTANT: eski yapı (span) -->
+    <div class="badges">
+      <span>60+ week history</span>
+      <span>Rising-keyword scoring</span>
+      <span>Include / Exclude filters</span>
     </div>
-  </section>
+  </div>
+
+  <div class="hero-image"
+       style="display:inline-block; padding:12px; border-radius:16px;
+              border:1px solid rgba(148,163,184,.18);
+              background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+              box-shadow:0 10px 30px rgba(2,6,23,.45), 0 1px 0 rgba(255,255,255,.05) inset;">
+    <img
+      src="/static/img/app-screen.png"
+      alt="Uptrend Hunter — Amazon trend dashboard"
+      loading="lazy"
+      style="display:block; width:min(90vw, 900px); height:auto; border-radius:12px;">
+      <!-- İstersen çok koyuysa şu satırı aç: filter:contrast(1.05) brightness(1.03); -->
+  </div>
+</section>
+
 
   <!-- Features -->
   <section id="features" class="features">
