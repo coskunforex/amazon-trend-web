@@ -3,72 +3,60 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Uptrend Hunter AI — Discover rising Amazon product trends early</title>
+  <title>Uptrend Hunter AI — Find rising Amazon search trends</title>
   <meta name="description" content="AI tool for Amazon sellers. Analyze 60+ weeks of Amazon search data, apply include/exclude filters, and surface early uptrends. No setup — try the live demo.">
-  <link rel="stylesheet" href="/static/css/landing.css?v=2">
+  <link rel="stylesheet" href="/static/css/landing.css?v=1">
   <link rel="icon" href="/static/img/app-screen.png" type="image/png">
 </head>
-
 <body>
+
   {% include "_nav.html" %}
 
-  <!-- Hero (eski yapıya sadık, kozmetik iyileştirme inline) -->
-<section class="hero">
-  <div class="hero-content">
-    <h1>Find your next winning product — weeks before others notice.</h1>
-    <p>
-      AI-powered trend detector for Amazon sellers. Analyze <strong>60+ weeks</strong>
-      of search momentum and reveal <strong>early uptrends</strong> in seconds —
-      no setup, no spreadsheets.
-    </p>
 
-    <div class="cta-group">
-      <a href="/app" class="btn">Try Free Demo</a>
-      <a href="/checkout" class="btn ghost">Upgrade to Pro</a>
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1>Find your next winning product — weeks before others notice.</h1>
+      <p>
+        AI-powered trend detector for Amazon sellers. Analyze <strong>60+ weeks</strong>
+        of search momentum and reveal <strong>early uptrends</strong> in seconds —
+        no setup, no spreadsheets.
+      </p>
+      <div class="cta-group">
+  <a href="/app" class="btn">Try Free Demo</a>
+  <a href="/checkout" class="btn ghost">Upgrade to Pro</a>
     </div>
 
-    <!-- IMPORTANT: eski yapı (span) -->
-    <div class="badges">
-      <span>60+ week history</span>
-      <span>Rising-keyword scoring</span>
-      <span>Include / Exclude filters</span>
+      <div class="badges">
+        <span>60+ week history</span>
+        <span>Rising-keyword scoring</span>
+        <span>Include / Exclude filters</span>
+      </div>
     </div>
-  </div>
-
-  <div class="hero-image"
-       style="display:inline-block; padding:12px; border-radius:16px;
-              border:1px solid rgba(148,163,184,.18);
-              background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
-              box-shadow:0 10px 30px rgba(2,6,23,.45), 0 1px 0 rgba(255,255,255,.05) inset;">
-    <img
-      src="/static/img/app-screen.png"
-      alt="Uptrend Hunter — Amazon trend dashboard"
-      loading="lazy"
-      style="display:block; width:min(90vw, 900px); height:auto; border-radius:12px;">
-      <!-- İstersen çok koyuysa şu satırı aç: filter:contrast(1.05) brightness(1.03); -->
-  </div>
-</section>
-
+    <div class="hero-image">
+      <img src="/static/img/app-screen.png" alt="Uptrend Hunter — Amazon trend dashboard" loading="lazy">
+    </div>
+  </section>
 
   <!-- Features -->
   <section id="features" class="features">
     <h2>Why Amazon sellers choose Uptrend Hunter</h2>
     <div class="grid">
       <div class="card">
-        <h3>Early trend detection</h3>
-        <p>Find terms with meaningful <strong>search-rank improvement</strong> across your selected weeks — separate signal from noise.</p>
+        <h3>Early Trend Detection</h3>
+        <p>Find terms with meaningful <strong>search rank improvement</strong> across your chosen weeks — quickly separate signal from noise.</p>
       </div>
       <div class="card">
-        <h3>Smart filters</h3>
-        <p>Include or exclude keywords (e.g., include “iphone”, exclude “case”) to focus on segments that matter.</p>
+        <h3>Smart Filters</h3>
+        <p>Include or exclude keywords (e.g., “iphone”, exclude “case”) to focus on the segments that matter.</p>
       </div>
       <div class="card">
-        <h3>60+ weeks history</h3>
-        <p>Look back more than a year to validate <strong>seasonality</strong> and <strong>sustained momentum</strong>, not just a snapshot.</p>
+        <h3>60+ Weeks History</h3>
+        <p>Look back more than a year to validate <strong>seasonality</strong> and <strong>sustained momentum</strong>, not just a single snapshot.</p>
       </div>
       <div class="card">
-        <h3>Lightweight & fast</h3>
-        <p>Server-side optimized queries. No installs, no account required to test.</p>
+        <h3>Lightweight & Fast</h3>
+        <p>Server-side optimized queries. No installs, no accounts required to test.</p>
       </div>
     </div>
   </section>
@@ -77,59 +65,97 @@
   <section id="usecases" class="features" style="margin-top:60px;">
     <h2>What you can do with it</h2>
     <div class="grid">
-      <div class="card"><h3>🎁 Seasonal wins</h3><p>Catch gift trends before they peak; plan inventory and creatives with confidence.</p></div>
-      <div class="card"><h3>🔎 Idea validation</h3><p>Confirm sustained momentum — avoid chasing one-week spikes.</p></div>
-      <div class="card"><h3>💸 Smarter PPC</h3><p>Allocate budget to queries gaining rank; reduce waste on flattening terms.</p></div>
+      <div class="card">
+        <h3>🎁 Seasonal wins</h3>
+        <p>Catch gift trends before they peak; plan inventory and creatives.</p>
+      </div>
+      <div class="card">
+        <h3>🔎 Idea validation</h3>
+        <p>Confirm sustained momentum, not one-week spikes shows trends.</p>
+      </div>
+      <div class="card">
+        <h3>💸 Smarter PPC</h3>
+        <p>Allocate budget to queries that are gaining rank on keywords.</p>
+      </div>
     </div>
   </section>
 
-  <!-- Why it works -->
+<!-- Why it works -->
   <div style="display:flex;justify-content:center;align-items:center;flex-direction:column;">
-    <img src="/static/img/trend-graph.png" 
-         alt="Keyword momentum chart from the app UI" 
-         style="max-width:800px; width:100%; border-radius:12px; box-shadow:0 0 20px rgba(0,0,0,0.2);" 
-         width="800" height="420" loading="lazy">
-    <p style="color:#9ca3af; font-size:14px; margin-top:12px;">Real app view — consistent upward momentum gets flagged; noisy zig-zags are filtered out.</p>
-  </div>
+  <img src="/static/img/trend-graph.png" 
+       alt="Example of Uptrend Hunter chart showing keyword momentum" 
+       style="max-width:800px; width:100%; border-radius:12px; box-shadow:0 0 20px rgba(0,0,0,0.2);" 
+       loading="lazy">
+  <p style="color:#9ca3af; font-size:14px; margin-top:12px;">
+    Real app view — keyword momentum over 12 weeks. Only consistent upward trends are flagged.
+  </p>
+</div>
+
 
   <!-- How it works -->
   <section id="how" class="how">
-    <h2>How it works</h2>
+    <h2>How It Works</h2>
     <div class="steps">
-      <div class="step"><img src="/static/img/sample1.png" alt="Pick start and end weeks"><h3>1) Pick weeks</h3><p>Select a window (e.g., last 10–12 weeks) to measure momentum.</p></div>
-      <div class="step"><img src="/static/img/sample2.png" alt="Add Include/Exclude filters"><h3>2) Add filters</h3><p>Use Include/Exclude to target keyword families that matter.</p></div>
-      <div class="step"><img src="/static/img/sample3.png" alt="See uptrends and open details"><h3>3) See uptrends</h3><p>Sort by <strong>Total Improvement</strong> and open a term to view its weekly trajectory.</p></div>
+      <div class="step">
+        <img src="/static/img/sample1.png" alt="Pick weeks">
+        <h3>1. Pick weeks</h3>
+        <p>Pick start & end weeks (e.g., last 10–12) to measure momentum.</p>
+      </div>
+      <div class="step">
+        <img src="/static/img/sample2.png" alt="Add filters">
+        <h3>2. Add filters</h3>
+        <p>Use Include/Exclude to focus on keyword families that matter.</p>
+      </div>
+      <div class="step">
+        <img src="/static/img/sample3.png" alt="See uptrends">
+        <h3>3. See uptrends</h3>
+        <p>Sort by <strong>Total Improvement</strong> and open a term to view its weekly trajectory.</p>
+      </div>
     </div>
   </section>
 
   <!-- Pricing -->
-  <section id="pricing" class="pricing">
-    <h2>Simple pricing</h2>
-    <div class="plans">
-      <div class="plan">
-        <h3>Starter</h3>
-        <p class="price">Free</p>
-        <ul><li>Up to 200 results per query</li><li>10–12 week lookback</li><li>Basic filters</li></ul>
-        <p class="tiny-note">No signup required. Demo data included.</p>
-        <a href="/app" class="btn full">Start Demo</a>
-      </div>
-      <div class="plan highlight">
-        <h3>Pro</h3>
-        <p class="price">$29.99 / month</p>
-        <ul><li>Full 60+ week history</li><li>Advanced Include/Exclude</li><li>Trend chart export</li><li>Priority updates & support</li></ul>
-        <p class="tiny-note">30-day full refund. Cancel anytime.</p>
-        <a href="/checkout" class="btn full">Start Pro</a>
-      </div>
+  <!-- Pricing -->
+<section id="pricing" class="pricing">
+  <h2>Simple pricing</h2>
+  <div class="plans">
+    <div class="plan">
+      <h3>Starter</h3>
+      <p class="price">Free</p>
+      <ul>
+        <li>Up to 200 results per query</li>
+        <li>10–12 week lookback</li>
+        <li>Basic filters</li>
+      </ul>
+      <!-- Starter = DEMO -->
+      <a href="/app" class="btn full" aria-label="Start free demo">Start Demo</a>
     </div>
-  </section>
+
+    <div class="plan highlight">
+      <h3>Pro</h3>
+      <p class="price">$29.99 / month</p>
+      <ul>
+        <li>Full 60+ week history</li>
+        <li>Advanced Include/Exclude</li>
+        <li>Trend chart export</li>
+        <li>Priority updates & support</li>
+      </ul>
+      <!-- Pro = CHECKOUT -->
+      <a href="/checkout" class="btn full" aria-label="Upgrade to Pro">Start Pro</a>
+    </div>
+  </div>
+</section>
+
 
   <!-- FAQ -->
   <section id="faq" class="faq">
     <h2>FAQ</h2>
-    <details><summary>Does it connect to my Amazon account?</summary><p>No. It’s a read-only analytics tool and never accesses your seller data.</p></details>
+    <details><summary>Does it connect to my Amazon account?</summary><p>No. It’s a read-only analytics tool that never accesses your seller data.</p></details>
     <details><summary>How many weeks of data are included?</summary><p>60+ weeks and growing, updated regularly.</p></details>
-    <details><summary>Do I need to upload any files?</summary><p>No uploads for the demo. Everything runs directly in your browser. Pro unlocks the full history and advanced features.</p></details>
-    <details><summary>Is there a refund policy?</summary><p>Yes — cancel Pro anytime within 30 days for a <strong>full refund</strong>.</p></details>
+    <details><summary>Do I need to upload any files?</summary><p>No uploads for the demo. Everything runs directly in your browser. Pro unlocks full history and advanced features.</p></details>
+    <details><summary>Which browsers are supported?</summary><p>Latest versions of Chrome, Edge, Safari, and Firefox.</p></details>
+    <details><summary>Is there a refund policy?</summary><p>Yes — cancel Pro anytime within 30 days for a full refund.</p></details>
+    <details><summary>How fast does it process results?</summary><p>Starter: up to 200 results per query. Pro: higher limits and faster queries.</p></details>
   </section>
 
   <!-- Final CTA -->
@@ -139,14 +165,26 @@
     <a href="/app" class="btn">Try Free Demo</a>
   </section>
 
+  <!-- Built by sellers block -->
+  <section class="builtby" style="text-align:center; padding:80px 20px;">
+    <h2>Made by Amazon sellers, for Amazon sellers</h2>
+    <p style="max-width:720px; margin:10px auto; color:#93a4b8; font-size:15px;">
+      Uptrend Hunter is built by real FBA operators. Our mission: give every seller the same data edge big players use.
+    </p>
+    <div style="margin-top:18px;">
+      <a href="/app" class="btn">Open live demo</a>
+    </div>
+  </section>
+
   <!-- Footer -->
   <footer class="footer" style="text-align:center; padding:30px 0; border-top:1px solid #1e293b;">
-    <p>© 2025 Uptrend Hunter by <strong>Erkan Ecom LLC</strong>. All rights reserved.</p>
+    <p>© 2025 Uptrend Hunter by Erkan Ecom LLC. All rights reserved.</p>
     <div class="links" style="margin-top:10px;">
-      <a href="/terms" style="color:#9aa0a6; margin:0 10px;">Terms</a> |
-      <a href="/privacy" style="color:#9aa0a6; margin:0 10px;">Privacy</a> |
-      <a href="/refund" style="color:#9aa0a6; margin:0 10px;">Refund</a> |
-      <a href="mailto:support@uptrendhunter.com" style="color:#9aa0a6; margin:0 10px;">Contact</a>
+      <a href="/terms" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Terms & Conditions</a> |
+      <a href="/privacy" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Privacy Policy</a> |
+      <a href="/refund" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Refund Policy</a> |
+      <a href="mailto:support@uptrendhunter.com" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Contact</a> |
+      <a href="https://github.com/coskunforex/amazon-trend-web" target="_blank" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">GitHub</a>
     </div>
   </footer>
 
