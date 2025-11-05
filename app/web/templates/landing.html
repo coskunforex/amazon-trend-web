@@ -7,35 +7,11 @@
   <meta name="description" content="AI tool for Amazon sellers. Analyze 60+ weeks of Amazon search data, apply include/exclude filters, and surface early uptrends. No setup — try the live demo.">
   <link rel="stylesheet" href="/static/css/landing.css?v=1">
   <link rel="icon" href="/static/img/app-screen.png" type="image/png">
-  <style>
-    .trust-line {
-      margin-top: 12px;
-      font-size: 0.95rem;
-      color: #bfc6d1;
-      font-weight: 500;
-    }
-    .secure-line {
-      margin-top: 8px;
-      font-size: 0.85rem;
-      color: #9ea8b7;
-    }
-    .footer-trust {
-      margin-top: 10px;
-      font-size: 0.9rem;
-      color: #aab2be;
-    }
-    .footer-trust a {
-      color: #b9d3ff;
-      text-decoration: underline;
-    }
-    .footer-trust a:hover {
-      text-decoration: none;
-    }
-  </style>
 </head>
 <body>
 
   {% include "_nav.html" %}
+
 
   <!-- Hero -->
   <section class="hero">
@@ -47,22 +23,22 @@
         no setup, no spreadsheets.
       </p>
       <div class="cta-group">
-        <a href="/app" class="btn">Try Free Demo</a>
-        <a href="/checkout" class="btn ghost">Upgrade to Pro</a>
-      </div>
+  <a href="/app" class="btn">Try Free Demo</a>
+  <a href="/checkout" class="btn ghost">Upgrade to Pro</a>
+    </div>
 
       <div class="badges">
         <span>60+ week history</span>
         <span>Rising-keyword scoring</span>
         <span>Include / Exclude filters</span>
       </div>
-
-      <!-- ✅ Hero güven bloğu -->
-      <p class="trust-line">Secure checkout · 30-day refund · <strong>Erkan Ecom LLC</strong></p>
     </div>
-
     <div class="hero-image">
       <img src="/static/img/app-screen.png" alt="Uptrend Hunter — Amazon trend dashboard" loading="lazy">
+      <p style="margin-top:12px; font-size:15px; color:#bfc6d1;">
+  Secure checkout · 30-day refund · <strong>Erkan Ecom LLC</strong>
+</p>
+
     </div>
   </section>
 
@@ -108,16 +84,17 @@
     </div>
   </section>
 
-  <!-- Why it works -->
+<!-- Why it works -->
   <div style="display:flex;justify-content:center;align-items:center;flex-direction:column;">
-    <img src="/static/img/trend-graph.png" 
-        alt="Example of Uptrend Hunter chart showing keyword momentum" 
-        style="max-width:800px; width:100%; border-radius:12px; box-shadow:0 0 20px rgba(0,0,0,0.2);" 
-        loading="lazy">
-    <p style="color:#9ca3af; font-size:14px; margin-top:12px;">
-      Real app view — keyword momentum over 12 weeks. Only consistent upward trends are flagged.
-    </p>
-  </div>
+  <img src="/static/img/trend-graph.png" 
+       alt="Example of Uptrend Hunter chart showing keyword momentum" 
+       style="max-width:800px; width:100%; border-radius:12px; box-shadow:0 0 20px rgba(0,0,0,0.2);" 
+       loading="lazy">
+  <p style="color:#9ca3af; font-size:14px; margin-top:12px;">
+    Real app view — keyword momentum over 12 weeks. Only consistent upward trends are flagged.
+  </p>
+</div>
+
 
   <!-- How it works -->
   <section id="how" class="how">
@@ -142,35 +119,41 @@
   </section>
 
   <!-- Pricing -->
-  <section id="pricing" class="pricing">
-    <h2>Simple pricing</h2>
-    <div class="plans">
-      <div class="plan">
-        <h3>Starter</h3>
-        <p class="price">Free</p>
-        <ul>
-          <li>Up to 200 results per query</li>
-          <li>10–12 week lookback</li>
-          <li>Basic filters</li>
-        </ul>
-        <a href="/app" class="btn full" aria-label="Start free demo">Start Demo</a>
-      </div>
-
-      <div class="plan highlight">
-        <h3>Pro</h3>
-        <p class="price">$29.99 / month</p>
-        <ul>
-          <li>Full 60+ week history</li>
-          <li>Advanced Include/Exclude</li>
-          <li>Trend chart export</li>
-          <li>Priority updates & support</li>
-        </ul>
-        <a href="/checkout" class="btn full" aria-label="Upgrade to Pro">Start Pro</a>
-        <!-- ✅ Pro plan güven bloğu -->
-        <p class="secure-line">Secure checkout · 30-day refund</p>
-      </div>
+  <!-- Pricing -->
+<section id="pricing" class="pricing">
+  <h2>Simple pricing</h2>
+  <div class="plans">
+    <div class="plan">
+      <h3>Starter</h3>
+      <p class="price">Free</p>
+      <ul>
+        <li>Up to 200 results per query</li>
+        <li>10–12 week lookback</li>
+        <li>Basic filters</li>
+      </ul>
+      <!-- Starter = DEMO -->
+      <a href="/app" class="btn full" aria-label="Start free demo">Start Demo</a>
     </div>
-  </section>
+
+    <div class="plan highlight">
+      <h3>Pro</h3>
+      <p class="price">$29.99 / month</p>
+      <ul>
+        <li>Full 60+ week history</li>
+        <li>Advanced Include/Exclude</li>
+        <li>Trend chart export</li>
+        <li>Priority updates & support</li>
+      </ul>
+      <!-- Pro = CHECKOUT -->
+      <a href="/checkout" class="btn full" aria-label="Upgrade to Pro">Start Pro</a>
+      <p style="margin-top:8px; font-size:14px; color:#9ea8b7;">
+  Secure checkout · 30-day refund
+</p>
+
+    </div>
+  </div>
+</section>
+
 
   <!-- FAQ -->
   <section id="faq" class="faq">
@@ -209,4 +192,13 @@
       <a href="/privacy" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Privacy Policy</a> |
       <a href="/refund" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Refund Policy</a> |
       <a href="mailto:support@uptrendhunter.com" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Contact</a> |
-      <a href="https://github.com/c
+      <a href="https://github.com/coskunforex/amazon-trend-web" target="_blank" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">GitHub</a>
+      <div style="margin-top:10px; font-size:14px; color:#aab2be;">
+  Secure checkout · <a href="/refund" style="color:#b9d3ff; text-decoration:underline;">30-day refund policy</a> · Erkan Ecom LLC
+</div>
+
+    </div>
+  </footer>
+
+</body>
+</html>
