@@ -13,7 +13,7 @@ from app.core.auth import (
 PRICE_TEXT = os.environ.get("PRICE_TEXT", "$29.99/month")
 PLAN_NAME  = os.environ.get("PLAN_NAME", "Uptrend Hunter Pro")
 PLAN_BENEFITS = [
-    "Full access to 60+ weeks of data",
+    "Full access to 24+ weeks of data",
     "Smart include/exclude filters",
     "Priority charts and faster queries",
 ]
@@ -207,7 +207,7 @@ def uptrends():
         end_id   = request.args.get("endWeekId", type=int)
         include  = (request.args.get("include") or "").strip().lower()
         exclude  = (request.args.get("exclude") or "").strip().lower()
-        limit    = request.args.get("limit", 200, type=int)
+        limit    = request.args.get("limit", 250, type=int)
         offset   = request.args.get("offset", 0, type=int)
         # YÜKSEK DEFAULT: büyük farklar gözüksün
         max_rank = request.args.get("maxRank", 1_500_000, type=int)

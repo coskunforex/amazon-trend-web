@@ -26,14 +26,14 @@ function applyDemoLimits() {
   const limitWeeks = () => {
     const startSel = document.querySelector('#start');
     const endSel = document.querySelector('#end');
-    const trim = (sel, keepLastN = 8) => {
+    const trim = (sel, keepLastN = 6) => {
       if (!sel) return;
       const opts = Array.from(sel.querySelectorAll('option'));
       const toRemove = opts.slice(0, Math.max(0, opts.length - keepLastN));
       toRemove.forEach(o => o.remove());
     };
-    trim(startSel, 8);
-    trim(endSel, 8);
+    trim(startSel, 6);
+    trim(endSel, 6);
   };
 
   setTimeout(limitWeeks, 0);
