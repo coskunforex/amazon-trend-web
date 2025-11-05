@@ -247,3 +247,9 @@ details p { color: var(--muted); font-size: 14px; margin-top: 10px; }
 .user-info { font-size: 0.9em; opacity: 0.85; }
 .btn.small { padding: 6px 10px; border-radius: 6px; }
 .btn.small.outline { border: 1px solid #3a455b; }
+.payment-note{
+  margin-top: 18px;
+  text-align: center;
+  font-size: .92rem;
+  color:#aab2be;
+}

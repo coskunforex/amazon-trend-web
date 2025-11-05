@@ -35,6 +35,8 @@
 Python 3.13.7
 
 blinker==1.9.0
+certifi==2025.10.5
+charset-normalizer==3.4.4
 click==8.3.0
 colorama==0.4.6
 contourpy==1.3.3
@@ -43,6 +45,7 @@ duckdb==1.4.0
 et_xmlfile==2.0.0
 Flask==3.1.2
 fonttools==4.60.0
+idna==3.11
 itsdangerous==2.2.0
 Jinja2==3.1.6
 kiwisolver==1.4.9
@@ -57,8 +60,10 @@ pip==25.2
 pyparsing==3.2.5
 python-dateutil==2.9.0.post0
 pytz==2025.2
+requests==2.32.5
 six==1.17.0
 tzdata==2025.2
+urllib3==2.5.0
 Werkzeug==3.1.3
 xlsxwriter==3.2.9
 
@@ -86,6 +91,14 @@ xlsxwriter==3.2.9
   - ./daily_sync_full_20251023_135206.zip
   - ./daily_sync_full_20251024_183757.zip
   - ./daily_sync_full_20251025_145328.zip
+  - ./daily_sync_full_20251030_175512.zip
+  - ./daily_sync_full_20251031_130938.zip
+  - ./daily_sync_full_20251031_182958.zip
+  - ./daily_sync_full_20251102_102637.zip
+  - ./daily_sync_full_20251102_112340.zip
+  - ./daily_sync_full_20251102_133643.zip
+  - ./daily_sync_full_20251102_143624.zip
+  - ./daily_sync_full_20251103_142241.zip
   - ./mvp-stable.zip
   - ./requirements.txt
   - ./roadmap.md
@@ -99,6 +112,7 @@ xlsxwriter==3.2.9
   - app\core/__init__.py
   - app\core/auth.py
   - app\core/db.py
+  - app\core/payments.py
   - app\core/trend_core.py
 - **app\server/**
   - app\server/__init__.py
@@ -119,9 +133,11 @@ xlsxwriter==3.2.9
   - app\web\static\img/sample1.png
   - app\web\static\img/sample2.png
   - app\web\static\img/sample3.png
+  - app\web\static\img/trend-graph.png
 - **app\web\static\js/**
   - app\web\static\js/app.js
 - **app\web\templates/**
+  - app\web\templates/_nav.html
   - app\web\templates/checkout.html
   - app\web\templates/dashboard.html
   - app\web\templates/index.html
@@ -149,6 +165,7 @@ xlsxwriter==3.2.9
   - data\raw/US_Top_Search_Terms_Simple_Week_2025_09_06.csv
   - data\raw/US_Top_Search_Terms_Simple_Week_2025_09_13.csv
   - data\raw/US_Top_Search_Terms_Simple_Week_2025_09_20.csv
+  - data\raw/US_Top_Search_Terms_Simple_Week_2025_09_27.csv
 - **scripts/**
   - scripts/convert_to_duckdb.py
   - scripts/daily_report.py
@@ -373,6 +390,74 @@ def append_week(week_csv_path: str, week_label: str):
         WHERE "Search Term" IS NOT NULL AND TRIM("Search Term") <> '';
     """)
     con.close()
+
+```
+
+### app\core\payments.py
+
+```py
+# app/core/payments.py
+import os, requests
+
+# --- DIAGNOSTIC HELPERS ---
+import requests, os
+
+BASE_URL = "https://api.lemonsqueezy.com/v1"
+API_KEY = os.getenv("LEMON_API_KEY")
+
+def _ls_headers():
+    return {
+        "Authorization": f"Bearer {API_KEY}",
+        "Accept": "application/vnd.api+json",
+        "Content-Type": "application/vnd.api+json",
+        "X-Api-Version": "2022-11-16",
+    }
+
+def ls_get(path: str):
+    """Lemon Squeezy API'den bir path getirir (örnek: stores/123 veya variants/456)."""
+    r = requests.get(f"{BASE_URL}/{path.lstrip('/')}", headers=_ls_headers(), timeout=20)
+    return r.status_code, r.text
+# --- END OF DIAGNOSTIC HELPERS ---
+
+
+BASE_URL = "https://api.lemonsqueezy.com/v1"
+
+API_KEY   = os.getenv("LEMON_API_KEY")
+STORE_ID  = os.getenv("LEMON_STORE_ID")
+VARIANT_ID= os.getenv("LEMON_VARIANT_ID")
+
+def create_checkout(email: str) -> str:
+    assert API_KEY and STORE_ID and VARIANT_ID, "LEMON_* env vars missing"
+
+    headers = {
+        "Authorization": f"Bearer {API_KEY}",
+        "Accept": "application/vnd.api+json",
+        "Content-Type": "application/vnd.api+json",
+        "X-Api-Version": "2022-11-16",
+    }
+
+    payload = {
+        "data": {
+            "type": "checkouts",
+            "attributes": {
+                "checkout_data": {"email": email}
+            },
+            "relationships": {
+                "store":   {"data": {"type": "stores",   "id": str(STORE_ID)}},
+                "variant": {"data": {"type": "variants", "id": str(VARIANT_ID)}},
+            }
+        }
+    }
+
+    r = requests.post(f"{BASE_URL}/checkouts", headers=headers, json=payload, timeout=30)
+    # Hata durumunda anlamak için metni de gösterelim
+    try:
+        r.raise_for_status()
+    except Exception:
+        raise RuntimeError(f"{r.status_code} error: {r.text}")
+
+    d = r.json()
+    return d["data"]["attributes"]["url"]
 
 ```
 
@@ -719,11 +804,22 @@ def query_series(
 from flask import Flask, jsonify, request, render_template, session, redirect, url_for
 import logging, os
 from pathlib import Path
+from app.core.payments import create_checkout
 
 from app.core.db import get_conn, init_full, append_week
 from app.core.auth import (
     ensure_users_table, create_user, verify_user, get_user, set_plan
 )
+
+# ---- Pricing / Plan text (used by dashboard & checkout) ----
+PRICE_TEXT = os.environ.get("PRICE_TEXT", "$29.99/month")
+PLAN_NAME  = os.environ.get("PLAN_NAME", "Uptrend Hunter Pro")
+PLAN_BENEFITS = [
+    "Full access to 60+ weeks of data",
+    "Smart include/exclude filters",
+    "Priority charts and faster queries",
+]
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -732,6 +828,14 @@ app = Flask(
     template_folder=str(PROJECT_ROOT / "app" / "web" / "templates"),
     static_folder=str(PROJECT_ROOT / "app" / "web" / "static"),
 )
+
+# Tüm şablonlarda current_user kullanabilelim
+@app.context_processor
+def inject_current_user():
+    email = session.get("user_email")
+    u = get_user(email) if email else None
+    return {"current_user": u}
+
 
 # ---------- Secrets / Logs / DB bootstrap ----------
 app.secret_key = os.environ.get("SECRET_KEY", "dev-change-me")
@@ -787,13 +891,24 @@ def signup():
     if request.method == "POST":
         email = (request.form.get("email") or "").strip().lower()
         password = request.form.get("password") or ""
+        password2 = request.form.get("password2") or ""
+
+        # Basit doğrulamalar
+        if len(password) < 6:
+            return render_template("signup.html", error="Password must be at least 6 characters.")
+        if password != password2:
+            return render_template("signup.html", error="Passwords do not match.")
+
         ok = create_user(email, password, plan="demo")
         if ok:
             session["user_email"] = email
             nxt = request.args.get("next") or url_for("dashboard")
             return redirect(nxt)
+
         return render_template("signup.html", error="Email already exists or invalid.")
+
     return render_template("signup.html")
+
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -816,7 +931,14 @@ def logout():
 def dashboard():
     email = session.get("user_email")
     user = get_user(email) if email else None
-    return render_template("dashboard.html", user=user)
+    return render_template(
+        "dashboard.html",
+        user=user,
+        plan_name=PLAN_NAME,
+        price_text=PRICE_TEXT,
+        benefits=PLAN_BENEFITS,
+    )
+
 
 # ---------- TEMP ADMIN (payment gelene kadar) ----------
 @app.post("/admin/setpro")
@@ -831,22 +953,25 @@ def admin_setpro():
     set_plan(email, "pro")
     return jsonify({"status": "ok", "email": email, "plan": "pro"})
 
-# ---------- API: Weeks ----------
 @app.get("/weeks")
 def weeks():
     try:
         con = get_conn(read_only=True)
         rows = con.execute("""
+            WITH all_weeks AS (
+              SELECT DISTINCT week FROM searches ORDER BY week
+            )
             SELECT
-              ROW_NUMBER() OVER (ORDER BY week) AS weekId,
-              week AS label
-            FROM (SELECT DISTINCT week FROM searches ORDER BY week)
+              ROW_NUMBER() OVER (ORDER BY week)   AS week_id,
+              week                                 AS label
+            FROM all_weeks
         """).fetchall()
         con.close()
         return jsonify([{"weekId": int(r[0]), "label": r[1]} for r in rows])
     except Exception as e:
-        app.logger.exception("weeks failed")
-        return jsonify({"error": "weeks_failed", "message": str(e)}), 500
+        app.logger.error("weeks failed: %s", e)
+        return jsonify([])
+
 
 # ---------- API: Reindex ----------
 @app.get("/reindex")
@@ -1044,7 +1169,15 @@ def series():
 def checkout():
     email = session.get("user_email")
     user = get_user(email) if email else None
-    return render_template("checkout.html", user=user)
+    return render_template(
+        "checkout.html",
+        user=user,
+        plan_name=PLAN_NAME,
+        price_text=PRICE_TEXT,
+        benefits=PLAN_BENEFITS,
+    )
+
+
 
 # Geçici: ödeme simülasyonu (sadece login kullanıcı)
 @app.post("/checkout/simulate")
@@ -1055,6 +1188,19 @@ def checkout_simulate():
     # burada normalde Stripe/Paddle webhook set_plan('pro') yapar
     set_plan(email, "pro")
     return redirect(url_for("dashboard"))
+
+@app.post("/checkout/start")
+def checkout_start():
+    email = session.get("user_email")
+    if not email:
+        return redirect(url_for("login", next="/checkout"))
+    try:
+        url = create_checkout(email)
+        return redirect(url)
+    except Exception as e:
+        app.logger.exception("checkout_start failed")
+        return render_template("checkout.html", user=get_user(email), error=str(e)), 500
+
 
 # ---------- API: Diagnostics ----------
 @app.get("/diag")
@@ -1084,9 +1230,60 @@ def diag():
         app.logger.exception("diag failed")
         return jsonify({"error":"diag_failed","message":str(e)}), 500
 
+# --- Lemon Squeezy Webhook (ödeme -> PRO) ---
+import hmac, hashlib
+
+LEMON_SECRET = os.getenv("LEMON_WEBHOOK_SECRET", "")
+
+@app.post("/webhooks/lemon")
+def lemon_webhook():
+    raw = request.get_data()
+    sig = request.headers.get("X-Signature", "")
+
+    if not LEMON_SECRET:
+        return "secret-missing", 500
+
+    mac = hmac.new(LEMON_SECRET.encode(), raw, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(mac, sig or ""):
+        return "invalid-signature", 400
+
+    payload = request.get_json(silent=True) or {}
+    event = (payload.get("meta") or {}).get("event_name", "")
+    attrs = (payload.get("data") or {}).get("attributes") or {}
+    email = (attrs.get("user_email") or attrs.get("email") or "").strip().lower()
+
+    if email and event in ("order_created", "subscription_created", "subscription_payment_success"):
+        set_plan(email, "pro")
+
+    return "ok", 200
+# --- /Webhook ---
+
+
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
     app.run(host="0.0.0.0", port=port, debug=False)
+
+# --- DIAGNOSTIC ENDPOINT ---
+from app.core.payments import ls_get
+import os
+from flask import jsonify
+
+@app.get("/diag/lemon")
+def diag_lemon():
+    """Lemon Squeezy store ve variant ID'lerini test eder."""
+    store_id = os.getenv("LEMON_STORE_ID", "").strip()
+    variant_id = os.getenv("LEMON_VARIANT_ID", "").strip()
+
+    results = {"store_id": store_id, "variant_id": variant_id}
+
+    sc1, st1 = ls_get(f"stores/{store_id}")
+    results["GET /stores/{id}"] = {"status": sc1, "body": st1[:400]}
+
+    sc2, st2 = ls_get(f"variants/{variant_id}")
+    results["GET /variants/{id}"] = {"status": sc2, "body": st2[:400]}
+
+    return jsonify(results)
+# --- END OF DIAGNOSTIC ENDPOINT ---
 
 ```
 
@@ -1348,6 +1545,19 @@ details p { color: var(--muted); font-size: 14px; margin-top: 10px; }
   .nav-inner{flex-wrap:wrap;gap:10px;}
   .menu{flex-wrap:wrap;justify-content:center;}
 }
+/* NAV - eski stile uyumlu, logoyu belirgin yap */
+.nav { position: sticky; top: 0; z-index: 10; background: #0b0f1a; border-bottom: 1px solid #1b2333; }
+.nav-inner { max-width: 1100px; margin: 0 auto; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; }
+.logo { display: flex; align-items: center; gap: 8px; text-decoration: none; }
+.logo .brand { font-weight: 700; color: #eaf0ff; }
+.logo .ai { color: #7fb0ff; }
+.logo-img { height: 20px; display: block; }
+
+.nav-links { display: flex; align-items: center; gap: 14px; }
+.nav-links a { color: #cfd7ff; text-decoration: none; }
+.user-info { font-size: 0.9em; opacity: 0.85; }
+.btn.small { padding: 6px 10px; border-radius: 6px; }
+.btn.small.outline { border: 1px solid #3a455b; }
 
 ```
 
@@ -1549,12 +1759,131 @@ svg .dot{ fill:#38bdf8; }
   border-radius: 8px;
   text-decoration: none;
 }
+/* --- Global Navbar (logo + auth) --- */
+.nav {
+  background: #0b0e17;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.nav .nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 18px 8%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.nav .logo,
+.nav .nav-links a {
+  color: #e8ecf0;
+  text-decoration: none;
+  font-size: 15px;
+}
+.nav .logo .ai { color: #6aa8ff; }
+.nav .nav-links a { margin-left: 20px; opacity: .95; }
+.nav .nav-links a:hover { opacity: .75; }
+
+/* buton */
+.btn.small {
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  background: #007aff;
+  color: #fff;
+  display: inline-block;
+}
+.btn.small:hover { background:#005fcc; }
+
+/* --- Legal pages spacing under navbar --- */
+.page.legal {
+  max-width: 860px;
+  margin: 32px auto;
+  padding: 0 20px;
+}
+.page.legal h1 {
+  margin-top: 12px;
+}
+
+
+/* outline versiyon (Log out) */
+.btn.small.outline {
+  background: transparent;
+  color: #e8ecf0;
+  border: 1px solid rgba(255,255,255,.15);
+}
+.btn.small.outline:hover {
+  background: rgba(255,255,255,.06);
+}
+.navbar {
+  display: flex; justify-content: space-between; align-items: center;
+  background:#0b0e17; padding:18px 8%;
+  border-bottom:1px solid rgba(255,255,255,.05);
+}
+.navbar a { color:#e8ecf0; text-decoration:none; margin-left:20px; font-size:15px; }
+.navbar a:hover { opacity:.75; }
+.navbar .btn { padding:6px 14px; border-radius:6px; background:#007aff; color:#fff; font-weight:500; font-size:14px; }
+.navbar .btn:hover { background:#005fcc; }
+.preloader{
+  position:fixed; inset:0;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  background:rgba(2, 6, 23, 0.85); /* koyu blur */
+  backdrop-filter:saturate(120%) blur(4px);
+  z-index:9999;
+}
+.preloader .spinner{
+  width:28px; height:28px; border-radius:50%;
+  border:3px solid rgba(148,163,184,.35);
+  border-top-color:#22d3ee;
+  animation:spin 0.8s linear infinite;
+  margin-bottom:12px;
+}
+.preloader .preloader-text{
+  color:#cbd5e1; font-size:14px; letter-spacing:.3px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.hidden{display:none!important;}
+/* ===== Preloader ===== */
+.preloader{
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: rgba(2,6,23,0.92); /* koyu overlay */
+  backdrop-filter: blur(2px);
+  z-index: 9999; /* nav ve her şeyin üstünde */
+  transition: opacity .25s ease;
+}
+.preloader.hidden{ opacity: 0; pointer-events: none; }
+
+.preloader .preloader-text{
+  margin-top: 12px; font-size: 14px; color: #9ca3af;
+}
+
+/* basit spinner */
+.spinner{
+  width: 42px; height: 42px; border-radius: 50%;
+  border: 3px solid rgba(148,163,184,.25);
+  border-top-color: #38bdf8; /* mavi */
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin{ to{ transform: rotate(360deg); } }
 
 ```
 
 ### app\web\static\js\app.js
 
 ```js
+/* ================== PRELOADER (global) ================== */
+// index.html'deki inline preloader ile uyumlu kapatma fonksiyonu.
+// (app.js yüklenir yüklenmez hazır olsun diye en üstte tanımlı)
+window.preloaderHide = window.preloaderHide || function () {
+  const el = document.getElementById('preloader');
+  if (!el) return;
+  el.style.opacity = '0';
+  el.style.pointerEvents = 'none';
+  setTimeout(() => { try { el.remove(); } catch (_) { el.style.display = 'none'; } }, 260);
+};
+/* ======================================================== */
+
 // DEMO / PRO ayrımı
 const MODE = document.body.dataset.mode || 'demo';
 
@@ -1584,8 +1913,13 @@ function applyDemoLimits() {
   setTimeout(limitWeeks, 0);
 }
 
+// ---------------- Preloader helper (yerel) ----------------
+function hidePreloader() {
+  // hem yerel fonksiyonu hem de global fallback'i tetikle
+  window.preloaderHide && window.preloaderHide();
+}
 
-// app/web/static/js/app.js
+// ----------------------------------------------------------
 
 const $ = (sel)=>document.querySelector(sel);
 
@@ -1666,9 +2000,15 @@ async function loadWeeks(){
       endSel.value = weeks[weeks.length-1].weekId;
     }
     restoreFilters();
+
+    // ✅ Haftalar geldi, preloader'ı kapat
+    hidePreloader();
+
   }catch(err){
     showToast("Failed to load weeks.");
     console.error(err);
+    // ✅ Hata bile olsa preloader'ı kapat
+    hidePreloader();
   }finally{
     setLoading(false);
   }
@@ -1704,9 +2044,14 @@ async function runQuery(){
     const sorted = sortRows(rows, currentSort.key, currentSort.dir);
     renderTable(sorted, s, e);
     persistFilters();
+
+    // ✅ İlk sorgu bitti, preloader'ı yine kapat
+    hidePreloader();
+
   }catch(err){
     showToast(err.message);
     console.error(err);
+    hidePreloader();
   }finally{
     setLoading(false);
   }
@@ -1887,74 +2232,144 @@ loadWeeks()
   .then(runQuery)
   .catch(console.error);
 
+// preloader'ı ekstra güvenceyle kapat
+document.addEventListener('DOMContentLoaded', ()=> window.preloaderHide && window.preloaderHide());
+window.addEventListener('load', ()=> window.preloaderHide && window.preloaderHide());
+
+```
+
+### app\web\templates\_nav.html
+
+```html
+<style>
+/* --- Embedded navbar styles (works on every page) --- */
+.nav{background:#0b0e17;border-bottom:1px solid rgba(255,255,255,.06)}
+.nav .nav-inner{max-width:1200px;margin:0 auto;padding:18px 8%;
+  display:flex;align-items:center;justify-content:space-between}
+.nav .logo,.nav .nav-links a{color:#e8ecf0;text-decoration:none;font-size:15px}
+.nav .logo .ai{color:#6aa8ff}
+.nav .nav-links a{margin-left:20px;opacity:.95}
+.nav .nav-links a:hover{opacity:.75}
+.btn.small{padding:6px 14px;border-radius:8px;font-size:14px;font-weight:600;
+  background:#007aff;color:#fff;display:inline-block}
+.btn.small:hover{background:#005fcc}
+.btn.small.outline{background:transparent;color:#e8ecf0;border:1px solid rgba(255,255,255,.15)}
+.btn.small.outline:hover{background:rgba(255,255,255,.06)}
+</style>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="{{ url_for('landing') }}" class="logo">
+      <span class="brand">Uptrend Hunter <span class="ai">AI</span></span>
+    </a>
+    <div class="nav-links">
+      {% if current_user %}
+        <a href="{{ url_for('dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('logout') }}" class="btn small outline">Log out</a>
+      {% else %}
+        <a href="{{ url_for('login', next=request.path) }}" class="btn small">Log in</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
 
 ```
 
 ### app\web\templates\checkout.html
 
 ```html
-<!doctype html><html lang="en"><head>
-<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Checkout — Amazon Trend Finder AI</title>
-<link rel="stylesheet" href="/static/css/auth.css?v=2">
-</head><body>
-<div class="auth">
-  <h1>Upgrade to Pro</h1>
-  <p class="muted">Unlock full 60+ weeks, advanced filters, and priority charts.</p>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Checkout — Uptrend Hunter</title>
+  <link rel="stylesheet" href="/static/css/landing.css?v=1">
+</head>
+<body>
+  {% include "_nav.html" %}
 
-  {% if user %}
-    <p><b>Signed in as:</b> {{ user.email }}</p>
-    {% if user.plan == 'pro' %}
-      <div class="err" style="background:#10241a;border-color:#1f6a3a;color:#b7f0c9">
-        You already have <b>PRO</b>. <a class="btn" href="/pro" style="margin-top:10px">Open Pro App</a>
-      </div>
-    {% else %}
-      <!-- Geçici ödeme simülasyonu: Stripe/Paddle gelene kadar -->
-      <form method="post" action="/checkout/simulate">
-        <button type="submit">Complete payment (temporary simulation)</button>
-      </form>
-      <p class="muted">This is a temporary button. We’ll replace it with Stripe/Paddle Checkout.</p>
-    {% endif %}
-  {% else %}
-    <p>Please log in to continue.</p>
-    <a class="btn" href="/login?next=/checkout">Log in</a>
-    <a class="btn ghost" href="/signup?next=/checkout">Create account</a>
-  {% endif %}
+  <!-- nav'dan boşluk: yapışmasın -->
+  <main class="container" style="max-width:720px;margin:96px auto 56px;">
+    <section class="card" style="padding:28px 28px; text-align:center;">
+      <h1 style="margin:0 0 6px;">{{ plan_name }}</h1>
+      <p class="muted" style="margin:0 0 16px;">{{ price_text }}</p>
 
-  <hr style="margin:16px 0;border:0;border-top:1px solid #1f2a3d">
-  <p class="muted">Questions? Contact sales: hello@yourdomain.com</p>
-</div>
-</body></html>
+      {% if user %}
+        <p class="muted" style="margin:0 0 16px;">Signed in as <strong>{{ user.email }}</strong></p>
+      {% else %}
+        <p class="muted" style="margin:0 20px 18px;">
+          To upgrade, please create an account or log in.
+        </p>
+        <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-bottom:18px;">
+          <a class="btn" href="{{ url_for('signup', next='/checkout') }}">Create account</a>
+          <a class="btn outline" href="{{ url_for('login',  next='/checkout') }}">Log in</a>
+        </div>
+      {% endif %}
+
+      <ul style="text-align:left; max-width:520px; margin:0 auto 16px; line-height:1.55;">
+        {% for b in benefits %}<li>{{ b }}</li>{% endfor %}
+      </ul>
+
+      {% if user %}
+        <form method="post" action="/checkout/start" style="margin-top:12px;">
+          <button class="btn" type="submit">Proceed to secure payment</button>
+        </form>
+        {% if error %}
+          <p style="color:#ff8383; margin-top:12px;">{{ error }}</p>
+        {% endif %}
+        <p class="muted" style="margin-top:8px;">You’ll be redirected to a secure Lemon Squeezy checkout.</p>
+      {% endif %}
+    </section>
+  </main>
+</body>
+</html>
 
 ```
 
 ### app\web\templates\dashboard.html
 
 ```html
-<!doctype html><html lang="en"><head>
-<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Dashboard — Amazon Trend Finder AI</title>
-<link rel="stylesheet" href="/static/css/auth.css?v=1">
-</head><body>
-<div class="auth">
-  <h1>Account</h1>
-  {% if user %}
-    <p><b>Email:</b> {{ user.email }}</p>
-    <p><b>Plan:</b> {{ user.plan|upper }}</p>
-    <div class="row">
-      {% if user.plan != 'pro' %}
-        <a class="btn" href="/checkout">Upgrade to Pro</a>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Dashboard — Uptrend Hunter</title>
+  <link rel="stylesheet" href="/static/css/landing.css?v=1">
+</head>
+<body>
+  {% include "_nav.html" %}
+
+  <main class="container" style="max-width:860px;margin:48px auto;">
+    <section class="card" style="padding:24px 28px;">
+      <h2 style="margin:0 0 8px;">Account</h2>
+      <p style="margin:0 0 16px;">
+        <strong>Email:</strong> {{ user.email if user else '—' }}<br>
+        <strong>Plan:</strong> {{ (user.plan|upper) if user else '—' }}
+      </p>
+
+      {% if user and user.plan != 'pro' %}
+        <div class="card" style="padding:20px; margin-top:12px;">
+          <h3 style="margin:0 0 8px;">{{ plan_name }} — <span>{{ price_text }}</span></h3>
+          <ul style="margin:0 0 16px 18px;">
+            {% for b in benefits %}<li>{{ b }}</li>{% endfor %}
+          </ul>
+          <div style="display:flex; gap:12px;">
+            <a class="btn" href="/checkout">Upgrade to Pro</a>
+            <a class="btn outline" href="/app">Try Demo</a>
+          </div>
+        </div>
       {% else %}
-        <a class="btn" href="/pro">Open Pro app</a>
+        <div class="card" style="padding:20px; margin-top:12px;">
+          <h3 style="margin:0 0 8px;">You’re on {{ plan_name }}</h3>
+          <p style="margin:0;">Tam erişim aktif. İyi analizler! 🚀</p>
+        </div>
       {% endif %}
-      <a class="btn ghost" href="/logout">Log out</a>
-    </div>
-  {% else %}
-    <p>You are not logged in.</p>
-    <a class="btn" href="/login">Log in</a>
-  {% endif %}
-</div>
-</body></html>
+    </section>
+  </main>
+</body>
+</html>
 
 ```
 
@@ -1968,33 +2383,74 @@ loadWeeks()
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Amazon Trend Finder AI — App</title>
 
-  <!-- Dış CSS (koyu tema) -->
-<link rel="stylesheet" href="/static/css/styles.css?v=app-final-7">
-
-
+  <!-- Ortak stiller -->
+  <link rel="stylesheet" href="/static/css/landing.css?v=1">
+  <link rel="stylesheet" href="/static/css/styles.css?v=app-final-7">
 </head>
+
 <body data-mode="{{ mode or 'demo' }}">
 
-
-
- <header class="app-header">
-  <h1 class="app-title">
-    <span class="top-dots" aria-hidden="true">
-      <span></span><span></span><span></span>
-    </span>
-     Uptrend Hunter AI
-  </h1>
-</header>
-
-{% if mode == 'demo' %}
-  <div class="upgrade-banner" role="status">
-    You’re using the free demo. Last 6 weeks only, advanced filters disabled.
-    <a href="/checkout" class="btn small">Upgrade to Pro</a>
-
+  <!-- ===== PRELOADER (sadece kendi içinde animasyon, grafiklere sızmaz) ===== -->
+  <div id="preloader" style="
+    position:fixed; inset:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:rgba(2,6,23,.94); backdrop-filter:blur(3px);
+    z-index:10000; transition:opacity .6s ease; opacity:1;
+  ">
+    <div style="display:flex; gap:10px;">
+      <div class="pre-dot"></div>
+      <div class="pre-dot"></div>
+      <div class="pre-dot"></div>
+    </div>
+    <p id="preloaderText" style="margin-top:14px; font-size:15px; color:#9ca3af;">
+      {{ 'Loading Pro…' if (mode=='pro') else 'Loading Demo…' }}
+    </p>
   </div>
-{% endif %}
 
+  <style>
+    #preloader .pre-dot{
+      width:14px; height:14px; border-radius:50%;
+      background-color:#38bdf8;
+      animation: pre_pulse 1.2s ease-in-out infinite;
+    }
+    #preloader .pre-dot:nth-child(1){ animation-delay:0s; }
+    #preloader .pre-dot:nth-child(2){ animation-delay:0.2s; }
+    #preloader .pre-dot:nth-child(3){ animation-delay:0.4s; }
 
+    @keyframes pre_pulse{
+      0%,80%,100%{ transform:scale(0.6); opacity:0.5; }
+      40%{ transform:scale(1); opacity:1; }
+    }
+  </style>
+
+  <script>
+    // preloader gizleme
+    (function(){
+      let done=false;
+      window.preloaderHide=function(){
+        if(done) return; done=true;
+        const el=document.getElementById('preloader');
+        if(!el) return;
+        setTimeout(()=>{
+          el.style.opacity='0';
+          el.style.pointerEvents='none';
+          setTimeout(()=>{ try{el.remove();}catch(e){el.style.display='none';} },600);
+        },2500);
+      };
+      window.addEventListener('load', window.preloaderHide);
+      setTimeout(()=>{ if(document.getElementById('preloader')) window.preloaderHide(); },6000);
+    })();
+  </script>
+  <!-- ===== /PRELOADER ===== -->
+
+  {% include "_nav.html" %}
+
+  {% if mode == 'demo' %}
+    <div class="upgrade-banner" role="status">
+      You’re using the free demo. Last 6 weeks only, advanced filters disabled.
+      <a href="{{ url_for('checkout') }}" class="btn small">Upgrade to Pro</a>
+    </div>
+  {% endif %}
 
   <!-- Filtreler -->
   <section class="controls" aria-labelledby="filtersTitle">
@@ -2030,7 +2486,6 @@ loadWeeks()
     <span id="found" class="pill">Found: 0</span>
     <span id="range" class="pill"></span>
 
-    <!-- (tablo yüklenirken) -->
     <span id="status" class="loading hidden" aria-hidden="true">
       <span class="dot"></span><span class="dot"></span><span class="dot"></span> Loading…
     </span>
@@ -2083,53 +2538,48 @@ loadWeeks()
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>UpTrend Hunter AI — Find rising marketplace search trends</title>
-  <meta name="description" content="Surface uptrends from 60+ weeks of search data. Smart include/exclude filters, fast scoring, and clean charts. Try the app — no setup.">
+  <title>Uptrend Hunter AI — Find rising Amazon search trends</title>
+  <meta name="description" content="AI tool for Amazon sellers. Analyze 60+ weeks of Amazon search data, apply include/exclude filters, and surface early uptrends. No setup — try the live demo.">
   <link rel="stylesheet" href="/static/css/landing.css?v=1">
   <link rel="icon" href="/static/img/app-screen.png" type="image/png">
 </head>
 <body>
-  <!-- Navbar -->
-  <nav class="nav">
-    <div class="nav-inner">
-      <div class="logo">Uptrend Hunter <span>AI</span></div>
-      <ul class="menu">
-        <li><a href="#features">Features</a></li>
-        <li><a href="#how">How it works</a></li>
-        <li><a href="#pricing">Pricing</a></li>
-        <li><a href="#faq">FAQ</a></li>
-      </ul>
-      <a href="/app" class="btn small">Try the App</a>
-    </div>
-  </nav>
+
+  {% include "_nav.html" %}
+
 
   <!-- Hero -->
   <section class="hero">
     <div class="hero-content">
-      <h1>Spot rising Amazon searches<br>before the crowd.</h1>
-      <p>Analyze <strong>60+ weeks</strong> of Amazon search trends, apply <strong>smart keyword filters</strong>, and surface <strong>early uptrends</strong> in seconds — no setup, no spreadsheets.</p>
+      <h1>Find your next winning product — weeks before others notice.</h1>
+      <p>
+        AI-powered trend detector for Amazon sellers. Analyze <strong>60+ weeks</strong>
+        of search momentum and reveal <strong>early uptrends</strong> in seconds —
+        no setup, no spreadsheets.
+      </p>
       <div class="cta-group">
-        <a href="/app" class="btn">Try the App</a>
-        <a href="/app" class="btn ghost">See live demo</a>
-      </div>
+  <a href="/app" class="btn">Try Free Demo</a>
+  <a href="/checkout" class="btn ghost">Upgrade to Pro</a>
+    </div>
+
       <div class="badges">
-        <span>60+ weeks</span>
-        <span>Smart filters</span>
-        <span>Zero setup</span>
+        <span>60+ week history</span>
+        <span>Rising-keyword scoring</span>
+        <span>Include / Exclude filters</span>
       </div>
     </div>
     <div class="hero-image">
-      <img src="/static/img/app-screen.png" alt="Amazon Trend Finder dashboard" loading="lazy">
+      <img src="/static/img/app-screen.png" alt="Uptrend Hunter — Amazon trend dashboard" loading="lazy">
     </div>
   </section>
 
   <!-- Features -->
   <section id="features" class="features">
-    <h2>Why sellers love it</h2>
+    <h2>Why Amazon sellers choose Uptrend Hunter</h2>
     <div class="grid">
       <div class="card">
         <h3>Early Trend Detection</h3>
-        <p>Find terms with meaningful rank improvement across your chosen weeks — quickly separate signal from noise.</p>
+        <p>Find terms with meaningful <strong>search rank improvement</strong> across your chosen weeks — quickly separate signal from noise.</p>
       </div>
       <div class="card">
         <h3>Smart Filters</h3>
@@ -2137,7 +2587,7 @@ loadWeeks()
       </div>
       <div class="card">
         <h3>60+ Weeks History</h3>
-        <p>Look back more than a year to validate seasonality and momentum, not just a single snapshot.</p>
+        <p>Look back more than a year to validate <strong>seasonality</strong> and <strong>sustained momentum</strong>, not just a single snapshot.</p>
       </div>
       <div class="card">
         <h3>Lightweight & Fast</h3>
@@ -2146,84 +2596,129 @@ loadWeeks()
     </div>
   </section>
 
+  <!-- Use Cases -->
+  <section id="usecases" class="features" style="margin-top:60px;">
+    <h2>What you can do with it</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>🎁 Seasonal wins</h3>
+        <p>Catch gift trends before they peak; plan inventory and creatives.</p>
+      </div>
+      <div class="card">
+        <h3>🔎 Idea validation</h3>
+        <p>Confirm sustained momentum, not one-week spikes shows trends.</p>
+      </div>
+      <div class="card">
+        <h3>💸 Smarter PPC</h3>
+        <p>Allocate budget to queries that are gaining rank on keywords.</p>
+      </div>
+    </div>
+  </section>
+
+<!-- Why it works -->
+  <div style="display:flex;justify-content:center;align-items:center;flex-direction:column;">
+  <img src="/static/img/trend-graph.png" 
+       alt="Example of Uptrend Hunter chart showing keyword momentum" 
+       style="max-width:800px; width:100%; border-radius:12px; box-shadow:0 0 20px rgba(0,0,0,0.2);" 
+       loading="lazy">
+  <p style="color:#9ca3af; font-size:14px; margin-top:12px;">
+    Real app view — keyword momentum over 12 weeks. Only consistent upward trends are flagged.
+  </p>
+</div>
+
+
   <!-- How it works -->
   <section id="how" class="how">
-    <h2>How it works</h2>
+    <h2>How It Works</h2>
     <div class="steps">
       <div class="step">
         <img src="/static/img/sample1.png" alt="Pick weeks">
         <h3>1. Pick weeks</h3>
-        <p>Choose start & end weeks — e.g., last 10–12 weeks.</p>
+        <p>Pick start & end weeks (e.g., last 10–12) to measure momentum.</p>
       </div>
       <div class="step">
         <img src="/static/img/sample2.png" alt="Add filters">
         <h3>2. Add filters</h3>
-        <p>Include or exclude keyword families to narrow scope.</p>
+        <p>Use Include/Exclude to focus on keyword families that matter.</p>
       </div>
       <div class="step">
         <img src="/static/img/sample3.png" alt="See uptrends">
         <h3>3. See uptrends</h3>
-        <p>Sort by <strong>Total improvement</strong> and open a term to view its weekly trajectory.</p>
+        <p>Sort by <strong>Total Improvement</strong> and open a term to view its weekly trajectory.</p>
       </div>
     </div>
   </section>
 
   <!-- Pricing -->
-  <section id="pricing" class="pricing">
-    <h2>Simple pricing</h2>
-    <div class="plans">
-      <div class="plan">
-        <h3>Starter</h3>
-        <p class="price">Free</p>
-        <ul>
-          <li>Up to 200 results per query</li>
-          <li>10–12 week lookback</li>
-          <li>Basic filters</li>
-        </ul>
-        <a href="/app" class="btn full">Try free</a>
-      </div>
-
-      <div class="plan highlight">
-        <h3>Pro</h3>
-        <p class="price">$29.90 / month</p>
-        <ul>
-          <li>Full 60+ week history</li>
-          <li>Advanced filtering</li>
-          <li>Trend chart export</li>
-          <li>Priority updates</li>
-        </ul>
-        <a href="/app" class="btn full">Start Pro</a>
-      </div>
+  <!-- Pricing -->
+<section id="pricing" class="pricing">
+  <h2>Simple pricing</h2>
+  <div class="plans">
+    <div class="plan">
+      <h3>Starter</h3>
+      <p class="price">Free</p>
+      <ul>
+        <li>Up to 200 results per query</li>
+        <li>10–12 week lookback</li>
+        <li>Basic filters</li>
+      </ul>
+      <!-- Starter = DEMO -->
+      <a href="/app" class="btn full" aria-label="Start free demo">Start Demo</a>
     </div>
-  </section>
+
+    <div class="plan highlight">
+      <h3>Pro</h3>
+      <p class="price">$29.99 / month</p>
+      <ul>
+        <li>Full 60+ week history</li>
+        <li>Advanced Include/Exclude</li>
+        <li>Trend chart export</li>
+        <li>Priority updates & support</li>
+      </ul>
+      <!-- Pro = CHECKOUT -->
+      <a href="/checkout" class="btn full" aria-label="Upgrade to Pro">Start Pro</a>
+    </div>
+  </div>
+</section>
+
 
   <!-- FAQ -->
   <section id="faq" class="faq">
     <h2>FAQ</h2>
     <details><summary>Does it connect to my Amazon account?</summary><p>No. It’s a read-only analytics tool that never accesses your seller data.</p></details>
     <details><summary>How many weeks of data are included?</summary><p>60+ weeks and growing, updated regularly.</p></details>
-    <details><summary>Do I need to upload any files?</summary><p>No uploads. Everything runs directly in your browser.</p></details>
+    <details><summary>Do I need to upload any files?</summary><p>No uploads for the demo. Everything runs directly in your browser. Pro unlocks full history and advanced features.</p></details>
     <details><summary>Which browsers are supported?</summary><p>Latest versions of Chrome, Edge, Safari, and Firefox.</p></details>
-    <details><summary>Is there a refund policy?</summary><p>Yes — cancel Pro anytime within 30 days of purchase for a full refund.</p></details>
+    <details><summary>Is there a refund policy?</summary><p>Yes — cancel Pro anytime within 30 days for a full refund.</p></details>
     <details><summary>How fast does it process results?</summary><p>Starter: up to 200 results per query. Pro: higher limits and faster queries.</p></details>
   </section>
 
-  <!-- CTA -->
+  <!-- Final CTA -->
   <section class="final-cta">
     <h2>Find your next winning product today</h2>
     <p>No signup required. Get started in seconds.</p>
-    <a href="/app" class="btn">Try the App</a>
+    <a href="/app" class="btn">Try Free Demo</a>
+  </section>
+
+  <!-- Built by sellers block -->
+  <section class="builtby" style="text-align:center; padding:80px 20px;">
+    <h2>Made by Amazon sellers, for Amazon sellers</h2>
+    <p style="max-width:720px; margin:10px auto; color:#93a4b8; font-size:15px;">
+      Uptrend Hunter is built by real FBA operators. Our mission: give every seller the same data edge big players use.
+    </p>
+    <div style="margin-top:18px;">
+      <a href="/app" class="btn">Open live demo</a>
+    </div>
   </section>
 
   <!-- Footer -->
-    <!-- Footer -->
   <footer class="footer" style="text-align:center; padding:30px 0; border-top:1px solid #1e293b;">
     <p>© 2025 Uptrend Hunter by Erkan Ecom LLC. All rights reserved.</p>
     <div class="links" style="margin-top:10px;">
       <a href="/terms" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Terms & Conditions</a> |
       <a href="/privacy" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Privacy Policy</a> |
       <a href="/refund" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Refund Policy</a> |
-      <a href="mailto:erkanecomll@gmail.com" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Contact</a> |
+      <a href="mailto:support@uptrendhunter.com" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Contact</a> |
       <a href="https://github.com/coskunforex/amazon-trend-web" target="_blank" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">GitHub</a>
     </div>
   </footer>
@@ -2239,8 +2734,21 @@ loadWeeks()
 <!doctype html><html lang="en"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Log in — Amazon Trend Finder AI</title>
+<link rel="stylesheet" href="/static/css/landing.css?v=1">
+
 <link rel="stylesheet" href="/static/css/auth.css?v=1">
 </head><body>
+  <!-- <body> açıldıktan hemen sonra -->
+<div class="top-right">
+  <a href="{{ url_for('landing') }}">← Back to Home</a>
+</div>
+<style>
+  .top-right { position:absolute; top:18px; right:18px; }
+  .top-right a { padding:8px 12px; border-radius:8px; background:#0b5; color:#fff; text-decoration:none; font-weight:600; }
+  .top-right a:hover { opacity:.9; }
+</style>
+
+
 <div class="auth">
   <h1>Welcome back</h1>
   {% if error %}<div class="err">{{ error }}</div>{% endif %}
@@ -2262,47 +2770,49 @@ loadWeeks()
 ```html
 <!doctype html><html lang="en"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Privacy Policy — UpTrend Hunter AI</title>
-<link rel="stylesheet" href="/static/css/auth.css?v=3">
+<title>Privacy Policy — Uptrend Hunter AI</title>
+<link rel="stylesheet" href="/static/css/landing.css?v=2">
 </head><body>
-<div class="auth">
-<h1>Privacy Policy</h1>
-<p><em>Last updated: October 2025</em></p>
+  {% include "_nav.html" %}
 
-<p>This Privacy Policy explains how Uptrend Hunter (“we,” “our,” “us”) collects, uses, and protects your information.</p>
+<main class="page legal">
+  <h1>Privacy Policy</h1>
+  <p><em>Last updated: October 2025</em></p>
 
-<h2>Information We Collect</h2>
-<ul>
-  <li>Account data (name, email) you provide when signing up.</li>
-  <li>Usage data (logs, device info) to maintain and improve the Service.</li>
-  <li>Payment data collected and processed by our Payment Partners to complete transactions.</li>
-</ul>
+  <p>This Privacy Policy explains how Uptrend Hunter (“we,” “our,” “us”) collects, uses, and protects your information.</p>
 
-<h2>How We Use Information</h2>
-<ul>
-  <li>To provide and maintain the Service.</li>
-  <li>To communicate updates, billing, and support.</li>
-  <li>To prevent abuse, secure accounts, and comply with legal obligations.</li>
-</ul>
+  <h2>Information We Collect</h2>
+  <ul>
+    <li>Account data (name, email) you provide when signing up.</li>
+    <li>Usage data (logs, device info) to maintain and improve the Service.</li>
+    <li>Payment data collected and processed by our Payment Partners to complete transactions.</li>
+  </ul>
 
-<h2>Data Sharing</h2>
-<p>We do not sell your personal data. We share only the minimum necessary information with service providers (e.g., hosting, analytics, Payment Partners) to operate the Service and fulfill purchases, subject to appropriate safeguards.</p>
+  <h2>How We Use Information</h2>
+  <ul>
+    <li>To provide and maintain the Service.</li>
+    <li>To communicate updates, billing, and support.</li>
+    <li>To prevent abuse, secure accounts, and comply with legal obligations.</li>
+  </ul>
 
-<h2>Data Protection</h2>
-<p>We apply reasonable technical and organizational measures to protect your data and comply with applicable data protection laws (e.g., GDPR where applicable).</p>
+  <h2>Data Sharing</h2>
+  <p>We do not sell your personal data. We share only the minimum necessary information with service providers (e.g., hosting, analytics, Payment Partners) to operate the Service and fulfill purchases, subject to appropriate safeguards.</p>
 
-<h2>Cookies</h2>
-<p>We use essential cookies to maintain sessions and improve functionality. You can disable cookies in your browser settings; some features may not function correctly.</p>
+  <h2>Data Protection</h2>
+  <p>We apply reasonable technical and organizational measures to protect your data and comply with applicable data protection laws (e.g., GDPR where applicable).</p>
 
-<h2>Your Rights</h2>
-<p>Where applicable, you may request access, correction, deletion, or portability of your personal data. Contact us to exercise these rights.</p>
+  <h2>Cookies</h2>
+  <p>We use essential cookies to maintain sessions and improve functionality. You can disable cookies in your browser settings; some features may not function correctly.</p>
 
-<h2>Contact</h2>
-<p>Privacy questions? Email <a href="mailto:support@uptrendhunter.com">support@uptrendhunter.com</a>.</p>
+  <h2>Your Rights</h2>
+  <p>Where applicable, you may request access, correction, deletion, or portability of your personal data. Contact us to exercise these rights.</p>
 
+  <h2>Contact</h2>
+  <p>Privacy questions? Email <a href="mailto:support@uptrendhunter.com">support@uptrendhunter.com</a>.</p>
 
-<p style="margin-top:20px"><a class="btn" href="/">← Back to Home</a></p>
-</div></body></html>
+  <p style="margin-top:20px"><a class="btn small" href="/">← Back to Home</a></p>
+</main>
+</body></html>
 
 ```
 
@@ -2311,57 +2821,99 @@ loadWeeks()
 ```html
 <!doctype html><html lang="en"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Refund Policy (30-Day Money Back Guarantee) — Amazon Trend Finder AI</title>
-<link rel="stylesheet" href="/static/css/auth.css?v=3">
+<title>Refund Policy (30-Day Money Back) — Uptrend Hunter AI</title>
+<link rel="stylesheet" href="/static/css/landing.css?v=2">
 </head><body>
-<div class="auth">
-<h1>Refund Policy (30-Day Money Back Guarantee)</h1>
-<p>Last updated: October 2025</p>
+  {% include "_nav.html" %}
 
-<h1>Refund Policy (30-Day Money Back Guarantee)</h1>
-<p><em>Last updated: October 2025</em></p>
+<main class="page legal">
+  <h1>Refund Policy (30-Day Money Back Guarantee)</h1>
+  <p><em>Last updated: October 2025</em></p>
 
-<p>All purchases are processed securely by our authorized Payment Partners and/or an authorized reseller acting as Merchant of Record.</p>
+  <p>All purchases are processed securely by our authorized Payment Partners and/or an authorized reseller acting as Merchant of Record.</p>
 
-<h2>Refund Window</h2>
-<p>We offer a <strong>30-day refund window</strong> for new purchases. If you experience a technical issue that prevents normal use of the Service, contact us within 30 days of purchase.</p>
+  <h2>Refund Window</h2>
+  <p>We offer a <strong>30-day refund window</strong> for new purchases. If you experience a technical issue that prevents normal use of the Service, contact us within 30 days of purchase.</p>
 
-<h2>How to Request a Refund</h2>
-<p>Email your request to <a href="mailto:erkanecomllc@gmail.com">erkanecomllc@gmail.com</a> (or <a href="mailto:support@uptrendhunter.com">support@uptrendhunter.com</a>) with your order reference and reason for the refund. We may ask for additional details to verify and resolve the issue.</p>
+  <h2>How to Request a Refund</h2>
+  <p>Email your request to <a href="mailto:erkanecomllc@gmail.com">erkanecomllc@gmail.com</a> (or <a href="mailto:support@uptrendhunter.com">support@uptrendhunter.com</a>) with your order reference and reason for the refund.</p>
 
-<h2>Exclusions</h2>
-<ul>
-  <li>Refunds are not granted for repeated violations of our Terms or misuse of the Service.</li>
-  <li>Where a Payment Partner or reseller’s policy imposes specific rules (e.g., tax handling, chargeback windows), those rules may apply.</li>
-</ul>
+  <h2>Exclusions</h2>
+  <ul>
+    <li>Refunds are not granted for repeated violations of our Terms or misuse of the Service.</li>
+    <li>Where a Payment Partner or reseller’s policy imposes specific rules (e.g., tax handling, chargeback windows), those rules may apply.</li>
+  </ul>
 
-
-<p style="margin-top:20px"><a class="btn" href="/">← Back to Home</a></p>
-</div></body></html>
+  <p style="margin-top:20px"><a class="btn small" href="/">← Back to Home</a></p>
+</main>
+</body></html>
 
 ```
 
 ### app\web\templates\signup.html
 
 ```html
-<!doctype html><html lang="en"><head>
-<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Sign up — Amazon Trend Finder AI</title>
-<link rel="stylesheet" href="/static/css/auth.css?v=1">
-</head><body>
-<div class="auth">
-  <h1>Create your account</h1>
-  {% if error %}<div class="err">{{ error }}</div>{% endif %}
-  <form method="post">
-    <label>Email</label>
-    <input name="email" type="email" required autocomplete="email" />
-    <label>Password</label>
-    <input name="password" type="password" required minlength="6" />
-    <button type="submit">Create account</button>
-  </form>
-  <p class="muted">Already have an account? <a href="/login">Log in</a></p>
-</div>
-</body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Create account — Uptrend Hunter AI</title>
+  <link rel="stylesheet" href="/static/css/auth.css?v=2">
+  <style>
+    /* sağ üst back link */
+    .top-right { position: absolute; top: 18px; right: 18px; }
+    .top-right a { padding: 8px 12px; border-radius: 8px; background:#0b5; color:#fff; text-decoration:none; font-weight:600; }
+    .top-right a:hover { opacity:.9; }
+  </style>
+</head>
+<body class="auth-page">
+
+  <!-- NAVBAR YOK; sadece back-to-home -->
+  <div class="top-right">
+    <a href="{{ url_for('landing') }}">← Back to Home</a>
+  </div>
+
+  <div class="auth">
+    <h1>Create your account</h1>
+
+    {% if error %}
+      <div class="error">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" id="signupForm" novalidate>
+      <label>Email</label>
+      <input type="email" name="email" required autocomplete="email"/>
+
+      <label>Password</label>
+      <input type="password" name="password" required minlength="6" autocomplete="new-password"/>
+
+      <label>Confirm password</label>
+      <input type="password" name="password2" required minlength="6" autocomplete="new-password"/>
+
+      <button class="btn" type="submit">Create account</button>
+    </form>
+
+    <p class="muted">Already have an account? <a href="{{ url_for('login') }}">Log in</a></p>
+  </div>
+
+  <script>
+    // Basit frontend doğrulama
+    document.getElementById('signupForm').addEventListener('submit', function (e) {
+      const p1 = this.password.value.trim();
+      const p2 = this.password2.value.trim();
+      if (p1.length < 6) {
+        alert('Password must be at least 6 characters.');
+        e.preventDefault(); return;
+      }
+      if (p1 !== p2) {
+        alert('Passwords do not match.');
+        e.preventDefault();
+      }
+    });
+  </script>
+</body>
+</html>
 
 ```
 
@@ -2370,39 +2922,38 @@ loadWeeks()
 ```html
 <!doctype html><html lang="en"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Terms and Conditions — UpTrend Hunter AI</title>
-<link rel="stylesheet" href="/static/css/auth.css?v=3">
+<title>Terms & Conditions — Uptrend Hunter AI</title>
+<link rel="stylesheet" href="/static/css/landing.css?v=2">
 </head><body>
-<div class="auth">
-<h1>Terms and Conditions</h1>
-<p>Last updated: October 2025</p>
+  {% include "_nav.html" %}
 
-<h1>Terms and Conditions</h1>
-<p><em>Last updated: October 2025</em></p>
+<main class="page legal">
+  <h1>Terms & Conditions</h1>
+  <p><em>Last updated: October 2025</em></p>
 
-<p>These Terms of Service (“Terms”) govern your access to and use of Uptrend Hunter (the “Service”). “Company,” “we,” “us,” or “our” refers to Erkan Ecom LLC. By accessing or using the Service, you agree to be bound by these Terms.</p>
+  <p>These Terms of Service (“Terms”) govern your access to and use of Uptrend Hunter (the “Service”). “Company,” “we,” “us,” or “our” refers to Erkan Ecom LLC. By accessing or using the Service, you agree to be bound by these Terms.</p>
 
-<h2>Use of Service</h2>
-<p>You may use the Service only for lawful purposes and in accordance with these Terms. You are responsible for maintaining the confidentiality of your account.</p>
+  <h2>Use of Service</h2>
+  <p>You may use the Service only for lawful purposes and in accordance with these Terms. You are responsible for maintaining the confidentiality of your account.</p>
 
-<h2>Subscriptions &amp; Payments</h2>
-<p>Paid plans are billed in advance. We use trusted third-party payment processors and/or an authorized reseller acting as Merchant of Record (“Payment Partners”) to process transactions securely. By purchasing, you authorize our Payment Partners to charge your selected payment method. Prices may change with prior notice.</p>
+  <h2>Subscriptions & Payments</h2>
+  <p>Paid plans are billed in advance. We use trusted third-party payment processors and/or an authorized reseller acting as Merchant of Record (“Payment Partners”) to process transactions securely. By purchasing, you authorize our Payment Partners to charge your selected payment method. Prices may change with prior notice.</p>
 
-<h2>Cancellation &amp; Termination</h2>
-<p>You can cancel your subscription anytime from your account/dashboard. Access remains active until the end of the current billing cycle. We may suspend or terminate access for violations of these Terms or misuse of the Service.</p>
+  <h2>Cancellation & Termination</h2>
+  <p>You can cancel your subscription anytime from your account/dashboard. Access remains active until the end of the current billing cycle. We may suspend or terminate access for violations of these Terms or misuse of the Service.</p>
 
-<h2>Refunds</h2>
-<p>Refunds are handled under our <a href="/refund-policy">Refund Policy</a>.</p>
+  <h2>Refunds</h2>
+  <p>Refunds are handled under our <a href="/refund">Refund Policy</a>.</p>
 
-<h2>Modifications</h2>
-<p>We may update these Terms from time to time. Continued use of the Service after changes become effective constitutes acceptance of the revised Terms.</p>
+  <h2>Modifications</h2>
+  <p>We may update these Terms from time to time. Continued use of the Service after changes become effective constitutes acceptance of the revised Terms.</p>
 
-<h2>Contact</h2>
-<p>Questions about these Terms? Email <a href="mailto:support@uptrendhunter.com">support@uptrendhunter.com</a>.</p>
+  <h2>Contact</h2>
+  <p>Questions about these Terms? Email <a href="mailto:support@uptrendhunter.com">support@uptrendhunter.com</a>.</p>
 
-
-<p style="margin-top:20px"><a class="btn" href="/">← Back to Home</a></p>
-</div></body></html>
+  <p style="margin-top:20px"><a class="btn small" href="/">← Back to Home</a></p>
+</main>
+</body></html>
 
 ```
 
