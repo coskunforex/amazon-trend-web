@@ -209,13 +209,28 @@ def uptrends():
         exclude  = (request.args.get("exclude") or "").strip().lower()
         limit    = request.args.get("limit", 250, type=int)
         offset   = request.args.get("offset", 0, type=int)
-        # YÜKSEK DEFAULT: büyük farklar gözüksün
         max_rank = request.args.get("maxRank", 1_500_000, type=int)
+
+        # ✅ MODE tespiti (URL ?mode=pro|demo, cookie fallback, default demo)
+        mode = (request.args.get("mode") or request.cookies.get("mode") or "demo").lower()
+        mode = "pro" if mode == "pro" else "demo"
 
         if not (start_id and end_id):
             return jsonify({"error": "Provide startWeekId and endWeekId"}), 400
         if end_id < start_id:
             start_id, end_id = end_id, start_id
+
+        # ✅ DEMO için 6 hafta clamp
+        if mode == "demo":
+            if (end_id - start_id + 1) > 6:
+                end_id = start_id + 5  # 6 hafta
+
+        # ✅ Sonuç limiti: demo=50, pro=250 (gelen limit parametresini üstten sınırla)
+        if mode == "demo":
+            limit = min(limit, 50)
+        else:
+            limit = min(limit, 250)
+
 
         con = get_conn(read_only=True)
         try:
