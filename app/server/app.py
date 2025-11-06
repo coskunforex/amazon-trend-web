@@ -94,23 +94,25 @@ def signup():
         email = (request.form.get("email") or "").strip().lower()
         password = request.form.get("password") or ""
         password2 = request.form.get("password2") or ""
-        name = (request.form.get("name") or "").strip()  # formda yoksa boş kalır
+        name = (request.form.get("name") or "").strip()
 
-        # Basit doğrulamalar
+        app.logger.info(f"SIGNUP_STARTED email={email}")  # LOG 1
+
         if len(password) < 6:
             return render_template("signup.html", error="Password must be at least 6 characters.")
         if password != password2:
             return render_template("signup.html", error="Passwords do not match.")
 
         ok = create_user(email, password, plan="demo")
+        app.logger.info(f"SIGNUP_CREATE_USER_RETURN={ok}")  # LOG 2
+
         if ok:
-            # ✅ HESAP OLUŞTUKTAN HEMEN SONRA WELCOME MAIL GÖNDER
             try:
                 from app.server.emailing import send_welcome_email
                 send_welcome_email(email, name or "")
-                app.logger.info("WELCOME_MAIL_SENT to=%s", email)
+                app.logger.info(f"WELCOME_MAIL_SENT to={email}")  # LOG 3
             except Exception as e:
-                app.logger.warning("WELCOME_MAIL_FAILED to=%s err=%s", email, e)
+                app.logger.exception(f"WELCOME_MAIL_FAILED to={email} err={e}")
 
             session["user_email"] = email
             nxt = request.args.get("next") or url_for("dashboard")
@@ -119,6 +121,7 @@ def signup():
         return render_template("signup.html", error="Email already exists or invalid.")
 
     return render_template("signup.html")
+
 
 
 @app.route("/login", methods=["GET", "POST"])
