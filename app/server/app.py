@@ -88,13 +88,13 @@ def app_pro():
         return redirect(url_for("dashboard"))
     return render_template("index.html", mode="pro")
 
-# ---------- AUTH ----------
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
     if request.method == "POST":
         email = (request.form.get("email") or "").strip().lower()
         password = request.form.get("password") or ""
         password2 = request.form.get("password2") or ""
+        name = (request.form.get("name") or "").strip()  # formda yoksa boş kalır
 
         # Basit doğrulamalar
         if len(password) < 6:
@@ -104,6 +104,14 @@ def signup():
 
         ok = create_user(email, password, plan="demo")
         if ok:
+            # ✅ HESAP OLUŞTUKTAN HEMEN SONRA WELCOME MAIL GÖNDER
+            try:
+                from app.server.emailing import send_welcome_email
+                send_welcome_email(email, name or "")
+                app.logger.info("WELCOME_MAIL_SENT to=%s", email)
+            except Exception as e:
+                app.logger.warning("WELCOME_MAIL_FAILED to=%s err=%s", email, e)
+
             session["user_email"] = email
             nxt = request.args.get("next") or url_for("dashboard")
             return redirect(nxt)
