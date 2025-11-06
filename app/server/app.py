@@ -28,6 +28,9 @@ app = Flask(
     template_folder=str(PROJECT_ROOT / "app" / "web" / "templates"),
     static_folder=str(PROJECT_ROOT / "app" / "web" / "static"),
 )
+from app.server.ls_webhook import ls_bp
+app.register_blueprint(ls_bp)
+
 
 # Tüm şablonlarda current_user kullanabilelim
 @app.context_processor
