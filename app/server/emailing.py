@@ -70,7 +70,3 @@ If you have any questions, reply to this email or contact support@uptrendhunter.
 Built by Amazon sellers, for Amazon sellers.
 """
     _send_text(to_email, subject, body)
-
-Built by Amazon sellers, for Amazon sellers.
-
-    _send_text(to_email, subject, body)
