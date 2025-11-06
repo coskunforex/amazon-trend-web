@@ -156,6 +156,25 @@ def admin_setpro():
     set_plan(email, "pro")
     return jsonify({"status": "ok", "email": email, "plan": "pro"})
 
+    # --- DIAG: test welcome mail in prod ---
+from flask import request, jsonify
+from app.server.emailing import send_welcome_email
+
+@app.post("/diag/test_mail")
+def diag_test_mail():
+    to = (request.args.get("to") or "").strip()
+    name = request.args.get("name") or "Diag"
+    if not to:
+        return jsonify({"ok": False, "error": "missing_to_param"}), 400
+    try:
+        app.logger.info("DIAG: sending welcome to=%s", to)
+        send_welcome_email(to, name)
+        return jsonify({"ok": True})
+    except Exception as e:
+        app.logger.exception("diag mail failed")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 @app.get("/weeks")
 def weeks():
     try:
