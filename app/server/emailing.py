@@ -72,5 +72,5 @@ Built by Amazon sellers, for Amazon sellers.
     _send_text(to_email, subject, body)
 
 Built by Amazon sellers, for Amazon sellers.
-"""
+
     _send_text(to_email, subject, body)
