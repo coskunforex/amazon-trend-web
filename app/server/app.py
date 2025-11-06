@@ -528,3 +528,24 @@ def diag_lemon():
 
     return jsonify(results)
 # --- END OF DIAGNOSTIC ENDPOINT ---
+from flask import request, jsonify
+from app.server.emailing import send_welcome_email
+
+@app.post("/api/create-account")
+def create_account():
+    data = (request.get_json(silent=True) or {})
+    email = (data.get("email") or "").strip().lower()
+    name  = (data.get("name") or "").strip()
+
+    if not email:
+        return jsonify({"ok": False, "error": "missing_email"}), 400
+
+    # Burada normalde veritabanına kayıt yapılır
+    # Şimdilik sadece mail atalım
+    try:
+        send_welcome_email(email, name)
+        app.logger.info(f"WELCOME_MAIL_SENT to={email}")
+    except Exception as e:
+        app.logger.warning(f"WELCOME_MAIL_FAILED to={email} err={e}")
+
+    return jsonify({"ok": True, "message": "Account created, email sent!"})
