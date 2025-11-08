@@ -166,7 +166,8 @@ async function runQuery(){
       exclude: norm(excludeInp.value),
     });
 
-    const rows = await fetchJSON("/uptrends?" + params.toString());
+    const MODE = document.body.dataset.mode || 'demo';
+    const rows = await fetchJSON(`/uptrends?${params.toString()}&mode=${MODE}`);
     const sorted = sortRows(rows, currentSort.key, currentSort.dir);
     renderTable(sorted, s, e);
     persistFilters();
@@ -220,7 +221,8 @@ async function showSeries(term, s, e){
   try{
     setLoading(true);
     const params = new URLSearchParams({ term, startWeekId: s, endWeekId: e });
-    const data = await fetchJSON("/series?" + params.toString());
+    const MODE = document.body.dataset.mode || 'demo';
+    const data = await fetchJSON(`/series?${params.toString()}&mode=${MODE}`);
     drawMiniChart(term, data);
     openModal();
   }catch(err){
