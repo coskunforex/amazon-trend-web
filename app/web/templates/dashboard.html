@@ -3,38 +3,84 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Dashboard — Uptrend Hunter</title>
+  <title>Dashboard — Uptrend Hunter AI</title>
   <link rel="stylesheet" href="/static/css/landing.css?v=1">
+  <style>
+    .dash-wrap{max-width:880px;margin:40px auto;padding:0 16px}
+    .card{background:#0b1220;border:1px solid #1e293b;border-radius:14px;padding:20px 22px;margin-bottom:16px}
+    .row{display:flex;gap:14px;flex-wrap:wrap}
+    .btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 16px;border-radius:10px;
+         border:1px solid #2b3b52;text-decoration:none;font-weight:600}
+    .btn-primary{background:#2563eb;border-color:#2563eb;color:#fff}
+    .btn-ghost{background:transparent;color:#cbd5e1}
+    .badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:.85rem;border:1px solid #334155;color:#e2e8f0}
+    .muted{color:#94a3b8}
+    .kvs{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width:640px){.kvs{grid-template-columns:1fr}}
+  </style>
 </head>
 <body>
+
   {% include "_nav.html" %}
 
-  <main class="container" style="max-width:860px;margin:48px auto;">
-    <section class="card" style="padding:24px 28px;">
-      <h2 style="margin:0 0 8px;">Account</h2>
-      <p style="margin:0 0 16px;">
-        <strong>Email:</strong> {{ user.email if user else '—' }}<br>
-        <strong>Plan:</strong> {{ (user.plan|upper) if user else '—' }}
+  <div class="dash-wrap">
+    <div class="card">
+      <h2 style="margin:0 0 6px 0;">Account</h2>
+      <div class="row" style="align-items:center">
+        <div class="badge">Email: {{ user.email if user else '—' }}</div>
+        <div class="badge">Plan: {{ (user.plan|upper) if user and user.plan else 'DEMO' }}</div>
+      </div>
+      <p class="muted" style="margin:10px 0 0 0;">
+        {% if user and user.plan == 'pro' %}
+          You’re on <strong>Uptrend Hunter Pro</strong>. Tam erişim aktif. İyi analizler! 🪄
+        {% else %}
+          You’re on the demo plan. Pro ile daha uzun dönem, daha fazla sonuç ve öncelikli destek al.
+        {% endif %}
       </p>
+    </div>
 
-      {% if user and user.plan != 'pro' %}
-        <div class="card" style="padding:20px; margin-top:12px;">
-          <h3 style="margin:0 0 8px;">{{ plan_name }} — <span>{{ price_text }}</span></h3>
-          <ul style="margin:0 0 16px 18px;">
-            {% for b in benefits %}<li>{{ b }}</li>{% endfor %}
-          </ul>
-          <div style="display:flex; gap:12px;">
-            <a class="btn" href="/checkout">Upgrade to Pro</a>
-            <a class="btn outline" href="/app">Try Demo</a>
-          </div>
+    {% if user and user.plan == 'pro' %}
+      <!-- PRO ACTIONS -->
+      <div class="card">
+        <h3 style="margin-top:0;">Quick actions</h3>
+        <div class="row">
+          <a class="btn btn-primary" href="/pro">Open Pro App</a>
+          <a class="btn btn-ghost" href="/app">Open Demo App</a>
+          <!-- İleride faturalama portalı eklenirse burayı güncelleriz -->
+          <a class="btn btn-ghost" href="/checkout">Manage billing</a>
         </div>
-      {% else %}
-        <div class="card" style="padding:20px; margin-top:12px;">
-          <h3 style="margin:0 0 8px;">You’re on {{ plan_name }}</h3>
-          <p style="margin:0;">Tam erişim aktif. İyi analizler! 🚀</p>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0;">What you get</h3>
+        <div class="kvs">
+          <div>• Full access to 24+ weeks of data</div>
+          <div>• Smart include/exclude filters</div>
+          <div>• 250 results per query</div>
+          <div>• Priority updates & support</div>
         </div>
-      {% endif %}
-    </section>
-  </main>
+      </div>
+    {% else %}
+      <!-- DEMO ACTIONS -->
+      <div class="card">
+        <h3 style="margin-top:0;">Get started</h3>
+        <div class="row">
+          <a class="btn btn-ghost" href="/app">Try the Demo</a>
+          <a class="btn btn-primary" href="/checkout">Upgrade to Pro</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0;">Pro includes</h3>
+        <div class="kvs">
+          {% for b in benefits %}
+            <div>• {{ b }}</div>
+          {% endfor %}
+        </div>
+        <p style="margin-top:10px">Plan: <strong>{{ plan_name }}</strong> — {{ price_text }}</p>
+      </div>
+    {% endif %}
+  </div>
+
 </body>
 </html>

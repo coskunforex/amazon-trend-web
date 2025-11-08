@@ -22,6 +22,11 @@
     <div class="nav-links">
       {% if current_user %}
         <a href="{{ url_for('dashboard') }}">Dashboard</a>
+      {% if current_user and current_user.plan == 'pro' %}
+        <a href="/pro" class="nav-cta">Open Pro</a>
+      {% else %}
+        <a href="/app" class="nav-cta">Demo</a>
+      {% endif %}
         <a href="{{ url_for('logout') }}" class="btn small outline">Log out</a>
       {% else %}
         <a href="{{ url_for('login', next=request.path) }}" class="btn small">Log in</a>
