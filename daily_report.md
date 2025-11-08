@@ -59,6 +59,7 @@ pillow==11.3.0
 pip==25.2
 pyparsing==3.2.5
 python-dateutil==2.9.0.post0
+python-dotenv==1.2.1
 pytz==2025.2
 requests==2.32.5
 six==1.17.0
@@ -83,22 +84,9 @@ xlsxwriter==3.2.9
   - ./Dockerfile
   - ./STATE.json
   - ./daily_report.md
-  - ./daily_sync_full_20251019_113201.zip
-  - ./daily_sync_full_20251019_122246.zip
-  - ./daily_sync_full_20251020_142938.zip
-  - ./daily_sync_full_20251022_151429.zip
-  - ./daily_sync_full_20251022_202324.zip
-  - ./daily_sync_full_20251023_135206.zip
-  - ./daily_sync_full_20251024_183757.zip
-  - ./daily_sync_full_20251025_145328.zip
-  - ./daily_sync_full_20251030_175512.zip
-  - ./daily_sync_full_20251031_130938.zip
-  - ./daily_sync_full_20251031_182958.zip
-  - ./daily_sync_full_20251102_102637.zip
-  - ./daily_sync_full_20251102_112340.zip
-  - ./daily_sync_full_20251102_133643.zip
-  - ./daily_sync_full_20251102_143624.zip
-  - ./daily_sync_full_20251103_142241.zip
+  - ./daily_sync_full_20251106_150701.zip
+  - ./daily_sync_full_20251106_211731.zip
+  - ./daily_sync_full_20251107_140509.zip
   - ./mvp-stable.zip
   - ./requirements.txt
   - ./roadmap.md
@@ -117,6 +105,8 @@ xlsxwriter==3.2.9
 - **app\server/**
   - app\server/__init__.py
   - app\server/app.py
+  - app\server/emailing.py
+  - app\server/ls_webhook.py
 - **app\web/**
   - app\web/static/
   - app\web/templates/
@@ -150,6 +140,7 @@ xlsxwriter==3.2.9
 - **config/**
 - **data/**
   - data/raw/
+  - data/tmp/
   - data/last_snapshot.json
   - data/trends.duckdb
 - **data\raw/**
@@ -166,6 +157,7 @@ xlsxwriter==3.2.9
   - data\raw/US_Top_Search_Terms_Simple_Week_2025_09_13.csv
   - data\raw/US_Top_Search_Terms_Simple_Week_2025_09_20.csv
   - data\raw/US_Top_Search_Terms_Simple_Week_2025_09_27.csv
+- **data\tmp/**
 - **scripts/**
   - scripts/convert_to_duckdb.py
   - scripts/daily_report.py
@@ -815,10 +807,12 @@ from app.core.auth import (
 PRICE_TEXT = os.environ.get("PRICE_TEXT", "$29.99/month")
 PLAN_NAME  = os.environ.get("PLAN_NAME", "Uptrend Hunter Pro")
 PLAN_BENEFITS = [
-    "Full access to 60+ weeks of data",
+    "Full access to 24+ weeks of data",
     "Smart include/exclude filters",
-    "Priority charts and faster queries",
+    "250 results per query",
+    "Priority updates & support",
 ]
+
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -828,6 +822,9 @@ app = Flask(
     template_folder=str(PROJECT_ROOT / "app" / "web" / "templates"),
     static_folder=str(PROJECT_ROOT / "app" / "web" / "static"),
 )
+from app.server.ls_webhook import ls_bp
+app.register_blueprint(ls_bp)
+
 
 # Tüm şablonlarda current_user kullanabilelim
 @app.context_processor
@@ -953,6 +950,25 @@ def admin_setpro():
     set_plan(email, "pro")
     return jsonify({"status": "ok", "email": email, "plan": "pro"})
 
+    # --- DIAG: test welcome mail in prod ---
+from flask import request, jsonify
+from app.server.emailing import send_welcome_email
+
+@app.post("/diag/test_mail")
+def diag_test_mail():
+    to = (request.args.get("to") or "").strip()
+    name = request.args.get("name") or "Diag"
+    if not to:
+        return jsonify({"ok": False, "error": "missing_to_param"}), 400
+    try:
+        app.logger.info("DIAG: sending welcome to=%s", to)
+        send_welcome_email(to, name)
+        return jsonify({"ok": True})
+    except Exception as e:
+        app.logger.exception("diag mail failed")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 @app.get("/weeks")
 def weeks():
     try:
@@ -1009,15 +1025,30 @@ def uptrends():
         end_id   = request.args.get("endWeekId", type=int)
         include  = (request.args.get("include") or "").strip().lower()
         exclude  = (request.args.get("exclude") or "").strip().lower()
-        limit    = request.args.get("limit", 200, type=int)
+        limit    = request.args.get("limit", 250, type=int)
         offset   = request.args.get("offset", 0, type=int)
-        # YÜKSEK DEFAULT: büyük farklar gözüksün
         max_rank = request.args.get("maxRank", 1_500_000, type=int)
+
+        # ✅ MODE tespiti (URL ?mode=pro|demo, cookie fallback, default demo)
+        mode = (request.args.get("mode") or request.cookies.get("mode") or "demo").lower()
+        mode = "pro" if mode == "pro" else "demo"
 
         if not (start_id and end_id):
             return jsonify({"error": "Provide startWeekId and endWeekId"}), 400
         if end_id < start_id:
             start_id, end_id = end_id, start_id
+
+        # ✅ DEMO için 6 hafta clamp
+        if mode == "demo":
+            if (end_id - start_id + 1) > 6:
+                end_id = start_id + 5  # 6 hafta
+
+        # ✅ Sonuç limiti: demo=50, pro=250 (gelen limit parametresini üstten sınırla)
+        if mode == "demo":
+            limit = min(limit, 50)
+        else:
+            limit = min(limit, 250)
+
 
         con = get_conn(read_only=True)
         try:
@@ -1284,6 +1315,129 @@ def diag_lemon():
 
     return jsonify(results)
 # --- END OF DIAGNOSTIC ENDPOINT ---
+
+```
+
+### app\server\emailing.py
+
+```py
+# app/server/emailing.py
+from dotenv import load_dotenv
+load_dotenv()
+
+import os, smtplib
+from email.mime.text import MIMEText
+from email.utils import formataddr
+
+SENDER_EMAIL = os.getenv("SENDER_EMAIL", "support@uptrendhunter.com")
+SENDER_NAME  = os.getenv("SENDER_NAME",  "Uptrend Hunter")
+SMTP_HOST    = os.getenv("SMTP_HOST",    "mail.privateemail.com")
+SMTP_PORT    = int(os.getenv("SMTP_PORT", "465"))
+SMTP_PASS    = os.getenv("SMTP_PASS")
+SMTP_USER    = os.getenv("SMTP_USER", SENDER_EMAIL)
+
+def _send_text(to_email: str, subject: str, body: str):
+    msg = MIMEText(body, "plain", "utf-8")
+    msg["Subject"] = subject
+    msg["From"] = formataddr((SENDER_NAME, SENDER_EMAIL))
+    msg["To"] = to_email
+
+    # Önce SSL 465 dene, olmazsa 587 STARTTLS
+    try:
+        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=20) as s:
+            s.login(SMTP_USER, SMTP_PASS)
+            s.send_message(msg)
+    except Exception:
+        with smtplib.SMTP(SMTP_HOST, 587, timeout=20) as s:
+            s.ehlo(); s.starttls(); s.ehlo()
+            s.login(SMTP_USER, SMTP_PASS)
+            s.send_message(msg)
+
+def send_welcome_email(to_email: str, name: str = ""):
+    subject = "Welcome to Uptrend Hunter — Your account is ready 🚀"
+    body = f"""Hi there,
+
+Your Uptrend Hunter account has been created successfully.
+
+You can log in and start exploring rising Amazon search trends.
+Dashboard: https://www.uptrendhunter.com/app
+
+Plan: Starter (demo limits apply)
+• Up to 6 weeks lookback
+• Top 50 results per query
+
+Need help? Just reply to this email or write to support@uptrendhunter.com.
+
+
+— Uptrend Hunter Team
+Built by Amazon sellers, for Amazon sellers.
+"""
+    _send_text(to_email, subject, body)
+
+def send_pro_activated_email(to_email: str, name: str = ""):
+    subject = "Uptrend Hunter Pro — Activated ✅"
+    body = f"""Hi there,
+
+Your Uptrend Hunter Pro plan is now active. 🎉
+
+What you’ve unlocked:
+• Full 24+ week history
+• Up to 250 results per query
+• Advanced include/exclude filters
+• Priority updates & support
+
+Open your dashboard: https://www.uptrendhunter.com/app
+
+If you have any questions, reply to this email or contact support@uptrendhunter.com.
+— The Uptrend Hunter Team
+Built by Amazon sellers, for Amazon sellers.
+"""
+    _send_text(to_email, subject, body)
+
+```
+
+### app\server\ls_webhook.py
+
+```py
+# app/server/ls_webhook.py
+import os, hmac, hashlib
+from flask import Blueprint, request, jsonify
+from app.server.emailing import send_pro_activated_email
+
+ls_bp = Blueprint("ls_bp", __name__)
+LS_SECRET = os.getenv("LEMON_WEBHOOK_SECRET", "")
+
+def _verify_signature(raw: bytes, sig: str) -> bool:
+    if not LS_SECRET:
+        return True  # dev ortamında secret yoksa doğrulama atlanır
+    mac = hmac.new(LS_SECRET.encode("utf-8"), msg=raw, digestmod=hashlib.sha256)
+    return hmac.compare_digest(mac.hexdigest(), (sig or "").strip())
+
+@ls_bp.post("/webhooks/lemon")  # <-- İSTEDİĞİN ENDPOINT
+def lemon_webhook():
+    raw = request.data
+    sig = request.headers.get("X-Signature", "")  # Lemon Squeezy'nin HMAC başlığı
+    if not _verify_signature(raw, sig):
+        return jsonify({"ok": False, "error": "bad_signature"}), 400
+
+    payload = request.get_json(silent=True) or {}
+    event = payload.get("meta", {}).get("event_name", "")
+    attrs = (payload.get("data", {}) or {}).get("attributes", {}) or {}
+
+    email = (attrs.get("user_email") or attrs.get("email") or "").strip().lower()
+    name  = (attrs.get("user_name") or "").strip()
+
+    success_events = {"subscription_created", "subscription_payment_success", "order_created"}
+
+    if email and event in success_events:
+        # TODO: burada hesabı PRO yap (kendi fonksiyonunla):
+        # set_user_pro_by_email(email)
+        try:
+            send_pro_activated_email(email, name)
+        except Exception as e:
+            print("Pro mail send failed:", e)
+
+    return jsonify({"ok": True})
 
 ```
 
@@ -1558,6 +1712,12 @@ details p { color: var(--muted); font-size: 14px; margin-top: 10px; }
 .user-info { font-size: 0.9em; opacity: 0.85; }
 .btn.small { padding: 6px 10px; border-radius: 6px; }
 .btn.small.outline { border: 1px solid #3a455b; }
+.payment-note{
+  margin-top: 18px;
+  text-align: center;
+  font-size: .92rem;
+  color:#aab2be;
+}
 
 ```
 
@@ -1900,14 +2060,14 @@ function applyDemoLimits() {
   const limitWeeks = () => {
     const startSel = document.querySelector('#start');
     const endSel = document.querySelector('#end');
-    const trim = (sel, keepLastN = 8) => {
+    const trim = (sel, keepLastN = 6) => {
       if (!sel) return;
       const opts = Array.from(sel.querySelectorAll('option'));
       const toRemove = opts.slice(0, Math.max(0, opts.length - keepLastN));
       toRemove.forEach(o => o.remove());
     };
-    trim(startSel, 8);
-    trim(endSel, 8);
+    trim(startSel, 6);
+    trim(endSel, 6);
   };
 
   setTimeout(limitWeeks, 0);
@@ -2447,7 +2607,7 @@ window.addEventListener('load', ()=> window.preloaderHide && window.preloaderHid
 
   {% if mode == 'demo' %}
     <div class="upgrade-banner" role="status">
-      You’re using the free demo. Last 6 weeks only, advanced filters disabled.
+      You’re using the free demo. Last 6 weeks and 50 results only, advanced filters disabled.
       <a href="{{ url_for('checkout') }}" class="btn small">Upgrade to Pro</a>
     </div>
   {% endif %}
@@ -2533,13 +2693,13 @@ window.addEventListener('load', ()=> window.preloaderHide && window.preloaderHid
 ### app\web\templates\landing.html
 
 ```html
-<!doctype html>
+<!doctype html> 
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Uptrend Hunter AI — Find rising Amazon search trends</title>
-  <meta name="description" content="AI tool for Amazon sellers. Analyze 60+ weeks of Amazon search data, apply include/exclude filters, and surface early uptrends. No setup — try the live demo.">
+  <meta name="description" content="AI tool for Amazon sellers. Analyze 24+ weeks of Amazon search data, apply include/exclude filters, and surface early uptrends. No setup — try the live demo.">
   <link rel="stylesheet" href="/static/css/landing.css?v=1">
   <link rel="icon" href="/static/img/app-screen.png" type="image/png">
 </head>
@@ -2553,7 +2713,7 @@ window.addEventListener('load', ()=> window.preloaderHide && window.preloaderHid
     <div class="hero-content">
       <h1>Find your next winning product — weeks before others notice.</h1>
       <p>
-        AI-powered trend detector for Amazon sellers. Analyze <strong>60+ weeks</strong>
+        AI-powered trend detector for Amazon sellers. Analyze <strong>24+ weeks</strong>
         of search momentum and reveal <strong>early uptrends</strong> in seconds —
         no setup, no spreadsheets.
       </p>
@@ -2563,13 +2723,15 @@ window.addEventListener('load', ()=> window.preloaderHide && window.preloaderHid
     </div>
 
       <div class="badges">
-        <span>60+ week history</span>
+        <span>24+ week history</span>
         <span>Rising-keyword scoring</span>
         <span>Include / Exclude filters</span>
       </div>
     </div>
     <div class="hero-image">
       <img src="/static/img/app-screen.png" alt="Uptrend Hunter — Amazon trend dashboard" loading="lazy">
+      
+
     </div>
   </section>
 
@@ -2586,7 +2748,7 @@ window.addEventListener('load', ()=> window.preloaderHide && window.preloaderHid
         <p>Include or exclude keywords (e.g., “iphone”, exclude “case”) to focus on the segments that matter.</p>
       </div>
       <div class="card">
-        <h3>60+ Weeks History</h3>
+        <h3>24+ Weeks History</h3>
         <p>Look back more than a year to validate <strong>seasonality</strong> and <strong>sustained momentum</strong>, not just a single snapshot.</p>
       </div>
       <div class="card">
@@ -2610,7 +2772,7 @@ window.addEventListener('load', ()=> window.preloaderHide && window.preloaderHid
       </div>
       <div class="card">
         <h3>💸 Smarter PPC</h3>
-        <p>Allocate budget to queries that are gaining rank on keywords.</p>
+        <p>Allocate your Ads budget to queries that are gaining rank on keywords.</p>
       </div>
     </div>
   </section>
@@ -2658,8 +2820,8 @@ window.addEventListener('load', ()=> window.preloaderHide && window.preloaderHid
       <h3>Starter</h3>
       <p class="price">Free</p>
       <ul>
-        <li>Up to 200 results per query</li>
-        <li>10–12 week lookback</li>
+        <li>Up to 50 results per query</li>
+        <li>6 week lookback</li>
         <li>Basic filters</li>
       </ul>
       <!-- Starter = DEMO -->
@@ -2670,13 +2832,17 @@ window.addEventListener('load', ()=> window.preloaderHide && window.preloaderHid
       <h3>Pro</h3>
       <p class="price">$29.99 / month</p>
       <ul>
-        <li>Full 60+ week history</li>
+        <li>Full 24+ week history</li>
         <li>Advanced Include/Exclude</li>
-        <li>Trend chart export</li>
+        <li>Up to 250 results per query</li>
         <li>Priority updates & support</li>
       </ul>
       <!-- Pro = CHECKOUT -->
       <a href="/checkout" class="btn full" aria-label="Upgrade to Pro">Start Pro</a>
+      <p style="margin-top:8px; font-size:14px; color:#9ea8b7;">
+  🔒Secure checkout · 30-day refund
+</p>
+
     </div>
   </div>
 </section>
@@ -2686,11 +2852,11 @@ window.addEventListener('load', ()=> window.preloaderHide && window.preloaderHid
   <section id="faq" class="faq">
     <h2>FAQ</h2>
     <details><summary>Does it connect to my Amazon account?</summary><p>No. It’s a read-only analytics tool that never accesses your seller data.</p></details>
-    <details><summary>How many weeks of data are included?</summary><p>60+ weeks and growing, updated regularly.</p></details>
+    <details><summary>How many weeks of data are included?</summary><p>24+ weeks and growing, updated regularly.</p></details>
     <details><summary>Do I need to upload any files?</summary><p>No uploads for the demo. Everything runs directly in your browser. Pro unlocks full history and advanced features.</p></details>
     <details><summary>Which browsers are supported?</summary><p>Latest versions of Chrome, Edge, Safari, and Firefox.</p></details>
     <details><summary>Is there a refund policy?</summary><p>Yes — cancel Pro anytime within 30 days for a full refund.</p></details>
-    <details><summary>How fast does it process results?</summary><p>Starter: up to 200 results per query. Pro: higher limits and faster queries.</p></details>
+    <details><summary>How fast does it process results?</summary><p>Starter: up to 50 results per query. Pro: higher limits and faster queries.</p></details>
   </section>
 
   <!-- Final CTA -->
@@ -2719,8 +2885,11 @@ window.addEventListener('load', ()=> window.preloaderHide && window.preloaderHid
       <a href="/privacy" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Privacy Policy</a> |
       <a href="/refund" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Refund Policy</a> |
       <a href="mailto:support@uptrendhunter.com" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Contact</a> |
-      <a href="https://github.com/coskunforex/amazon-trend-web" target="_blank" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">GitHub</a>
+     
+
     </div>
+    <div class="payment-note">🔒 Secure payments — by Lemon Squeezy</div>
+
   </footer>
 
 </body>

@@ -3,6 +3,12 @@ from flask import Flask, jsonify, request, render_template, session, redirect, u
 import logging, os
 from pathlib import Path
 from app.core.payments import create_checkout
+# --- DIAGNOSTIC ENDPOINT ---
+from app.core.payments import ls_get
+
+from app.server.emailing import send_welcome_email, send_pro_activated_email
+from app.core.auth import set_plan
+
 
 from app.core.db import get_conn, init_full, append_week
 from app.core.auth import (
@@ -104,6 +110,12 @@ def signup():
 
         ok = create_user(email, password, plan="demo")
         if ok:
+            try:
+                send_welcome_email(email, "")
+                app.logger.info("WELCOME_MAIL_SENT to=%s", email)
+            except Exception as e:
+                app.logger.exception("WELCOME_MAIL_FAILED to=%s err=%s", email, e)
+
             session["user_email"] = email
             nxt = request.args.get("next") or url_for("dashboard")
             return redirect(nxt)
@@ -111,6 +123,9 @@ def signup():
         return render_template("signup.html", error="Email already exists or invalid.")
 
     return render_template("signup.html")
+
+
+
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -155,24 +170,6 @@ def admin_setpro():
         return jsonify({"error": "email required"}), 400
     set_plan(email, "pro")
     return jsonify({"status": "ok", "email": email, "plan": "pro"})
-
-    # --- DIAG: test welcome mail in prod ---
-from flask import request, jsonify
-from app.server.emailing import send_welcome_email
-
-@app.post("/diag/test_mail")
-def diag_test_mail():
-    to = (request.args.get("to") or "").strip()
-    name = request.args.get("name") or "Diag"
-    if not to:
-        return jsonify({"ok": False, "error": "missing_to_param"}), 400
-    try:
-        app.logger.info("DIAG: sending welcome to=%s", to)
-        send_welcome_email(to, name)
-        return jsonify({"ok": True})
-    except Exception as e:
-        app.logger.exception("diag mail failed")
-        return jsonify({"ok": False, "error": str(e)}), 500
 
 
 @app.get("/weeks")
@@ -424,7 +421,14 @@ def checkout_simulate():
         return redirect(url_for("login", next="/checkout"))
     # burada normalde Stripe/Paddle webhook set_plan('pro') yapar
     set_plan(email, "pro")
+    try:
+        send_pro_activated_email(email, "")
+    except Exception as e:
+        app.logger.exception("PRO_MAIL_FAILED to=%s err=%s", email, e)
+
     return redirect(url_for("dashboard"))
+
+
 
 @app.post("/checkout/start")
 def checkout_start():
@@ -467,43 +471,10 @@ def diag():
         app.logger.exception("diag failed")
         return jsonify({"error":"diag_failed","message":str(e)}), 500
 
-# --- Lemon Squeezy Webhook (ödeme -> PRO) ---
-import hmac, hashlib
 
-LEMON_SECRET = os.getenv("LEMON_WEBHOOK_SECRET", "")
-
-@app.post("/webhooks/lemon")
-def lemon_webhook():
-    raw = request.get_data()
-    sig = request.headers.get("X-Signature", "")
-
-    if not LEMON_SECRET:
-        return "secret-missing", 500
-
-    mac = hmac.new(LEMON_SECRET.encode(), raw, hashlib.sha256).hexdigest()
-    if not hmac.compare_digest(mac, sig or ""):
-        return "invalid-signature", 400
-
-    payload = request.get_json(silent=True) or {}
-    event = (payload.get("meta") or {}).get("event_name", "")
-    attrs = (payload.get("data") or {}).get("attributes") or {}
-    email = (attrs.get("user_email") or attrs.get("email") or "").strip().lower()
-
-    if email and event in ("order_created", "subscription_created", "subscription_payment_success"):
-        set_plan(email, "pro")
-
-    return "ok", 200
-# --- /Webhook ---
-
-
-if __name__ == "__main__":
-    port = int(os.getenv("PORT", 8000))
-    app.run(host="0.0.0.0", port=port, debug=False)
 
 # --- DIAGNOSTIC ENDPOINT ---
 from app.core.payments import ls_get
-import os
-from flask import jsonify
 
 @app.get("/diag/lemon")
 def diag_lemon():
@@ -520,4 +491,25 @@ def diag_lemon():
     results["GET /variants/{id}"] = {"status": sc2, "body": st2[:400]}
 
     return jsonify(results)
-# --- END OF DIAGNOSTIC ENDPOINT ---
+
+
+# --- DIAG: test welcome mail endpoint ---
+@app.post("/diag/test_mail")
+def diag_test_mail():
+    to = (request.args.get("to") or "").strip()
+    name = request.args.get("name") or "Diag"
+    if not to:
+        return jsonify({"ok": False, "error": "missing_to_param"}), 400
+    try:
+        app.logger.info("DIAG: sending welcome to=%s", to)
+        send_welcome_email(to, name)
+        return jsonify({"ok": True})
+    except Exception as e:
+        app.logger.exception("diag mail failed")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+# 🟢 En son, sadece bu kalacak:
+if __name__ == "__main__":
+    port = int(os.getenv("PORT", 8000))
+    app.run(host="0.0.0.0", port=port, debug=False)
