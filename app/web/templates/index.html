@@ -11,6 +11,11 @@
 </head>
 
 <body data-mode="{{ mode or 'demo' }}">
+ <script>
+  const MODE = document.body.dataset.mode || 'demo';
+  document.cookie = `mode=${MODE}; path=/; SameSite=Lax`;
+</script>
+
 
   <!-- ===== PRELOADER (sadece kendi içinde animasyon, grafiklere sızmaz) ===== -->
   <div id="preloader" style="
@@ -117,15 +122,26 @@
   <section aria-labelledby="resultsTitle">
     <h2 id="resultsTitle" class="hidden">Results</h2>
     <table id="tbl">
-      <thead>
-        <tr>
-          <th data-key="term">Term</th>
-          <th data-key="start_rank">Start rank</th>
-          <th data-key="end_rank">End rank</th>
-          <th data-key="total_improvement">Total improvement</th>
-          <th data-key="weeks">Weeks</th>
-        </tr>
-      </thead>
+ <thead>
+  <tr>
+    <th data-key="term">
+      Term <span style="opacity: 0.6;">▼</span>
+    </th>
+    <th data-key="start_rank">
+      Start rank <span style="opacity: 0.6;">▼</span>
+    </th>
+    <th data-key="end_rank">
+      End rank <span style="opacity: 0.6;">▼</span>
+    </th>
+    <th data-key="total_improvement">
+      Total improvement <span style="opacity: 0.6;">▼</span>
+    </th>
+    <th data-key="weeks">
+      Weeks <span style="opacity: 0.6;">▼</span>
+    </th>
+  </tr>
+</thead>
+
       <tbody></tbody>
     </table>
     <div id="empty" class="hidden">No results. Try relaxing your filters.</div>
