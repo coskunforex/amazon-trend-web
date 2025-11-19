@@ -232,9 +232,11 @@ def uptrends():
         offset   = request.args.get("offset", 0, type=int)
         max_rank = request.args.get("maxRank", 1_500_000, type=int)
 
-        # ✅ MODE tespiti (URL ?mode=pro|demo, cookie fallback, default demo)
-        mode = (request.args.get("mode") or request.cookies.get("mode") or "demo").lower()
-        mode = "pro" if mode == "pro" else "demo"
+        # ✅ MODE tespiti: user plan üzerinden (session)
+        email = session.get("user_email")
+        u = get_user(email) if email else None
+        mode = "pro" if (u and u.get("plan") == "pro") else "demo"
+
 
         if not (start_id and end_id):
             return jsonify({"error": "Provide startWeekId and endWeekId"}), 400
@@ -441,6 +443,7 @@ def checkout_start():
     except Exception as e:
         app.logger.exception("checkout_start failed")
         return render_template("checkout.html", user=get_user(email), error=str(e)), 500
+
 
 
 # ---------- API: Diagnostics ----------
