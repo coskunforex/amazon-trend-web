@@ -236,6 +236,14 @@ def uptrends():
         mode = (request.args.get("mode") or request.cookies.get("mode") or "demo").lower()
         mode = "pro" if mode == "pro" else "demo"
 
+        # ✅ Login olmuş PRO kullanıcıyı session'dan tespit et ve mode'u zorla PRO yap
+        email = session.get("user_email")
+        if email:
+            u = get_user(email)
+            if u and u.get("plan") == "pro":
+                mode = "pro"
+
+
         if not (start_id and end_id):
             return jsonify({"error": "Provide startWeekId and endWeekId"}), 400
         if end_id < start_id:
