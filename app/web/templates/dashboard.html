@@ -4,34 +4,274 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Dashboard — Uptrend Hunter</title>
+
+  <!-- Mevcut stiller -->
   <link rel="stylesheet" href="/static/css/landing.css?v=1">
+  <link rel="stylesheet" href="/static/css/styles.css?v=app-final-7">
+
+  <style>
+    /* Dashboard layout */
+    .dash-page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: radial-gradient(circle at top, #0f172a 0, #020617 45%, #020617 100%);
+      color: #e5e7eb;
+    }
+    .dash-inner {
+      flex: 1;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 96px 16px 40px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+    }
+    .dash-card {
+      width: 100%;
+      max-width: 640px;
+      background: radial-gradient(circle at top left, rgba(56,189,248,0.10), rgba(15,23,42,0.95));
+      border-radius: 16px;
+      padding: 28px 28px 24px;
+      box-shadow: 0 18px 45px rgba(15,23,42,0.9);
+      border: 1px solid rgba(148,163,184,0.25);
+    }
+
+    .dash-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .dash-title {
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #9ca3af;
+    }
+    .plan-pill {
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      border: 1px solid rgba(148,163,184,0.5);
+    }
+    .plan-pill.demo {
+      color: #e5e7eb;
+      background: rgba(15,23,42,0.8);
+    }
+    .plan-pill.pro {
+      color: #bbf7d0;
+      border-color: rgba(74,222,128,0.7);
+      background: rgba(21,128,61,0.25);
+    }
+
+    .account-meta {
+      font-size: 0.9rem;
+      color: #cbd5f5;
+      margin-bottom: 18px;
+    }
+    .account-meta div {
+      margin-bottom: 2px;
+    }
+
+    .plan-box {
+      background: rgba(15,23,42,0.9);
+      border-radius: 14px;
+      padding: 18px 18px 16px;
+      border: 1px solid rgba(148,163,184,0.6);
+      margin-bottom: 20px;
+    }
+    .plan-name {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #e5e7eb;
+      margin-bottom: 4px;
+    }
+    .plan-sub {
+      font-size: 0.85rem;
+      color: #9ca3af;
+      margin-bottom: 10px;
+    }
+    .plan-price {
+      font-size: 0.95rem;
+      color: #e5e7eb;
+      margin-bottom: 10px;
+    }
+    .plan-benefits {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      font-size: 0.85rem;
+      color: #d1d5db;
+    }
+    .plan-benefits li {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+    .plan-benefits li span {
+      font-size: 1.1rem;
+      line-height: 1.2;
+      color: #22c55e;
+    }
+
+    .dash-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .btn-primary-dash,
+    .btn-secondary-dash {
+      border-radius: 999px;
+      padding: 9px 18px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      border: 1px solid transparent;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+    .btn-primary-dash {
+      background: linear-gradient(135deg, #0ea5e9, #22d3ee);
+      color: #0b1220;
+      box-shadow: 0 10px 25px rgba(56,189,248,0.45);
+    }
+    .btn-primary-dash:hover {
+      filter: brightness(1.04);
+    }
+    .btn-secondary-dash {
+      background: rgba(15,23,42,0.8);
+      color: #e5e7eb;
+      border-color: rgba(148,163,184,0.7);
+    }
+    .btn-secondary-dash:hover {
+      background: rgba(15,23,42,0.95);
+    }
+
+    .dash-footnote {
+      font-size: 0.75rem;
+      color: #9ca3af;
+    }
+
+    .dash-help {
+      margin-top: 14px;
+      font-size: 0.8rem;
+      color: #94a3b8;
+    }
+    .dash-help a {
+      color: #38bdf8;
+      text-decoration: none;
+    }
+    .dash-help a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 640px) {
+      .dash-inner {
+        padding-top: 80px;
+      }
+      .dash-card {
+        padding: 20px 16px 18px;
+      }
+      .dash-actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .btn-primary-dash,
+      .btn-secondary-dash {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  </style>
 </head>
-<body>
+<body class="dash-page" data-mode="demo">
+
   {% include "_nav.html" %}
 
-  <main class="container" style="max-width:860px;margin:48px auto;">
-    <section class="card" style="padding:24px 28px;">
-      <h2 style="margin:0 0 8px;">Account</h2>
-      <p style="margin:0 0 16px;">
-        <strong>Email:</strong> {{ user.email if user else '—' }}<br>
-        <strong>Plan:</strong> {{ (user.plan|upper) if user else '—' }}
-      </p>
+  <main class="dash-inner">
+    <section class="dash-card">
+      <header class="dash-card-header">
+        <div class="dash-title">Account</div>
+        {% if user and user.plan == "pro" %}
+          <div class="plan-pill pro">PRO • Active</div>
+        {% else %}
+          <div class="plan-pill demo">DEMO</div>
+        {% endif %}
+      </header>
 
-      {% if user and user.plan != 'pro' %}
-        <div class="card" style="padding:20px; margin-top:12px;">
-          <h3 style="margin:0 0 8px;">{{ plan_name }} — <span>{{ price_text }}</span></h3>
-          <ul style="margin:0 0 16px 18px;">
-            {% for b in benefits %}<li>{{ b }}</li>{% endfor %}
+      <div class="account-meta">
+        <div><strong>Email:</strong> {{ user.email if user else "—" }}</div>
+        <div><strong>Plan:</strong> {{ user.plan|upper if user and user.plan else "DEMO" }}</div>
+      </div>
+
+      {% if user and user.plan == "pro" %}
+        {# --------- PRO BLOĞU --------- #}
+        <div class="plan-box">
+          <div class="plan-name">You’re on Uptrend Hunter Pro</div>
+          <div class="plan-sub">Full access is active. Happy hunting! 🚀</div>
+
+          <ul class="plan-benefits">
+            <li><span>•</span><div>Data window: 60+ weeks of Amazon search data</div></li>
+            <li><span>•</span><div>Results per query: up to 250 terms</div></li>
+            <li><span>•</span><div>Filters: include &amp; exclude keywords for precise hunting</div></li>
           </ul>
-          <div style="display:flex; gap:12px;">
-            <a class="btn" href="/checkout">Upgrade to Pro</a>
-            <a class="btn outline" href="/app">Try Demo</a>
-          </div>
         </div>
+
+        <div class="dash-actions">
+          <a href="/pro" class="btn-primary-dash">
+            Open Pro App
+          </a>
+          <a href="/app" class="btn-secondary-dash">
+            Open Demo (sandbox)
+          </a>
+        </div>
+
+        <div class="dash-help">
+          Need help or have feedback? Reach out at
+          <a href="mailto:support@uptrendhunter.com">support@uptrendhunter.com</a>.
+        </div>
+
       {% else %}
-        <div class="card" style="padding:20px; margin-top:12px;">
-          <h3 style="margin:0 0 8px;">You’re on {{ plan_name }}</h3>
-          <p style="margin:0;">Tam erişim aktif. İyi analizler! 🚀</p>
+        {# --------- DEMO BLOĞU --------- #}
+        <div class="plan-box">
+          <div class="plan-name">Uptrend Hunter Pro — {{ price_text }}</div>
+          <div class="plan-sub">For serious Amazon sellers who want to catch uptrends early.</div>
+
+          <ul class="plan-benefits">
+            <li><span>✓</span><div>Full access to 24+ weeks of historical search data</div></li>
+            <li><span>✓</span><div>Smart include / exclude keyword filters</div></li>
+            <li><span>✓</span><div>Up to 250 results per query</div></li>
+            <li><span>✓</span><div>Priority updates &amp; support</div></li>
+          </ul>
+        </div>
+
+        <div class="dash-actions">
+          <a href="/checkout" class="btn-primary-dash">
+            Upgrade to Pro
+          </a>
+          <a href="/app" class="btn-secondary-dash">
+            Open Demo App
+          </a>
+        </div>
+
+        <div class="dash-footnote">
+          Cancel anytime. Secure payment handled by Lemon Squeezy.
+        </div>
+
+        <div class="dash-help">
+          Questions before upgrading? Contact
+          <a href="mailto:support@uptrendhunter.com">support@uptrendhunter.com</a>.
         </div>
       {% endif %}
     </section>
