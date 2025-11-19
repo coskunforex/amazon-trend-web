@@ -22,10 +22,16 @@
         of search momentum and reveal <strong>early uptrends</strong> in seconds —
         no setup, no spreadsheets.
       </p>
-      <div class="cta-group">
-  <a href="/app" class="btn">Try Free Demo</a>
-  <a href="/checkout" class="btn ghost">Upgrade to Pro</a>
-    </div>
+            <div class="cta-group">
+        {% if current_user and current_user.plan == "pro" %}
+          <a href="/pro" class="btn">Open Pro app</a>
+          <a href="/dashboard" class="btn ghost">Account &amp; billing</a>
+        {% else %}
+          <a href="/app" class="btn">Try Free Demo</a>
+          <a href="/checkout" class="btn ghost">Upgrade to Pro</a>
+        {% endif %}
+      </div>
+
 
       <div class="badges">
         <span>24+ week history</span>
@@ -133,7 +139,7 @@
       <a href="/app" class="btn full" aria-label="Start free demo">Start Demo</a>
     </div>
 
-    <div class="plan highlight">
+        <div class="plan highlight">
       <h3>Pro</h3>
       <p class="price">$29.99 / month</p>
       <ul>
@@ -142,13 +148,21 @@
         <li>Up to 250 results per query</li>
         <li>Priority updates & support</li>
       </ul>
-      <!-- Pro = CHECKOUT -->
-      <a href="/checkout" class="btn full" aria-label="Upgrade to Pro">Start Pro</a>
-      <p style="margin-top:8px; font-size:14px; color:#9ea8b7;">
-  🔒Secure checkout · 30-day refund
-</p>
+
+      {% if current_user and current_user.plan == "pro" %}
+        <a href="/pro" class="btn full" aria-label="Open Pro app">Open Pro</a>
+        <p style="margin-top:8px; font-size:14px; color:#9ea8b7;">
+          You already have Pro — thank you for supporting Uptrend Hunter.
+        </p>
+      {% else %}
+        <a href="/checkout" class="btn full" aria-label="Upgrade to Pro">Start Pro</a>
+        <p style="margin-top:8px; font-size:14px; color:#9ea8b7;">
+          🔒Secure checkout · 30-day refund
+        </p>
+      {% endif %}
 
     </div>
+
   </div>
 </section>
 

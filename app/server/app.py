@@ -232,11 +232,9 @@ def uptrends():
         offset   = request.args.get("offset", 0, type=int)
         max_rank = request.args.get("maxRank", 1_500_000, type=int)
 
-        # ✅ MODE tespiti: user plan üzerinden (session)
-        email = session.get("user_email")
-        u = get_user(email) if email else None
-        mode = "pro" if (u and u.get("plan") == "pro") else "demo"
-
+        # ✅ MODE tespiti (URL ?mode=pro|demo, cookie fallback, default demo)
+        mode = (request.args.get("mode") or request.cookies.get("mode") or "demo").lower()
+        mode = "pro" if mode == "pro" else "demo"
 
         if not (start_id and end_id):
             return jsonify({"error": "Provide startWeekId and endWeekId"}), 400
@@ -405,6 +403,11 @@ def series():
 def checkout():
     email = session.get("user_email")
     user = get_user(email) if email else None
+
+    # Pro kullanıcı zaten ödeme yapmışsa checkout yerine dashboard'a gönder
+    if user and user.get("plan") == "pro":
+        return redirect(url_for("dashboard"))
+
     return render_template(
         "checkout.html",
         user=user,
@@ -412,6 +415,7 @@ def checkout():
         price_text=PRICE_TEXT,
         benefits=PLAN_BENEFITS,
     )
+
 
 
 

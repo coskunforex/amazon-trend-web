@@ -87,6 +87,8 @@ xlsxwriter==3.2.9
   - ./daily_sync_full_20251106_150701.zip
   - ./daily_sync_full_20251106_211731.zip
   - ./daily_sync_full_20251107_140509.zip
+  - ./daily_sync_full_20251107_153129.zip
+  - ./daily_sync_full_20251108_163651.zip
   - ./mvp-stable.zip
   - ./requirements.txt
   - ./roadmap.md
@@ -797,6 +799,12 @@ from flask import Flask, jsonify, request, render_template, session, redirect, u
 import logging, os
 from pathlib import Path
 from app.core.payments import create_checkout
+# --- DIAGNOSTIC ENDPOINT ---
+from app.core.payments import ls_get
+
+from app.server.emailing import send_welcome_email, send_pro_activated_email
+from app.core.auth import set_plan
+
 
 from app.core.db import get_conn, init_full, append_week
 from app.core.auth import (
@@ -898,6 +906,12 @@ def signup():
 
         ok = create_user(email, password, plan="demo")
         if ok:
+            try:
+                send_welcome_email(email, "")
+                app.logger.info("WELCOME_MAIL_SENT to=%s", email)
+            except Exception as e:
+                app.logger.exception("WELCOME_MAIL_FAILED to=%s err=%s", email, e)
+
             session["user_email"] = email
             nxt = request.args.get("next") or url_for("dashboard")
             return redirect(nxt)
@@ -905,6 +919,9 @@ def signup():
         return render_template("signup.html", error="Email already exists or invalid.")
 
     return render_template("signup.html")
+
+
+
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -949,24 +966,6 @@ def admin_setpro():
         return jsonify({"error": "email required"}), 400
     set_plan(email, "pro")
     return jsonify({"status": "ok", "email": email, "plan": "pro"})
-
-    # --- DIAG: test welcome mail in prod ---
-from flask import request, jsonify
-from app.server.emailing import send_welcome_email
-
-@app.post("/diag/test_mail")
-def diag_test_mail():
-    to = (request.args.get("to") or "").strip()
-    name = request.args.get("name") or "Diag"
-    if not to:
-        return jsonify({"ok": False, "error": "missing_to_param"}), 400
-    try:
-        app.logger.info("DIAG: sending welcome to=%s", to)
-        send_welcome_email(to, name)
-        return jsonify({"ok": True})
-    except Exception as e:
-        app.logger.exception("diag mail failed")
-        return jsonify({"ok": False, "error": str(e)}), 500
 
 
 @app.get("/weeks")
@@ -1218,7 +1217,14 @@ def checkout_simulate():
         return redirect(url_for("login", next="/checkout"))
     # burada normalde Stripe/Paddle webhook set_plan('pro') yapar
     set_plan(email, "pro")
+    try:
+        send_pro_activated_email(email, "")
+    except Exception as e:
+        app.logger.exception("PRO_MAIL_FAILED to=%s err=%s", email, e)
+
     return redirect(url_for("dashboard"))
+
+
 
 @app.post("/checkout/start")
 def checkout_start():
@@ -1231,6 +1237,7 @@ def checkout_start():
     except Exception as e:
         app.logger.exception("checkout_start failed")
         return render_template("checkout.html", user=get_user(email), error=str(e)), 500
+
 
 
 # ---------- API: Diagnostics ----------
@@ -1261,43 +1268,10 @@ def diag():
         app.logger.exception("diag failed")
         return jsonify({"error":"diag_failed","message":str(e)}), 500
 
-# --- Lemon Squeezy Webhook (ödeme -> PRO) ---
-import hmac, hashlib
 
-LEMON_SECRET = os.getenv("LEMON_WEBHOOK_SECRET", "")
-
-@app.post("/webhooks/lemon")
-def lemon_webhook():
-    raw = request.get_data()
-    sig = request.headers.get("X-Signature", "")
-
-    if not LEMON_SECRET:
-        return "secret-missing", 500
-
-    mac = hmac.new(LEMON_SECRET.encode(), raw, hashlib.sha256).hexdigest()
-    if not hmac.compare_digest(mac, sig or ""):
-        return "invalid-signature", 400
-
-    payload = request.get_json(silent=True) or {}
-    event = (payload.get("meta") or {}).get("event_name", "")
-    attrs = (payload.get("data") or {}).get("attributes") or {}
-    email = (attrs.get("user_email") or attrs.get("email") or "").strip().lower()
-
-    if email and event in ("order_created", "subscription_created", "subscription_payment_success"):
-        set_plan(email, "pro")
-
-    return "ok", 200
-# --- /Webhook ---
-
-
-if __name__ == "__main__":
-    port = int(os.getenv("PORT", 8000))
-    app.run(host="0.0.0.0", port=port, debug=False)
 
 # --- DIAGNOSTIC ENDPOINT ---
 from app.core.payments import ls_get
-import os
-from flask import jsonify
 
 @app.get("/diag/lemon")
 def diag_lemon():
@@ -1314,7 +1288,28 @@ def diag_lemon():
     results["GET /variants/{id}"] = {"status": sc2, "body": st2[:400]}
 
     return jsonify(results)
-# --- END OF DIAGNOSTIC ENDPOINT ---
+
+
+# --- DIAG: test welcome mail endpoint ---
+@app.post("/diag/test_mail")
+def diag_test_mail():
+    to = (request.args.get("to") or "").strip()
+    name = request.args.get("name") or "Diag"
+    if not to:
+        return jsonify({"ok": False, "error": "missing_to_param"}), 400
+    try:
+        app.logger.info("DIAG: sending welcome to=%s", to)
+        send_welcome_email(to, name)
+        return jsonify({"ok": True})
+    except Exception as e:
+        app.logger.exception("diag mail failed")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+# 🟢 En son, sadece bu kalacak:
+if __name__ == "__main__":
+    port = int(os.getenv("PORT", 8000))
+    app.run(host="0.0.0.0", port=port, debug=False)
 
 ```
 
@@ -1399,10 +1394,10 @@ Built by Amazon sellers, for Amazon sellers.
 ### app\server\ls_webhook.py
 
 ```py
-# app/server/ls_webhook.py
 import os, hmac, hashlib
 from flask import Blueprint, request, jsonify
 from app.server.emailing import send_pro_activated_email
+from app.core.auth import set_plan
 
 ls_bp = Blueprint("ls_bp", __name__)
 LS_SECRET = os.getenv("LEMON_WEBHOOK_SECRET", "")
@@ -1413,8 +1408,9 @@ def _verify_signature(raw: bytes, sig: str) -> bool:
     mac = hmac.new(LS_SECRET.encode("utf-8"), msg=raw, digestmod=hashlib.sha256)
     return hmac.compare_digest(mac.hexdigest(), (sig or "").strip())
 
-@ls_bp.post("/webhooks/lemon")  # <-- İSTEDİĞİN ENDPOINT
+@ls_bp.post("/webhooks/lemon")
 def lemon_webhook():
+    """Lemon Squeezy webhook: PRO plan + mail gönderimi"""
     raw = request.data
     sig = request.headers.get("X-Signature", "")  # Lemon Squeezy'nin HMAC başlığı
     if not _verify_signature(raw, sig):
@@ -1425,13 +1421,18 @@ def lemon_webhook():
     attrs = (payload.get("data", {}) or {}).get("attributes", {}) or {}
 
     email = (attrs.get("user_email") or attrs.get("email") or "").strip().lower()
-    name  = (attrs.get("user_name") or "").strip()
+    name = (attrs.get("user_name") or "").strip()
 
     success_events = {"subscription_created", "subscription_payment_success", "order_created"}
 
     if email and event in success_events:
-        # TODO: burada hesabı PRO yap (kendi fonksiyonunla):
-        # set_user_pro_by_email(email)
+        # 1) Planı PRO yap
+        try:
+            set_plan(email, "pro")
+        except Exception as e:
+            print("set_plan failed:", e)
+
+        # 2) Pro mailini gönder
         try:
             send_pro_activated_email(email, name)
         except Exception as e:
@@ -2200,7 +2201,8 @@ async function runQuery(){
       exclude: norm(excludeInp.value),
     });
 
-    const rows = await fetchJSON("/uptrends?" + params.toString());
+    const MODE = document.body.dataset.mode || 'demo';
+    const rows = await fetchJSON(`/uptrends?${params.toString()}&mode=${MODE}`);
     const sorted = sortRows(rows, currentSort.key, currentSort.dir);
     renderTable(sorted, s, e);
     persistFilters();
@@ -2254,7 +2256,8 @@ async function showSeries(term, s, e){
   try{
     setLoading(true);
     const params = new URLSearchParams({ term, startWeekId: s, endWeekId: e });
-    const data = await fetchJSON("/series?" + params.toString());
+    const MODE = document.body.dataset.mode || 'demo';
+    const data = await fetchJSON(`/series?${params.toString()}&mode=${MODE}`);
     drawMiniChart(term, data);
     openModal();
   }catch(err){
@@ -2425,6 +2428,11 @@ window.addEventListener('load', ()=> window.preloaderHide && window.preloaderHid
     <div class="nav-links">
       {% if current_user %}
         <a href="{{ url_for('dashboard') }}">Dashboard</a>
+      {% if current_user and current_user.plan == 'pro' %}
+        <a href="/pro" class="nav-cta">Open Pro</a>
+      {% else %}
+        <a href="/app" class="nav-cta">Demo</a>
+      {% endif %}
         <a href="{{ url_for('logout') }}" class="btn small outline">Log out</a>
       {% else %}
         <a href="{{ url_for('login', next=request.path) }}" class="btn small">Log in</a>
@@ -2495,39 +2503,85 @@ window.addEventListener('load', ()=> window.preloaderHide && window.preloaderHid
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Dashboard — Uptrend Hunter</title>
+  <title>Dashboard — Uptrend Hunter AI</title>
   <link rel="stylesheet" href="/static/css/landing.css?v=1">
+  <style>
+    .dash-wrap{max-width:880px;margin:40px auto;padding:0 16px}
+    .card{background:#0b1220;border:1px solid #1e293b;border-radius:14px;padding:20px 22px;margin-bottom:16px}
+    .row{display:flex;gap:14px;flex-wrap:wrap}
+    .btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 16px;border-radius:10px;
+         border:1px solid #2b3b52;text-decoration:none;font-weight:600}
+    .btn-primary{background:#2563eb;border-color:#2563eb;color:#fff}
+    .btn-ghost{background:transparent;color:#cbd5e1}
+    .badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:.85rem;border:1px solid #334155;color:#e2e8f0}
+    .muted{color:#94a3b8}
+    .kvs{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width:640px){.kvs{grid-template-columns:1fr}}
+  </style>
 </head>
 <body>
+
   {% include "_nav.html" %}
 
-  <main class="container" style="max-width:860px;margin:48px auto;">
-    <section class="card" style="padding:24px 28px;">
-      <h2 style="margin:0 0 8px;">Account</h2>
-      <p style="margin:0 0 16px;">
-        <strong>Email:</strong> {{ user.email if user else '—' }}<br>
-        <strong>Plan:</strong> {{ (user.plan|upper) if user else '—' }}
+  <div class="dash-wrap">
+    <div class="card">
+      <h2 style="margin:0 0 6px 0;">Account</h2>
+      <div class="row" style="align-items:center">
+        <div class="badge">Email: {{ user.email if user else '—' }}</div>
+        <div class="badge">Plan: {{ (user.plan|upper) if user and user.plan else 'DEMO' }}</div>
+      </div>
+      <p class="muted" style="margin:10px 0 0 0;">
+        {% if user and user.plan == 'pro' %}
+          You’re on <strong>Uptrend Hunter Pro</strong>. Tam erişim aktif. İyi analizler! 🪄
+        {% else %}
+          You’re on the demo plan. Pro ile daha uzun dönem, daha fazla sonuç ve öncelikli destek al.
+        {% endif %}
       </p>
+    </div>
 
-      {% if user and user.plan != 'pro' %}
-        <div class="card" style="padding:20px; margin-top:12px;">
-          <h3 style="margin:0 0 8px;">{{ plan_name }} — <span>{{ price_text }}</span></h3>
-          <ul style="margin:0 0 16px 18px;">
-            {% for b in benefits %}<li>{{ b }}</li>{% endfor %}
-          </ul>
-          <div style="display:flex; gap:12px;">
-            <a class="btn" href="/checkout">Upgrade to Pro</a>
-            <a class="btn outline" href="/app">Try Demo</a>
-          </div>
+    {% if user and user.plan == 'pro' %}
+      <!-- PRO ACTIONS -->
+      <div class="card">
+        <h3 style="margin-top:0;">Quick actions</h3>
+        <div class="row">
+          <a class="btn btn-primary" href="/pro">Open Pro App</a>
+          <a class="btn btn-ghost" href="/app">Open Demo App</a>
+          <!-- İleride faturalama portalı eklenirse burayı güncelleriz -->
+          <a class="btn btn-ghost" href="/checkout">Manage billing</a>
         </div>
-      {% else %}
-        <div class="card" style="padding:20px; margin-top:12px;">
-          <h3 style="margin:0 0 8px;">You’re on {{ plan_name }}</h3>
-          <p style="margin:0;">Tam erişim aktif. İyi analizler! 🚀</p>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0;">What you get</h3>
+        <div class="kvs">
+          <div>• Full access to 24+ weeks of data</div>
+          <div>• Smart include/exclude filters</div>
+          <div>• 250 results per query</div>
+          <div>• Priority updates & support</div>
         </div>
-      {% endif %}
-    </section>
-  </main>
+      </div>
+    {% else %}
+      <!-- DEMO ACTIONS -->
+      <div class="card">
+        <h3 style="margin-top:0;">Get started</h3>
+        <div class="row">
+          <a class="btn btn-ghost" href="/app">Try the Demo</a>
+          <a class="btn btn-primary" href="/checkout">Upgrade to Pro</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0;">Pro includes</h3>
+        <div class="kvs">
+          {% for b in benefits %}
+            <div>• {{ b }}</div>
+          {% endfor %}
+        </div>
+        <p style="margin-top:10px">Plan: <strong>{{ plan_name }}</strong> — {{ price_text }}</p>
+      </div>
+    {% endif %}
+  </div>
+
 </body>
 </html>
 
@@ -2549,6 +2603,11 @@ window.addEventListener('load', ()=> window.preloaderHide && window.preloaderHid
 </head>
 
 <body data-mode="{{ mode or 'demo' }}">
+ <script>
+  const MODE = document.body.dataset.mode || 'demo';
+  document.cookie = `mode=${MODE}; path=/; SameSite=Lax`;
+</script>
+
 
   <!-- ===== PRELOADER (sadece kendi içinde animasyon, grafiklere sızmaz) ===== -->
   <div id="preloader" style="
@@ -2660,7 +2719,10 @@ window.addEventListener('load', ()=> window.preloaderHide && window.preloaderHid
           <th data-key="term">Term</th>
           <th data-key="start_rank">Start rank</th>
           <th data-key="end_rank">End rank</th>
-          <th data-key="total_improvement">Total improvement</th>
+          <th data-key="total_improvement">
+              Total improvement <span style="opacity: 0.6;">▼</span>
+         </th>
+
           <th data-key="weeks">Weeks</th>
         </tr>
       </thead>
