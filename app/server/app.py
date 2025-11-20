@@ -303,17 +303,18 @@ def uptrends():
         def _parts_space(s: str):
             return [p.strip().lower() for p in s.split() if p.strip()]
 
-        if include:
-    for w in _parts_space(include):
-        # kelime olarak eşleşme: başı/sonu veya boşluk sınırı
-        sql += " AND LOWER(term) REGEXP ?"
-        params.append(rf'(^|[^a-z]){w}([^a-z]|$)')
+# --- Include filters (word-boundary match) ---
+     if include:
+         for w in _parts_space(include):
+             sql += " AND LOWER(term) REGEXP ?"
+             params.append(rf'(^|[^a-z]){w}([^a-z]|$)')
 
-        if exclude:
-    for w in _parts_space(exclude):
-        sql += " AND LOWER(term) NOT REGEXP ?"
-        params.append(rf'(^|[^a-z]){w}([^a-z]|$)')
 
+        # --- Exclude filters (word-boundary match) ---
+     if exclude:
+         for w in _parts_space(exclude):
+             sql += " AND LOWER(term) NOT REGEXP ?"
+             params.append(rf'(^|[^a-z]){w}([^a-z]|$)')
 
         sql += """
         ),
