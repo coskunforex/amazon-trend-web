@@ -306,14 +306,16 @@ def uptrends():
         # --- Include filters (word-boundary match) ---
         if include:
             for w in _parts_space(include):
-                sql += " AND LOWER(term) REGEXP ?"
+        # kelime bazlı eşleşme
+                sql += " AND REGEXP_MATCHES(LOWER(term), ?)"
                 params.append(rf'(^|[^a-z]){w}([^a-z]|$)')
 
-        # --- Exclude filters (word-boundary match) ---
-        if exclude:
-            for w in _parts_space(exclude):
-                sql += " AND LOWER(term) NOT REGEXP ?"
+
+    if exclude:
+           for w in _parts_space(exclude):
+                sql += " AND NOT REGEXP_MATCHES(LOWER(term), ?)"
                 params.append(rf'(^|[^a-z]){w}([^a-z]|$)')
+
 
         sql += """
         ),
