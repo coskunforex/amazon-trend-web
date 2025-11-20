@@ -43,7 +43,11 @@ app.register_blueprint(ls_bp)
 def inject_current_user():
     email = session.get("user_email")
     u = get_user(email) if email else None
-    return {"current_user": u}
+    lemon_portal = os.environ.get("LEMON_PORTAL_URL", "").strip()
+    return {
+        "current_user": u,
+        "LEMON_PORTAL_URL": lemon_portal,
+    }
 
 
 # ---------- Secrets / Logs / DB bootstrap ----------

@@ -23,14 +23,22 @@
         no setup, no spreadsheets.
       </p>
             <div class="cta-group">
-        {% if current_user and current_user.plan == "pro" %}
-          <a href="/pro" class="btn">Open Pro app</a>
-          <a href="/dashboard" class="btn ghost">Account &amp; billing</a>
-        {% else %}
-          <a href="/app" class="btn">Try Free Demo</a>
-          <a href="/checkout" class="btn ghost">Upgrade to Pro</a>
-        {% endif %}
-      </div>
+  {% if current_user and current_user.plan == "pro" %}
+    <a href="/pro" class="btn">Open Pro app</a>
+    <a
+      href="{{ LEMON_PORTAL_URL or '/dashboard' }}"
+      class="btn ghost"
+      target="_blank"
+      rel="noopener"
+    >
+      Account &amp; billing
+    </a>
+  {% else %}
+    <a href="/app" class="btn">Try Free Demo</a>
+    <a href="/checkout" class="btn ghost">Upgrade to Pro</a>
+  {% endif %}
+</div>
+
 
 
       <div class="badges">

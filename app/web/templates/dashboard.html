@@ -228,14 +228,26 @@
           </ul>
         </div>
 
-        <div class="dash-actions">
-          <a href="/pro" class="btn-primary-dash">
-            Open Pro App
-          </a>
-          <a href="/app" class="btn-secondary-dash">
-            Open Demo (sandbox)
-          </a>
-        </div>
+       <div class="dash-actions">
+  <a href="/pro" class="btn">Open Pro app</a>
+  <a href="/app" class="btn ghost">Open Demo (sandbox)</a>
+
+  {% if LEMON_PORTAL_URL %}
+    <a
+      href="{{ LEMON_PORTAL_URL }}"
+      class="btn ghost"
+      target="_blank"
+      rel="noopener"
+      style="margin-top:10px;"
+    >
+      Manage account &amp; billing
+    </a>
+    <p class="dash-note">
+      Update card, view invoices, cancel anytime.
+    </p>
+  {% endif %}
+</div>
+
 
         <div class="dash-help">
           Need help or have feedback? Reach out at
