@@ -311,7 +311,7 @@ def uptrends():
                 params.append(rf'(^|[^a-z]){w}([^a-z]|$)')
 
 
-    if exclude:
+       if exclude:
            for w in _parts_space(exclude):
                 sql += " AND NOT REGEXP_MATCHES(LOWER(term), ?)"
                 params.append(rf'(^|[^a-z]){w}([^a-z]|$)')
