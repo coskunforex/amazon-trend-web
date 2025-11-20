@@ -304,13 +304,16 @@ def uptrends():
             return [p.strip().lower() for p in s.split() if p.strip()]
 
         if include:
-            for w in _parts_space(include):
-                sql += " AND LOWER(term) LIKE ?"
-                params.append(f"%{w}%")
+    for w in _parts_space(include):
+        # kelime olarak eşleşme: başı/sonu veya boşluk sınırı
+        sql += " AND LOWER(term) REGEXP ?"
+        params.append(rf'(^|[^a-z]){w}([^a-z]|$)')
+
         if exclude:
-            for w in _parts_space(exclude):
-                sql += " AND LOWER(term) NOT LIKE ?"
-                params.append(f"%{w}%")
+    for w in _parts_space(exclude):
+        sql += " AND LOWER(term) NOT REGEXP ?"
+        params.append(rf'(^|[^a-z]){w}([^a-z]|$)')
+
 
         sql += """
         ),
