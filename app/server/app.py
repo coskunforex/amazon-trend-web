@@ -301,24 +301,24 @@ def uptrends():
         params = [start_id, end_id, max_rank]
 
         def _parts_space(s: str):
-            return [p.strip().lower() for p in s.split() if p.strip()]
+            return [p.strip().lower() for s in [s or ""] for p in s.split(",") if p.strip()]
 
-# --- Include filters (word-boundary match) ---
-     if include:
-         for w in _parts_space(include):
-             sql += " AND LOWER(term) REGEXP ?"
-             params.append(rf'(^|[^a-z]){w}([^a-z]|$)')
-
+        # --- Include filters (word-boundary match) ---
+        if include:
+            for w in _parts_space(include):
+                sql += " AND LOWER(term) REGEXP ?"
+                params.append(rf'(^|[^a-z]){w}([^a-z]|$)')
 
         # --- Exclude filters (word-boundary match) ---
-     if exclude:
-         for w in _parts_space(exclude):
-             sql += " AND LOWER(term) NOT REGEXP ?"
-             params.append(rf'(^|[^a-z]){w}([^a-z]|$)')
+        if exclude:
+            for w in _parts_space(exclude):
+                sql += " AND LOWER(term) NOT REGEXP ?"
+                params.append(rf'(^|[^a-z]){w}([^a-z]|$)')
 
         sql += """
         ),
         term_bounds AS (
+
           SELECT term,
                  MIN(week_id) AS min_w,
                  MAX(week_id) AS max_w,
