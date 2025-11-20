@@ -228,6 +228,8 @@ def reindex():
 @app.get("/uptrends")
 def uptrends():
     try:
+        import re
+
         start_id = request.args.get("startWeekId", type=int)
         end_id   = request.args.get("endWeekId", type=int)
         include  = (request.args.get("include") or "").strip().lower()
@@ -247,7 +249,6 @@ def uptrends():
             if u and u.get("plan") == "pro":
                 mode = "pro"
 
-
         if not (start_id and end_id):
             return jsonify({"error": "Provide startWeekId and endWeekId"}), 400
         if end_id < start_id:
@@ -263,7 +264,6 @@ def uptrends():
             limit = min(limit, 50)
         else:
             limit = min(limit, 250)
-
 
         con = get_conn(read_only=True)
         try:
@@ -300,27 +300,28 @@ def uptrends():
         """
         params = [start_id, end_id, max_rank]
 
+        # include/exclude stringlerini parçala
         def _parts_space(s: str):
-            return [p.strip().lower() for s in [s or ""] for p in s.split(",") if p.strip()]
+            parts = re.split(r"[,\s]+", s or "")
+            return [p.strip().lower() for p in parts if p.strip()]
 
-        # --- Include filters (word-boundary match) ---
+        # ✅ INCLUDE: kelime bazlı eşleşme (trumpet sorunu çözülüyor)
         if include:
             for w in _parts_space(include):
-        # kelime bazlı eşleşme
+                pattern = rf"(^|[^a-z]){re.escape(w)}([^a-z]|$)"
                 sql += " AND REGEXP_MATCHES(LOWER(term), ?)"
-                params.append(rf'(^|[^a-z]){w}([^a-z]|$)')
+                params.append(pattern)
 
-
-       if exclude:
-           for w in _parts_space(exclude):
+        # ✅ EXCLUDE: aynı mantıkla hariç tut
+        if exclude:
+            for w in _parts_space(exclude):
+                pattern = rf"(^|[^a-z]){re.escape(w)}([^a-z]|$)"
                 sql += " AND NOT REGEXP_MATCHES(LOWER(term), ?)"
-                params.append(rf'(^|[^a-z]){w}([^a-z]|$)')
-
+                params.append(pattern)
 
         sql += """
         ),
         term_bounds AS (
-
           SELECT term,
                  MIN(week_id) AS min_w,
                  MAX(week_id) AS max_w,
@@ -369,52 +370,6 @@ def uptrends():
     except Exception as e:
         app.logger.exception("uptrends failed")
         return jsonify({"error": "uptrends_failed", "message": str(e)}), 500
-
-# ---------- API: Series (range-aware) ----------
-@app.get("/series")
-def series():
-    try:
-        term = (request.args.get("term") or "").strip()
-        if not term:
-            return jsonify({"error": "term required"}), 400
-
-        start_id = request.args.get("startWeekId", type=int)
-        end_id   = request.args.get("endWeekId", type=int)
-
-        con = get_conn(read_only=True)
-
-        if start_id and end_id:
-            if end_id < start_id:
-                start_id, end_id = end_id, start_id
-            rows = con.execute("""
-                WITH all_weeks AS (
-                  SELECT DISTINCT week FROM searches ORDER BY week
-                ),
-                weeks_idx AS (
-                  SELECT week, ROW_NUMBER() OVER (ORDER BY week) AS week_id
-                  FROM all_weeks
-                )
-                SELECT w.week, s.rank
-                FROM searches s
-                JOIN weeks_idx w USING(week)
-                WHERE LOWER(s.term) = LOWER(?)
-                  AND w.week_id BETWEEN ? AND ?
-                ORDER BY w.week
-            """, [term, start_id, end_id]).fetchall()
-        else:
-            rows = con.execute("""
-                SELECT week, rank
-                FROM searches
-                WHERE LOWER(term) = LOWER(?)
-                ORDER BY week
-            """, [term]).fetchall()
-
-        con.close()
-
-        return jsonify([{"week": r[0], "weekLabel": r[0], "rank": int(r[1])} for r in rows])
-    except Exception as e:
-        app.logger.exception("series failed")
-        return jsonify({"error": "series_failed", "message": str(e)}), 500
 
 # ---------- CHECKOUT (placeholder) ----------
 @app.get("/checkout")
