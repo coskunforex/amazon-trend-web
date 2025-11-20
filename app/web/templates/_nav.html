@@ -24,7 +24,7 @@
   <a href="{{ url_for('dashboard') }}">Dashboard</a>
 
   {% if current_user.plan == "pro" %}
-    <a href="{{ url_for('app_pro') }}">Pro active</a>
+    <a href="{{ url_for('app_pro') }}">Pro</a>
   {% endif %}
 
   <a href="{{ url_for('logout') }}" class="btn small outline">Log out</a>
