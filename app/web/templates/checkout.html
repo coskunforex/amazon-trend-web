@@ -41,6 +41,51 @@
       <ul style="text-align:left; max-width:520px; margin:0 auto 16px; line-height:1.55;">
         {% for b in benefits %}<li>{{ b }}</li>{% endfor %}
       </ul>
+      <!-- TRUST BADGES -->
+<div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin:6px 0 18px;">
+  <span style="padding:6px 10px; border:1px solid rgba(255,255,255,.10); border-radius:999px; font-size:12px; opacity:.85;">
+    Secure checkout
+  </span>
+  <span style="padding:6px 10px; border:1px solid rgba(255,255,255,.10); border-radius:999px; font-size:12px; opacity:.85;">
+    Cancel anytime
+  </span>
+  <span style="padding:6px 10px; border:1px solid rgba(255,255,255,.10); border-radius:999px; font-size:12px; opacity:.85;">
+    30-day refund
+  </span>
+</div>
+
+<!-- MINI SOCIAL PROOF -->
+<div style="max-width:520px; margin:8px auto 14px; text-align:left;">
+  <p style="margin:0 0 8px; font-weight:700;">Amazon sellers say…</p>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+    <blockquote style="margin:0; padding:10px 12px; background:rgba(255,255,255,.04); border-radius:12px; font-size:14px;">
+      “Caught two winners early. Way faster than spreadsheets.”
+      <div style="margin-top:6px; font-size:12px; opacity:.7;">— Alex, Amazon Seller</div>
+    </blockquote>
+    <blockquote style="margin:0; padding:10px 12px; background:rgba(255,255,255,.04); border-radius:12px; font-size:14px;">
+      “I check trend momentum in minutes. Clean and simple.”
+      <div style="margin-top:6px; font-size:12px; opacity:.7;">— Priya, FBA Operator</div>
+    </blockquote>
+  </div>
+</div>
+
+<!-- MINI FAQ -->
+<div style="max-width:520px; margin:10px auto 6px; text-align:left;">
+  <p style="margin:0 0 8px; font-weight:700;">Quick FAQ</p>
+  <details style="background:rgba(255,255,255,.03); padding:8px 10px; border-radius:10px; margin:6px 0;">
+    <summary style="cursor:pointer; font-weight:600;">Does this connect to my Amazon account?</summary>
+    <p style="margin:6px 0 0; font-size:14px; opacity:.9;">No. It works only with the Brand Analytics CSV you upload.</p>
+  </details>
+  <details style="background:rgba(255,255,255,.03); padding:8px 10px; border-radius:10px; margin:6px 0;">
+    <summary style="cursor:pointer; font-weight:600;">Can I cancel anytime?</summary>
+    <p style="margin:6px 0 0; font-size:14px; opacity:.9;">Yes. Cancel in 1 click from your billing portal.</p>
+  </details>
+  <details style="background:rgba(255,255,255,.03); padding:8px 10px; border-radius:10px; margin:6px 0;">
+    <summary style="cursor:pointer; font-weight:600;">Refund policy?</summary>
+    <p style="margin:6px 0 0; font-size:14px; opacity:.9;">Full refund within 30 days if you're not happy.</p>
+  </details>
+</div>
+
 
       {% if user %}
         <form method="post" action="/checkout/start" style="margin-top:12px;">
