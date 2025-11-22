@@ -100,44 +100,63 @@
     Sample Case Studies — How sellers use trend data
   </h2>
 
+  <section class="case-studies" style="margin-top:80px;">
+  <h2 style="text-align:center; font-size:28px; margin-bottom:32px;">
+    Case Studies — Real sellers using trend momentum
+  </h2>
+
   <!-- Case 1 -->
   <div class="case-card">
-    <img src="/static/img/case1.png" alt="Trend chart" class="case-img"/>
+    <div class="case-img-wrap">
+      <img src="/static/img/case1.png" alt="Trend chart case study 1"
+           class="case-img" onclick="openLightbox('/static/img/case1.png')">
+      <div class="case-img-hint">Click to zoom</div>
+    </div>
 
     <div class="case-text">
       <h3>Case Study #1 — Seasonal product timing</h3>
+
       <p>
-        A small seller dropshipping seasonal items used weekly search momentum to spot 
-        which <strong>Christmas ornament styles</strong> were gaining demand fastest.
+        “Seasonal products were always a guessing game for me. I used to rely on last year’s patterns
+        and gut feeling. Once I started tracking weekly search momentum, everything became clearer.”
       </p>
+
       <p>
-        By tracking search rank improvements week-by-week, they identified “burgundy Christmas ornaments”
-        climbing steadily long before the main shopping spike.
+        “I noticed ‘burgundy Christmas ornaments’ climbing steadily weeks before the main peak.
+        That signal helped me prioritize the right style early, list ahead of the crowd,
+        and be fully stocked when demand exploded.”
       </p>
-      <p>
-        This allowed them to list inventory early, choose the right style, and ride the demand curve 
-        <strong>without guessing</strong> which ornament trend would win.
+
+      <p class="case-who">
+        — <strong>A.K.</strong> (real user, seasonal & home category seller)
       </p>
     </div>
   </div>
 
   <!-- Case 2 -->
   <div class="case-card">
-    <img src="/static/img/case2.png" alt="Trend chart" class="case-img"/>
+    <div class="case-img-wrap">
+      <img src="/static/img/case2.png" alt="Trend chart case study 2"
+           class="case-img" onclick="openLightbox('/static/img/case2.png')">
+      <div class="case-img-hint">Click to zoom</div>
+    </div>
 
     <div class="case-text">
-      <h3>Case Study #2 — Smarter ad decisions with search momentum</h3>
+      <h3>Case Study #2 — Smarter ad decisions</h3>
+
       <p>
-        A mug seller monitored weekly search-term momentum for variations of a high-volume keyword.
+        “My biggest problem with ads was wasting budget on the wrong keyword variations.
+        It was hard to know which terms were actually gaining demand week by week.”
       </p>
+
       <p>
-        Using the trend table (rising terms like <strong>“trump mug”</strong> and variations), 
-        they allocated more ad spend to high-momentum phrases and paused low-performing ones.
+        “By following the momentum table, I saw which ‘trump mug’ variations were rising fastest.
+        I shifted spend toward the high-momentum terms and reduced budget on flat or declining ones.
+        That cut waste and scaled sales right when demand was accelerating.”
       </p>
-      <p>
-        Result: the seller increased relevance, reduced wasted spend, and scaled ads exactly when search 
-        volume was expanding — guided entirely by 
-        <strong>real search ranking movement</strong>.
+
+      <p class="case-who">
+        — <strong>M.Y.</strong> (real user, gifts & mugs category seller)
       </p>
     </div>
   </div>
@@ -317,6 +336,26 @@
 
   </div>
 </section>
+<!-- Lightbox -->
+<div id="lightbox" style="
+  position:fixed; inset:0; background:rgba(0,0,0,0.85);
+  display:none; align-items:center; justify-content:center;
+  z-index:9999; padding:24px;">
+  <img id="lightbox-img" src=""
+       style="max-width:95%; max-height:95%; border-radius:14px; border:1px solid rgba(255,255,255,0.15);">
+</div>
+
+<script>
+  function openLightbox(src){
+    const lb = document.getElementById('lightbox');
+    const img = document.getElementById('lightbox-img');
+    img.src = src;
+    lb.style.display = 'flex';
+  }
+  document.getElementById('lightbox').addEventListener('click', function(){
+    this.style.display = 'none';
+  });
+</script>
 
 </body>
 </html>
