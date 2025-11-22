@@ -164,24 +164,35 @@
   <script>
 document.addEventListener("DOMContentLoaded", () => {
 
-  // --- DEMO modunda pro’dan kalan haftaları temizle ---
-  if (document.body.dataset.mode === "demo") {
+  const mode = document.body.dataset.mode || "demo"; // demo / pro
+  const DEFAULT_DEMO_WEEKS = 6;
+
+  // 1) DEMO ise pro’dan kalan verileri temizle
+  if (mode === "demo") {
+    try {
       localStorage.removeItem("selectedWeeks");
       localStorage.removeItem("lastQuery");
       localStorage.removeItem("filters");
+    } catch(e) {}
   }
 
-  // --- HER AÇILIŞTA OTOMATİK 18 WEEKS SEÇ ---
+  // 2) Weeks dropdown + label varsa 6 yap
   const w = document.querySelector("#weeksRange");
   const label = document.querySelector("#weeksLabel");
 
-  if (w) w.value = "18";
-  if (label) label.textContent = "18 weeks";
+  if (mode === "demo") {
+    if (w) w.value = String(DEFAULT_DEMO_WEEKS);
+    if (label) label.textContent = `${DEFAULT_DEMO_WEEKS} weeks`;
 
-  // --- OTOMATİK ARAMA YAP (runSearch yerine sende hangi fonksiyon varsa onu yaz) ---
-  if (typeof runSearch === "function") {
-      runSearch({ weeks: 18 });
-  } 
+    // 3) Sayfa açılır açılmaz otomatik arama tetikle
+    if (typeof runSearch === "function") {
+      runSearch({ weeks: DEFAULT_DEMO_WEEKS });
+    } else if (typeof doSearch === "function") {
+      doSearch({ weeks: DEFAULT_DEMO_WEEKS });
+    } else if (typeof triggerSearch === "function") {
+      triggerSearch({ weeks: DEFAULT_DEMO_WEEKS });
+    }
+  }
 });
 </script>
 
