@@ -286,3 +286,43 @@ details p { color: var(--muted); font-size: 14px; margin-top: 10px; }
   font-size: 13px;
   letter-spacing: .3px;
 }
+
+.case-studies {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.case-card {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 60px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.case-img {
+  width: 40%;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.case-text {
+  width: 60%;
+  line-height: 1.6;
+}
+
+.case-text h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 20px;
+}
+@media (max-width: 800px){
+  .case-card {
+    flex-direction: column;
+  }
+  .case-img, .case-text {
+    width: 100%;
+  }
+}
