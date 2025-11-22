@@ -100,6 +100,14 @@
   </div>
 </div>
 
+<form method="post" action="/checkout/start" style="margin-top:12px;">
+          <button class="btn" type="submit">Proceed to secure payment</button>
+        </form>
+        {% if error %}
+          <p style="color:#ff8383; margin-top:12px;">{{ error }}</p>
+        {% endif %}
+        <p class="muted" style="margin-top:8px;">You’ll be redirected to a secure Lemon Squeezy checkout.</p>
+
 <!-- MINI FAQ -->
 <div style="max-width:520px; margin:10px auto 6px; text-align:left;">
   <p style="margin:0 0 8px; font-weight:700;">Quick FAQ</p>
@@ -122,13 +130,7 @@
 
 
       {% if user %}
-        <form method="post" action="/checkout/start" style="margin-top:12px;">
-          <button class="btn" type="submit">Proceed to secure payment</button>
-        </form>
-        {% if error %}
-          <p style="color:#ff8383; margin-top:12px;">{{ error }}</p>
-        {% endif %}
-        <p class="muted" style="margin-top:8px;">You’ll be redirected to a secure Lemon Squeezy checkout.</p>
+        
       {% endif %}
     </section>
   </main>
