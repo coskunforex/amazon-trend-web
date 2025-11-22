@@ -161,5 +161,29 @@
 
   <!-- App JS -->
   <script src="/static/js/app.js" defer></script>
+  <script>
+document.addEventListener("DOMContentLoaded", () => {
+
+  // --- DEMO modunda pro’dan kalan haftaları temizle ---
+  if (document.body.dataset.mode === "demo") {
+      localStorage.removeItem("selectedWeeks");
+      localStorage.removeItem("lastQuery");
+      localStorage.removeItem("filters");
+  }
+
+  // --- HER AÇILIŞTA OTOMATİK 18 WEEKS SEÇ ---
+  const w = document.querySelector("#weeksRange");
+  const label = document.querySelector("#weeksLabel");
+
+  if (w) w.value = "18";
+  if (label) label.textContent = "18 weeks";
+
+  // --- OTOMATİK ARAMA YAP (runSearch yerine sende hangi fonksiyon varsa onu yaz) ---
+  if (typeof runSearch === "function") {
+      runSearch({ weeks: 18 });
+  } 
+});
+</script>
+
 </body>
 </html>
