@@ -58,7 +58,7 @@ def send_pro_activated_email(to_email: str, name: str = ""):
 Your Uptrend Hunter Pro plan is now active. 🎉
 
 What you’ve unlocked:
-• Full 24+ week history
+• Full 18+ week history
 • Up to 250 results per query
 • Advanced include/exclude filters
 • Priority updates & support

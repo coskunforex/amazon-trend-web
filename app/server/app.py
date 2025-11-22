@@ -19,7 +19,7 @@ from app.core.auth import (
 PRICE_TEXT = os.environ.get("PRICE_TEXT", "$29.99/month")
 PLAN_NAME  = os.environ.get("PLAN_NAME", "Uptrend Hunter Pro")
 PLAN_BENEFITS = [
-    "Full access to 24+ weeks of data",
+    "Full access to 18+ weeks of data",
     "Smart include/exclude filters",
     "250 results per query",
     "Priority updates & support",
