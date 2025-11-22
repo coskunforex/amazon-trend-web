@@ -162,37 +162,59 @@
   <!-- App JS -->
   <script src="/static/js/app.js" defer></script>
   <script>
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
 
-  const mode = document.body.dataset.mode || "demo"; // demo / pro
+  const mode = document.body.dataset.mode || "demo"; 
   const DEFAULT_DEMO_WEEKS = 6;
 
-  // 1) DEMO ise pro’dan kalan verileri temizle
+  // UI elemanları
+  const w = document.querySelector("#weeksRange");
+  const label = document.querySelector("#weeksLabel");
+
+  // 0) PRO + DEMO haftalarını backend’den kesin olarak al
+  let availableWeeks = 18; 
+  try {
+    const r = await fetch("/api/meta", { cache: "no-store" });
+    if (r.ok) {
+      const j = await r.json();
+      if (j.available_weeks > 0) {
+        availableWeeks = j.available_weeks;
+      }
+    }
+  } catch(e){}
+
+  // 1) DEMO ise pro’dan kalan state’i temizle + 6 weeks yap
   if (mode === "demo") {
+
     try {
       localStorage.removeItem("selectedWeeks");
       localStorage.removeItem("lastQuery");
       localStorage.removeItem("filters");
     } catch(e) {}
-  }
 
-  // 2) Weeks dropdown + label varsa 6 yap
-  const w = document.querySelector("#weeksRange");
-  const label = document.querySelector("#weeksLabel");
-
-  if (mode === "demo") {
     if (w) w.value = String(DEFAULT_DEMO_WEEKS);
     if (label) label.textContent = `${DEFAULT_DEMO_WEEKS} weeks`;
 
-    // 3) Sayfa açılır açılmaz otomatik arama tetikle
     if (typeof runSearch === "function") {
       runSearch({ weeks: DEFAULT_DEMO_WEEKS });
-    } else if (typeof doSearch === "function") {
-      doSearch({ weeks: DEFAULT_DEMO_WEEKS });
-    } else if (typeof triggerSearch === "function") {
-      triggerSearch({ weeks: DEFAULT_DEMO_WEEKS });
     }
+    return; // DEMO konusunu bitiriyoruz
   }
+
+  // 2) PRO modunda ise:
+  // - localStorage kalsın
+  // - "0 weeks" veya "12 weeks" kalmasın
+  // - otomatik olarak availableWeeks kullanılsın
+
+  const PRO_DEFAULT = availableWeeks; // ör: 18
+
+  if (w) w.value = String(PRO_DEFAULT);
+  if (label) label.textContent = `${PRO_DEFAULT} weeks`;
+
+  if (typeof runSearch === "function") {
+    runSearch({ weeks: PRO_DEFAULT });
+  }
+
 });
 </script>
 
