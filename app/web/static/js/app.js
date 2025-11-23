@@ -99,9 +99,20 @@ function setLoading(on){
     statusEl.classList.toggle("hidden", !on);
     statusEl.setAttribute("aria-hidden", on ? "false":"true");
   }
-  if(runBtn) runBtn.disabled = on;
+
+  // runBtn loading’de disable edilmez → Stop çalışsın
+  // sadece diğer actionlar kilitlenir
   if(reindexBtn) reindexBtn.disabled = on;
+
+  // input/selectleri kilitle (Stop basılana kadar)
+  if(startSel) startSel.disabled = on;
+  if(endSel) endSel.disabled = on;
+
+  // demo’da zaten disabled ama pro’da da kilitle
+  if(includeInp) includeInp.disabled = on || (MODE === "demo");
+  if(excludeInp) excludeInp.disabled = on || (MODE === "demo");
 }
+
 
 function persistFilters(){
   const data = {
@@ -209,8 +220,9 @@ async function runQuery(){
     runBtn.disabled = false; // stop’a basabilsin
   }
 
-  try{
-    setLoading(true);
+ try{
+  setLoading(true);
+  if (runBtn) runBtn.disabled = false;
 
     const { s, e, sLabel, eLabel, total } = parseWeeks();
     if(rangePill) rangePill.textContent = `${total} weeks • ${sLabel} → ${eLabel}`;
