@@ -12,6 +12,7 @@ window.preloaderHide = window.preloaderHide || function () {
 
 // DEMO / PRO ayrımı
 const MODE = document.body.dataset.mode || 'demo';
+const FILTER_KEY = `atf.filters.${MODE}`;
 
 function applyDemoLimits() {
   if (MODE !== 'demo') return; // sadece demo'da çalışır
@@ -93,22 +94,38 @@ function setLoading(on){
 
 function persistFilters(){
   const data = {
-    start: startSel.value, end: endSel.value,
-    include: includeInp.value, exclude: excludeInp.value
+    start: startSel.value,
+    end: endSel.value,
+    include: includeInp.value,
+    exclude: excludeInp.value
   };
-  localStorage.setItem("atf.filters", JSON.stringify(data));
+  localStorage.setItem(FILTER_KEY, JSON.stringify(data));
 }
+
 function restoreFilters(){
-  const raw = localStorage.getItem("atf.filters");
+  const raw = localStorage.getItem(FILTER_KEY);
   if(!raw) return;
+
   try{
     const d = JSON.parse(raw);
+
     if(d.start) startSel.value = String(d.start);
-    if(d.end) endSel.value = String(d.end);
-    if(d.include!=null) includeInp.value = d.include;
-    if(d.exclude!=null) excludeInp.value = d.exclude;
+    if(d.end)   endSel.value   = String(d.end);
+
+    // Demo'da include/exclude her zaman boş olmalı
+    if(MODE === "demo"){
+      includeInp.value = "";
+      excludeInp.value = "";
+      return;
+    }
+
+if (inc) inc.value = "";
+if (exc) exc.value = "";
+persistFilters();
+
   }catch{}
 }
+
 
 /* ---------- weeks ---------- */
 async function loadWeeks(){
