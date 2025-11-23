@@ -65,6 +65,8 @@ const toast = $("#toast");                        // may be null
 let weeks = [];
 let lastFocusedBeforeModal = null;
 let currentSort = { key: "total_improvement", dir: "desc" };
+let currentController = null;
+let isRunningQuery = false;
 
 /* ---------- helpers ---------- */
 function showToast(msg, ms=2600){
@@ -74,14 +76,15 @@ function showToast(msg, ms=2600){
   setTimeout(()=>toast.classList.add("hidden"), ms);
 }
 
-async function fetchJSON(url){
-  const res = await fetch(url);
+async function fetchJSON(url, signal){
+  const res = await fetch(url, { signal });
   if(!res.ok){
     const t = await res.text().catch(()=>res.statusText);
     throw new Error(`${res.status} ${res.statusText} - ${t}`);
   }
   return res.json();
 }
+
 
 function setLoading(on){
   if(statusEl){
@@ -119,8 +122,12 @@ function restoreFilters(){
       return;
     }
 
-if (inc) inc.value = "";
-if (exc) exc.value = "";
+    if(d.include != null) includeInp.value = d.include;
+    if(d.exclude != null) excludeInp.value = d.exclude;
+
+  }catch{}
+}
+
 persistFilters();
 
   }catch{}
@@ -169,10 +176,36 @@ function parseWeeks(){
   return { s, e, sLabel, eLabel, total };
 }
 
-/* ---------- query ---------- */
 async function runQuery(){
+  // Eğer zaten çalışıyorsa → STOP gibi davran
+  if (isRunningQuery && currentController){
+    currentController.abort();
+    currentController = null;
+    isRunningQuery = false;
+
+    if(runBtn){
+      runBtn.textContent = "Find uptrends";
+      runBtn.classList.remove("danger");
+      runBtn.disabled = false;
+    }
+
+    setLoading(false);
+    return;
+  }
+
+  // Yeni sorgu başlatılıyor
+  currentController = new AbortController();
+  isRunningQuery = true;
+
+  if(runBtn){
+    runBtn.textContent = "Stop";
+    runBtn.classList.add("danger");
+    runBtn.disabled = false; // stop’a basabilsin
+  }
+
   try{
     setLoading(true);
+
     const { s, e, sLabel, eLabel, total } = parseWeeks();
     if(rangePill) rangePill.textContent = `${total} weeks • ${sLabel} → ${eLabel}`;
 
@@ -183,22 +216,36 @@ async function runQuery(){
       exclude: norm(excludeInp.value),
     });
 
-    const rows = await fetchJSON("/uptrends?" + params.toString());
+    const rows = await fetchJSON(
+      "/uptrends?" + params.toString(),
+      currentController.signal
+    );
+
     const sorted = sortRows(rows, currentSort.key, currentSort.dir);
     renderTable(sorted, s, e);
     persistFilters();
 
-    // ✅ İlk sorgu bitti, preloader'ı yine kapat
     hidePreloader();
 
   }catch(err){
-    showToast(err.message);
-    console.error(err);
-    hidePreloader();
+    if(err.name !== "AbortError"){
+      showToast(err.message || "Query failed.");
+      console.error(err);
+    }
   }finally{
     setLoading(false);
+
+    isRunningQuery = false;
+    currentController = null;
+
+    if(runBtn){
+      runBtn.textContent = "Find uptrends";
+      runBtn.classList.remove("danger");
+      runBtn.disabled = false;
+    }
   }
 }
+
 
 function sortRows(rows, key, dir){
   const mul = dir === "desc" ? -1 : 1;
