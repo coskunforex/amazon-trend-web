@@ -315,3 +315,16 @@ details p { color: var(--muted); font-size: 14px; margin-top: 10px; }
 .case-text h3{
   font-size:22px;               /* 20 → 22 */
 }
+
+/* RUN → CANCEL görünümü */
+.btn.cancel-mode {
+  background: #fbbf24 !important;   /* amber-400 */
+  color: #1e293b !important;        /* slate-800 */
+  border-color: #f59e0b !important; /* amber-500 */
+  box-shadow: 0 0 12px rgba(251,191,36,0.5);
+}
+
+.btn.cancel-mode:hover {
+  background: #f59e0b !important;   /* amber-500 */
+  box-shadow: 0 0 14px rgba(245,158,11,0.6);
+}

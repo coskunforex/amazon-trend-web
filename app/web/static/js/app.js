@@ -215,7 +215,7 @@ async function runQuery(){
   isRunningQuery = true;
 
   if(runBtn){
-    runBtn.textContent = "Stop";
+    runBtn.textContent = "Cancel Search";
     runBtn.classList.add("danger");
     runBtn.disabled = false; // stop’a basabilsin
   }
