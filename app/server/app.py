@@ -176,6 +176,74 @@ def admin_setpro():
     return jsonify({"status": "ok", "email": email, "plan": "pro"})
 
 
+# ====== ADMIN DASHBOARD (senin göreceğin panel) ======
+ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "").strip()
+
+def require_admin(req):
+    if not ADMIN_TOKEN:
+        return False
+    t = (req.args.get("token") or req.headers.get("X-Admin-Token") or "").strip()
+    return t == ADMIN_TOKEN
+
+@app.get("/admin")
+def admin_dashboard():
+    if not require_admin(request):
+        return "Not authorized", 401
+
+    con = get_conn(read_only=True)
+
+    users = []
+    try:
+        users = con.execute("""
+            SELECT email, plan, created_at
+            FROM users
+            ORDER BY created_at DESC
+            LIMIT 500
+        """).fetchall()
+    except Exception:
+        app.logger.exception("ADMIN users query failed")
+
+    payments = []
+    try:
+        payments = con.execute("""
+            SELECT email, status, amount, currency, created_at
+            FROM payments
+            ORDER BY created_at DESC
+            LIMIT 200
+        """).fetchall()
+    except Exception:
+        payments = []
+
+    stats = {"total_users": 0, "pro_users": 0, "demo_users": 0, "paid_total": 0}
+
+    try:
+        stats["total_users"] = con.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+        stats["pro_users"]   = con.execute("SELECT COUNT(*) FROM users WHERE plan='pro'").fetchone()[0]
+        stats["demo_users"]  = con.execute("SELECT COUNT(*) FROM users WHERE plan!='pro'").fetchone()[0]
+    except Exception:
+        pass
+
+    try:
+        stats["paid_total"] = con.execute("""
+            SELECT COALESCE(SUM(amount),0)
+            FROM payments
+            WHERE status='paid'
+        """).fetchone()[0]
+    except Exception:
+        stats["paid_total"] = 0
+
+    con.close()
+
+    return render_template(
+        "admin.html",
+        users=users,
+        payments=payments,
+        stats=stats,
+    )
+# ==============================================
+
+
+
 @app.get("/weeks")
 def weeks():
     try:

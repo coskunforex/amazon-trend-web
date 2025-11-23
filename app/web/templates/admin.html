@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Admin — Uptrend Hunter</title>
+
+  <link rel="stylesheet" href="/static/css/landing.css?v=1">
+  <link rel="stylesheet" href="/static/css/styles.css?v=app-final-7">
+  <style>
+    .admin-wrap{max-width:1100px;margin:96px auto 64px;padding:0 16px;}
+    .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;}
+    .kpi{background:#0b1220;border:1px solid #1f2937;border-radius:12px;padding:12px;}
+    .kpi .label{font-size:12px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;}
+    .kpi .value{font-size:20px;font-weight:700;margin-top:4px;}
+    .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:12px;}
+    .card{background:#0b1220;border:1px solid #1f2937;border-radius:12px;padding:0;overflow:hidden;}
+    table{width:100%;border-collapse:collapse;}
+    th,td{padding:10px 12px;border-bottom:1px solid #111827;font-size:14px;}
+    th{background:#0f172a;text-align:left;color:#cbd5e1;font-weight:600;}
+    tr:hover td{background:#0f172a;}
+    .pill{padding:2px 8px;border-radius:999px;font-size:12px;border:1px solid #1f2937;}
+    .pill.pro{color:#bbf7d0;background:rgba(21,128,61,0.25);border-color:rgba(74,222,128,0.6);}
+    .pill.demo{color:#e2e8f0;background:#0f172a;}
+    .pill.paid{color:#38bdf8;background:#0f172a;}
+    @media(max-width:900px){
+      .kpis{grid-template-columns:repeat(2,1fr);}
+      .grid{grid-template-columns:1fr;}
+    }
+  </style>
+</head>
+<body>
+  {% include "_nav.html" %}
+
+  <main class="admin-wrap">
+    <h1 style="margin:0 0 10px;font-size:22px;">Admin Dashboard</h1>
+
+    <section class="kpis">
+      <div class="kpi">
+        <div class="label">Total users</div>
+        <div class="value">{{ stats.total_users }}</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Pro users</div>
+        <div class="value">{{ stats.pro_users }}</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Demo users</div>
+        <div class="value">{{ stats.demo_users }}</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Paid total</div>
+        <div class="value">{{ stats.paid_total }}</div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <!-- USERS -->
+      <div class="card">
+        <div style="padding:10px 12px;font-weight:700;">Latest Signups</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Plan</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in users %}
+              <tr>
+                <td>{{ u[0] }}</td>
+                <td>
+                  {% if u[1] == "pro" %}
+                    <span class="pill pro">PRO</span>
+                  {% else %}
+                    <span class="pill demo">{{ (u[1] or "demo")|upper }}</span>
+                  {% endif %}
+                </td>
+                <td>{{ u[2] }}</td>
+              </tr>
+            {% endfor %}
+            {% if users|length == 0 %}
+              <tr><td colspan="3" class="muted">No users found.</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- PAYMENTS -->
+      <div class="card">
+        <div style="padding:10px 12px;font-weight:700;">Latest Payments</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Status</th>
+              <th>Amount</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in payments %}
+              <tr>
+                <td>{{ p[0] }}</td>
+                <td><span class="pill paid">{{ p[1] }}</span></td>
+                <td>{{ p[2] }} {{ p[3] }}</td>
+                <td>{{ p[4] }}</td>
+              </tr>
+            {% endfor %}
+            {% if payments|length == 0 %}
+              <tr><td colspan="4" class="muted">No payments table / no payments yet.</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
