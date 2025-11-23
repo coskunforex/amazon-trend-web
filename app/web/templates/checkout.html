@@ -84,6 +84,40 @@
 
 </div>
 
+<style>
+  .checkout-pro-btn {
+    background: linear-gradient(90deg, #0ea5e9, #38bdf8);
+    padding: 14px 28px;
+    color: #fff;
+    font-size: 17px;
+    font-weight: 600;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    width: 100%;
+    max-width: 320px;
+    box-shadow: 0 0 14px rgba(14,165,233,0.35);
+    transition: all 0.25s ease;
+  }
+
+  .checkout-pro-btn:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 0 22px rgba(14,165,233,0.6);
+    background: linear-gradient(90deg, #38bdf8, #0ea5e9);
+  }
+</style>
+
+
+<form method="post" action="/checkout/start" style="margin-top:16px;">
+  <button class="checkout-pro-btn" type="submit">Proceed to secure payment</button>
+</form>
+
+{% if error %}
+  <p style="color:#ff8383; margin-top:14px;">{{ error }}</p>
+{% endif %}
+
+<p class="muted" style="margin-top:10px;">You’ll be redirected to a secure Lemon Squeezy checkout.</p>
+
 
 <!-- MINI SOCIAL PROOF -->
 <div style="max-width:520px; margin:8px auto 14px; text-align:left;">
@@ -100,13 +134,6 @@
   </div>
 </div>
 
-<form method="post" action="/checkout/start" style="margin-top:12px;">
-          <button class="btn" type="submit">Proceed to secure payment</button>
-        </form>
-        {% if error %}
-          <p style="color:#ff8383; margin-top:12px;">{{ error }}</p>
-        {% endif %}
-        <p class="muted" style="margin-top:8px;">You’ll be redirected to a secure Lemon Squeezy checkout.</p>
 
 <!-- MINI FAQ -->
 <div style="max-width:520px; margin:10px auto 6px; text-align:left;">
