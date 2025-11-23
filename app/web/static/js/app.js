@@ -35,6 +35,14 @@ function applyDemoLimits() {
     };
     trim(startSel, 6);
     trim(endSel, 6);
+    // trim sonrası seçili değerler uçtuysa son seçeneklere çek
+if (startSel && startSel.options.length) {
+  startSel.value = startSel.options[0].value;
+}
+if (endSel && endSel.options.length) {
+  endSel.value = endSel.options[endSel.options.length - 1].value;
+}
+
   };
 
   setTimeout(limitWeeks, 0);
@@ -115,7 +123,7 @@ function restoreFilters(){
     if(d.start) startSel.value = String(d.start);
     if(d.end)   endSel.value   = String(d.end);
 
-    // Demo'da include/exclude her zaman boş olmalı
+    // Demo'da include/exclude her zaman boş kalır
     if(MODE === "demo"){
       includeInp.value = "";
       excludeInp.value = "";
@@ -125,13 +133,11 @@ function restoreFilters(){
     if(d.include != null) includeInp.value = d.include;
     if(d.exclude != null) excludeInp.value = d.exclude;
 
-  }catch{}
+  }catch(err){
+    console.error("restoreFilters error:", err);
+  }
 }
 
-persistFilters();
-
-  }catch{}
-}
 
 
 /* ---------- weeks ---------- */
