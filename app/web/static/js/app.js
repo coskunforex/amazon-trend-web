@@ -256,19 +256,45 @@ function drawMiniChart(title, data){
     path += (path===""? `M ${p.x} ${p.y}` : ` L ${p.x} ${p.y}`);
   }
 
-  const svg = `
-  <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${title} rank chart">
-    <g class="axis">
+ const svg = `
+  <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${title} rank chart"
+       style="font-family:Inter, sans-serif; font-size:14px; fill:#e2e8f0;">
+    
+    <g class="axis" stroke="#334155" stroke-width="1">
+      <!-- Y axis -->
       <line x1="${pad}" y1="${pad}" x2="${pad}" y2="${H-pad}" />
+      
+      <!-- X axis -->
       <line x1="${pad}" y1="${H-pad}" x2="${W-pad}" y2="${H-pad}" />
-      <text x="${pad}" y="${pad-6}">${minR}</text>
-      <text x="${pad}" y="${H-pad+16}">${data[0]?.weekLabel||""}</text>
-      <text x="${W-pad-80}" y="${H-pad+16}">${data[data.length-1]?.weekLabel||""}</text>
-      <text x="${pad}" y="${H-pad+30}" fill="#0f172a">${title}</text>
+
+      <!-- Min rank -->
+      <text x="${pad+4}" y="${pad+4}" fill="#e2e8f0" font-size="14" font-weight="600">
+        ${minR}
+      </text>
+
+      <!-- Start week -->
+      <text x="${pad}" y="${H-pad+20}" fill="#cbd5e1" font-size="13">
+        ${data[0]?.weekLabel || ""}
+      </text>
+
+      <!-- End week -->
+      <text x="${W-pad-60}" y="${H-pad+20}" fill="#cbd5e1" font-size="13">
+        ${data[data.length-1]?.weekLabel || ""}
+      </text>
     </g>
-    <path class="line" d="${path}"/>
-    ${pts.map(p => p.y===null? "" : `<circle class="dot" cx="${p.x}" cy="${p.y}" r="3"><title>${p.label} • rank ${p.rank}</title></circle>`).join("")}
+
+    <!-- Trend line -->
+    <path class="line" d="${path}" stroke="#38bdf8" stroke-width="3" fill="none"/>
+
+    <!-- Dots -->
+    ${pts.map(p => 
+      p.y===null ? "" :
+      `<circle cx="${p.x}" cy="${p.y}" r="4" fill="#38bdf8">
+         <title>${p.label} • rank ${p.rank}</title>
+       </circle>`
+    ).join("")}
   </svg>`;
+
   $("#modalTitle").textContent = title;
   chartEl.innerHTML = svg;
 }
