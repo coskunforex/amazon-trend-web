@@ -96,62 +96,110 @@
     Sample Case Studies — Real sellers using trend momentum
   </h2>
 
-  <!-- Case 1 -->
-  <div class="case-card">
-    <div class="case-img-wrap">
-      <img src="/static/img/case1.png" alt="Trend chart case study 1"
-           class="case-img" onclick="openLightbox('/static/img/case1.png')">
-      <div class="case-img-hint">Click to zoom</div>
+  <!-- ========================= -->
+<!-- Case Studies — Real sellers use trend data -->
+<!-- ========================= -->
+
+<section style="padding: 80px 0; background: #0C1220;">
+  <div class="container" style="max-width: 1250px; margin: auto; padding: 0 24px;">
+
+    <h2 style="font-size: 34px; font-weight: 700; margin-bottom: 50px;">
+      Case Studies — <span style="color:#82C8F8;">Real sellers using trend momentum</span>
+    </h2>
+
+    <!-- CASE STUDY 1 -->
+    <div style="
+      display: flex;
+      gap: 40px;
+      margin-bottom: 90px;
+      flex-wrap: wrap;
+      align-items: flex-start;
+    ">
+      <!-- Image -->
+      <div style="flex: 1 1 520px; text-align: center;">
+        <img src="/static/img/case1.png"
+             alt="Case Study 1"
+             style="width: 100%; border-radius: 14px; cursor: zoom-in;"
+             onclick="openZoom('/static/img/case1.png')">
+        <p style="margin-top: 8px; opacity: 0.75;">Click to zoom</p>
+      </div>
+
+      <!-- Text -->
+      <div style="flex: 1 1 520px;">
+        <h3 style="font-size: 26px; margin-bottom: 10px;">Case Study #1 — Seasonal product timing</h3>
+
+        <p style="opacity: 0.9; line-height: 1.55;">
+        “Seasonal products were always a guessing game for me. I used to rely on last year’s patterns and gut feeling.  
+        Once I started tracking weekly search momentum, everything became clearer.”
+        </p>
+
+        <p style="opacity: 0.9; line-height: 1.55; margin-top: 12px;">
+        “I noticed <strong>‘burgundy Christmas ornaments’</strong> climbing steadily weeks before the main peak.  
+        That signal helped me prioritize the right style early, list ahead of the crowd, and be fully stocked when demand exploded.”
+        </p>
+
+        <p style="margin-top:16px; font-weight:600;">
+          — A.K. <span style="opacity:0.7;">(real user, seasonal & home category seller)</span>
+        </p>
+      </div>
     </div>
 
-    <div class="case-text">
-      <h3>Case Study #1 — Seasonal product timing</h3>
 
-      <p>
-        “Seasonal products were always a guessing game for me. I used to rely on last year’s patterns
-        and gut feeling. Once I started tracking weekly search momentum, everything became clearer.”
-      </p>
+    <!-- CASE STUDY 2 -->
+    <div style="
+      display: flex;
+      gap: 40px;
+      flex-wrap: wrap;
+      align-items: flex-start;
+    ">
+      <!-- Image -->
+      <div style="flex: 1 1 520px; text-align: center;">
+        <img src="/static/img/case2.png"
+             alt="Case Study 2"
+             style="width: 100%; border-radius: 14px; cursor: zoom-in;"
+             onclick="openZoom('/static/img/case2.png')">
+        <p style="margin-top: 8px; opacity: 0.75;">Click to zoom</p>
+      </div>
 
-      <p>
-        “I noticed ‘burgundy Christmas ornaments’ climbing steadily weeks before the main peak.
-        That signal helped me prioritize the right style early, list ahead of the crowd,
-        and be fully stocked when demand exploded.”
-      </p>
+      <!-- Text -->
+      <div style="flex: 1 1 520px;">
+        <h3 style="font-size: 26px; margin-bottom: 10px;">Case Study #2 — Smarter ad decisions</h3>
 
-      <p class="case-who">
-        — <strong>A.K.</strong> (real user, seasonal & home category seller)
-      </p>
-    </div>
-  </div>
-
-  <!-- Case 2 -->
-  <div class="case-card">
-    <div class="case-img-wrap">
-      <img src="/static/img/case2.png" alt="Trend chart case study 2"
-           class="case-img" onclick="openLightbox('/static/img/case2.png')">
-      <div class="case-img-hint">Click to zoom</div>
-    </div>
-
-    <div class="case-text">
-      <h3>Case Study #2 — Smarter ad decisions</h3>
-
-      <p>
-        “My biggest problem with ads was wasting budget on the wrong keyword variations.
+        <p style="opacity: 0.9; line-height: 1.55;">
+        “My biggest problem with ads was wasting budget on the wrong keyword variations.  
         It was hard to know which terms were actually gaining demand week by week.”
-      </p>
+        </p>
 
-      <p>
-        “By following the momentum table, I saw which ‘trump mug’ variations were rising fastest.
-        I shifted spend toward the high-momentum terms and reduced budget on flat or declining ones.
-        That cut waste and scaled sales right when demand was accelerating.”
-      </p>
+        <p style="opacity: 0.9; line-height: 1.55; margin-top: 12px;">
+        “By following the momentum table, I saw which <strong>‘trump mug’</strong> variations were rising fastest.  
+        I shifted spend toward the high-momentum terms and reduced budget on flat ones.  
+        That cut waste and boosted sales right when demand was accelerating.”
+        </p>
 
-      <p class="case-who">
-        — <strong>M.Y.</strong> (real user, gifts & mugs category seller)
-      </p>
+        <p style="margin-top:16px; font-weight:600;">
+          — M.Y. <span style="opacity:0.7;">(real user, gifts & mugs category seller)</span>
+        </p>
+      </div>
     </div>
+
   </div>
 </section>
+
+<!-- Modal for zoom -->
+<div id="zoomModal" style="
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,.7);
+  backdrop-filter: blur(4px); z-index:9999; align-items:center; justify-content:center;">
+  <img id="zoomImg" src="" style="max-width:90%; max-height:90%; border-radius:14px;">
+</div>
+
+<script>
+  function openZoom(src) {
+    document.getElementById('zoomImg').src = src;
+    document.getElementById('zoomModal').style.display = 'flex';
+  }
+  document.getElementById('zoomModal').onclick = () =>
+    document.getElementById('zoomModal').style.display = 'none';
+</script>
 
 
 
