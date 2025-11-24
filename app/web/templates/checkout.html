@@ -24,7 +24,21 @@
   <main class="container" style="max-width:720px;margin:96px auto 56px;">
     <section class="card" style="padding:28px 28px; text-align:center;">
       <h1 style="margin:0 0 6px;">{{ plan_name }}</h1>
-      <p class="muted" style="margin:0 0 16px;">{{ price_text }}</p>
+      <div style="margin:0 0 16px;">
+  <div style="font-size:28px; font-weight:800; line-height:1.1;">
+    $9.99
+    <span style="text-decoration:line-through; opacity:0.55; margin-left:8px; font-size:18px; font-weight:600;">
+      $29.99
+    </span>
+  </div>
+  <div style="margin-top:6px; font-size:14px; color:#2ecc71; font-weight:700;">
+    ✔ Black Friday Special — 67% OFF
+  </div>
+  <div class="muted" style="margin-top:4px; font-size:13px;">
+    Deal applied automatically at checkout.
+  </div>
+</div>
+
 
       {% if user %}
         <p class="muted" style="margin:0 0 16px;">Signed in as <strong>{{ user.email }}</strong></p>

@@ -23,6 +23,46 @@
 
   {% include "_nav.html" %}
 
+<div id="bf-banner" style="
+  width:100%;
+  background:#000;
+  color:#fff;
+  padding:14px 0;
+  text-align:center;
+  font-size:15px;
+  font-weight:600;
+  letter-spacing:0.3px;
+">
+  🔥 Black Friday Mega Deal: <span style="color:#ffca28;">$9.99</span> (normal $29.99) — 
+  <span id="countdown" style="color:#ff5252; margin-left:6px;"></span>
+</div>
+
+<script>
+// === Black Friday End Time ===
+// Bitiş süresini buradan değiştir: (YYYY-MM-DD HH:MM:SS)
+const endTime = new Date("2025-11-29T23:59:59").getTime();
+
+function updateCountdown() {
+    const now = new Date().getTime();
+    const distance = endTime - now;
+
+    if (distance < 0) {
+        document.getElementById("countdown").innerHTML = "Expired";
+        return;
+    }
+
+    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const mins = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+    const secs = Math.floor((distance % (1000 * 60)) / 1000);
+
+    document.getElementById("countdown").innerHTML =
+      `${days}d ${hours}h ${mins}m ${secs}s left`;
+}
+
+setInterval(updateCountdown, 1000);
+updateCountdown();
+</script>
 
   <!-- Hero -->
   <section class="hero">
@@ -270,7 +310,14 @@
 
         <div class="plan highlight">
       <h3>Pro</h3>
-      <p class="price">$29.99 / month</p>
+      <p class="price">
+  <span style="font-size:26px; font-weight:700;">$9.99</span>
+  <span style="text-decoration:line-through; opacity:0.6; margin-left:6px; font-size:16px;">$29.99</span>
+  <span style="font-size:14px; color:#2ecc71; margin-left:6px; font-weight:600;">Black Friday</span>
+</p>
+<div style="margin-top:6px; font-size:14px; color:#2ecc71; font-weight:600;">
+    ✔ Black Friday Special — 67% OFF
+  </div>
       <ul>
         <li>Full 18+ week history</li>
         <li>Advanced Include/Exclude</li>
