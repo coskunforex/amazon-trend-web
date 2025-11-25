@@ -377,7 +377,7 @@ function drawMiniChart(title, data){
     ).join("")}
      <!-- Watermark -->
     <text 
-  x="${W - pad - 32}" 
+  x="${W - pad - 52}" 
   y="${H - 8}"
   fill="#e2e8f0" opacity="0.45"
   font-size="11" text-anchor="end">
