@@ -376,11 +376,14 @@ function drawMiniChart(title, data){
        </circle>`
     ).join("")}
      <!-- Watermark -->
-    <text x="${W - pad}" y="${H - 8}"
-          fill="#e2e8f0" opacity="0.45"
-          font-size="11" text-anchor="end">
-      uptrendhunter.com
-    </text>
+    <text 
+  x="${W - pad - 32}" 
+  y="${H - 8}"
+  fill="#e2e8f0" opacity="0.45"
+  font-size="11" text-anchor="end">
+  uptrendhunter.com
+</text>
+
   </svg>`;
 
   $("#modalTitle").textContent = title;
