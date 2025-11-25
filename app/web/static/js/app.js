@@ -375,6 +375,12 @@ function drawMiniChart(title, data){
          <title>${p.label} • rank ${p.rank}</title>
        </circle>`
     ).join("")}
+     <!-- Watermark -->
+    <text x="${W - pad}" y="${H - 8}"
+          fill="#e2e8f0" opacity="0.45"
+          font-size="11" text-anchor="end">
+      uptrendhunter.com
+    </text>
   </svg>`;
 
   $("#modalTitle").textContent = title;
