@@ -162,7 +162,6 @@ def forgot():
     if request.method == "POST":
         email = (request.form.get("email") or "").strip().lower()
 
-        # Güvenlik: email varsa mail gönder, yoksa da aynı mesajı göster
         user = get_user(email)
         if user:
             token = create_reset_token(email)
@@ -172,12 +171,15 @@ def forgot():
                 except Exception as e:
                     app.logger.exception("reset email send failed: %s", e)
 
-        return render_template(
-            "forgot.html",
-            msg="If this email is registered, we've sent a reset link."
-        )
+        # E-mail gönderildi sayfasına yönlendir
+        return redirect(url_for("reset_sent"))
 
     return render_template("forgot.html")
+
+@app.route("/reset-sent")
+def reset_sent():
+    return render_template("reset_sent.html")
+
 
 @app.route("/reset/<token>", methods=["GET", "POST"])
 def reset(token):

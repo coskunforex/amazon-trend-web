@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Email sent — Uptrend Hunter</title>
+  <link rel="stylesheet" href="/static/css/landing.css?v=1">
+  <link rel="stylesheet" href="/static/css/styles.css?v=app-final-7">
+</head>
+<body>
+  {% include "_nav.html" %}
+
+  <main style="
+    min-height: calc(100vh - 64px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  ">
+    <section style="
+      width: 100%;
+      max-width: 420px;
+      padding: 32px 28px;
+      border-radius: 18px;
+      background: rgba(15,23,42,0.92);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.65);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(148,163,184,0.3);
+      color: #e5e7eb;
+      text-align: center;
+    ">
+      <h1 style="font-size: 26px; margin-bottom: 12px; font-weight: 600;">
+        Check your email 📩
+      </h1>
+
+      <p style="font-size: 15px; color:#cbd5f5; line-height:1.6;">
+        If your email address is registered, we’ve sent you a link<br>
+        to reset your password.
+      </p>
+
+      <p style="margin-top: 20px; font-size: 13px; color:#9ca3af;">
+        Didn’t receive anything?  
+        <br>Check your spam folder or
+        <a href="{{ url_for('forgot') }}" style="color:#93c5fd;">try again</a>.
+      </p>
+
+      <a href="{{ url_for('login') }}" style="
+        display:inline-block;
+        margin-top: 20px;
+        padding: 10px 16px;
+        border-radius: 999px;
+        background:#3b82f6;
+        color:white;
+        text-decoration:none;
+        font-size:14px;
+      ">
+        Return to login
+      </a>
+    </section>
+  </main>
+</body>
+</html>
