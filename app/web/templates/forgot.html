@@ -10,23 +10,82 @@
 <body>
   {% include "_nav.html" %}
 
-  <main class="auth-main" style="max-width:480px;margin:40px auto;padding:24px;">
-    <h1>Reset your password</h1>
-    <p>Enter your email and we'll send you a reset link.</p>
+  <main style="
+    min-height: calc(100vh - 64px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  ">
+    <section style="
+      width: 100%;
+      max-width: 420px;
+      padding: 32px 28px;
+      border-radius: 18px;
+      background: rgba(15,23,42,0.92);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.65);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(148,163,184,0.3);
+      color: #e5e7eb;
+    ">
+      <h1 style="font-size: 26px; margin: 0 0 8px; font-weight: 600;">
+        Reset your password
+      </h1>
+      <p style="margin: 0 0 20px; font-size: 14px; color:#cbd5f5;">
+        Enter your email and we’ll send you a reset link.
+      </p>
 
-    {% if msg %}
-      <div class="alert-success">{{ msg }}</div>
-    {% endif %}
+      {% if msg %}
+        <div style="
+          margin-bottom: 16px;
+          padding: 10px 12px;
+          border-radius: 8px;
+          font-size: 13px;
+          background: rgba(22,163,74,0.12);
+          border: 1px solid rgba(22,163,74,0.5);
+          color: #bbf7d0;
+        ">
+          {{ msg }}
+        </div>
+      {% endif %}
 
-    <form method="post" style="display:flex;flex-direction:column;gap:12px;margin-top:16px;">
-      <input
-        type="email"
-        name="email"
-        placeholder="Your email"
-        required
-      />
-      <button type="submit">Send reset link</button>
-    </form>
+      <form method="post" style="display:flex;flex-direction:column;gap:12px;">
+        <input
+          type="email"
+          name="email"
+          placeholder="Your email"
+          required
+          style="
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(148,163,184,0.6);
+            background: rgba(15,23,42,0.9);
+            color:#e5e7eb;
+            font-size: 14px;
+            outline: none;
+          "
+        />
+
+        <button type="submit" style="
+          margin-top: 4px;
+          padding: 10px 14px;
+          border-radius: 999px;
+          border: none;
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+        " class="btn-primary">
+          Send reset link
+        </button>
+      </form>
+
+      <p style="margin-top: 16px; font-size: 13px; color:#9ca3af;">
+        Remembered your password?
+        <a href="{{ url_for('login') }}" style="color:#93c5fd; text-decoration:none;">
+          Go back to login
+        </a>
+      </p>
+    </section>
   </main>
 </body>
 </html>
