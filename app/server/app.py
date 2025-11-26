@@ -6,14 +6,27 @@ from app.core.payments import create_checkout
 # --- DIAGNOSTIC ENDPOINT ---
 from app.core.payments import ls_get
 
-from app.server.emailing import send_welcome_email, send_pro_activated_email
+from app.server.emailing import (
+    send_welcome_email,
+    send_pro_activated_email,
+    send_password_reset_email,
+)
+
 from app.core.auth import set_plan
 
 
 from app.core.db import get_conn, init_full, append_week
 from app.core.auth import (
-    ensure_users_table, create_user, verify_user, get_user, set_plan
+    ensure_users_table,
+    create_user,
+    verify_user,
+    get_user,
+    set_plan,
+    create_reset_token,
+    get_user_by_reset_token,
+    set_password_for_email,
 )
+
 
 # ---- Pricing / Plan text (used by dashboard & checkout) ----
 PRICE_TEXT = os.environ.get("PRICE_TEXT", "$29.99/month")
@@ -143,6 +156,61 @@ def login():
             return redirect(nxt)
         return render_template("login.html", error="Invalid credentials.")
     return render_template("login.html")
+
+@app.route("/forgot", methods=["GET", "POST"])
+def forgot():
+    if request.method == "POST":
+        email = (request.form.get("email") or "").strip().lower()
+
+        # Güvenlik: email varsa mail gönder, yoksa da aynı mesajı göster
+        user = get_user(email)
+        if user:
+            token = create_reset_token(email)
+            if token:
+                try:
+                    send_password_reset_email(email, token)
+                except Exception as e:
+                    app.logger.exception("reset email send failed: %s", e)
+
+        return render_template(
+            "forgot.html",
+            msg="If this email is registered, we've sent a reset link."
+        )
+
+    return render_template("forgot.html")
+
+@app.route("/reset/<token>", methods=["GET", "POST"])
+def reset(token):
+    user = get_user_by_reset_token(token)
+    if not user:
+        return render_template(
+            "reset.html",
+            error="This reset link is invalid or has expired."
+        )
+
+    if request.method == "POST":
+        pw1 = request.form.get("password") or ""
+        pw2 = request.form.get("password2") or ""
+
+        if len(pw1) < 6:
+            return render_template(
+                "reset.html",
+                error="Password must be at least 6 characters."
+            )
+
+        if pw1 != pw2:
+            return render_template(
+                "reset.html",
+                error="Passwords do not match."
+            )
+
+        set_password_for_email(user["email"], pw1)
+        # İstersen burada direkt login de yapıyoruz:
+        session["user_email"] = user["email"]
+        return redirect(url_for("dashboard"))
+
+    return render_template("reset.html")
+
 
 @app.get("/logout")
 def logout():

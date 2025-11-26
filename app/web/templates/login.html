@@ -30,14 +30,28 @@
 
 <div class="auth">
   <h1>Welcome back</h1>
-  {% if error %}<div class="err">{{ error }}</div>{% endif %}
+
+  {% if error %}
+    <div class="err">{{ error }}</div>
+  {% endif %}
+
   <form method="post">
     <label>Email</label>
     <input name="email" type="email" required autocomplete="email" />
+
     <label>Password</label>
     <input name="password" type="password" required />
-    <button type="submit">Log in</button>
+
+    <button type="submit" class="btn-primary">Log in</button>
+
+    <p class="auth-extra">
+      <a href="{{ url_for('forgot') }}">Forgot your password?</a>
+    </p>
   </form>
-  <p class="muted">New here? <a href="/signup">Create an account</a></p>
+
+  <p class="muted">
+    New here? <a href="/signup">Create an account</a>
+  </p>
 </div>
+
 </body></html>

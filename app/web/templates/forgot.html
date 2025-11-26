@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Forgot password — Uptrend Hunter</title>
+  <link rel="stylesheet" href="/static/css/landing.css?v=1">
+  <link rel="stylesheet" href="/static/css/styles.css?v=app-final-7">
+</head>
+<body>
+  {% include "_nav.html" %}
+
+  <main class="auth-main" style="max-width:480px;margin:40px auto;padding:24px;">
+    <h1>Reset your password</h1>
+    <p>Enter your email and we'll send you a reset link.</p>
+
+    {% if msg %}
+      <div class="alert-success">{{ msg }}</div>
+    {% endif %}
+
+    <form method="post" style="display:flex;flex-direction:column;gap:12px;margin-top:16px;">
+      <input
+        type="email"
+        name="email"
+        placeholder="Your email"
+        required
+      />
+      <button type="submit">Send reset link</button>
+    </form>
+  </main>
+</body>
+</html>

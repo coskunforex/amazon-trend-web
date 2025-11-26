@@ -51,6 +51,24 @@ Built by Amazon sellers, for Amazon sellers.
 """
     _send_text(to_email, subject, body)
 
+def send_password_reset_email(to_email: str, token: str):
+    reset_url = f"https://www.uptrendhunter.com/reset/{token}"
+    subject = "Reset your Uptrend Hunter password"
+    body = f"""Hi there,
+
+We received a request to reset the password for your Uptrend Hunter account.
+
+Click the link below to set a new password (this link is valid for 60 minutes):
+
+{reset_url}
+
+If you didn't ask for this, you can safely ignore this email.
+
+— Uptrend Hunter Team
+"""
+    _send_text(to_email, subject, body)
+
+
 def send_pro_activated_email(to_email: str, name: str = ""):
     subject = "Uptrend Hunter Pro — Activated ✅"
     body = f"""Hi there,
