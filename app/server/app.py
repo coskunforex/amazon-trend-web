@@ -27,6 +27,8 @@ from app.core.auth import (
     set_password_for_email,
 )
 
+from app.core.db import get_conn, init_full, append_week, ensure_subscribers_table
+
 
 # ---- Pricing / Plan text (used by dashboard & checkout) ----
 PRICE_TEXT = os.environ.get("PRICE_TEXT", "$29.99/month")
@@ -212,6 +214,31 @@ def reset(token):
         return redirect(url_for("dashboard"))
 
     return render_template("reset.html")
+
+
+@app.route("/subscribe", methods=["POST"])
+def subscribe():
+    email = (request.form.get("email") or "").strip().lower()
+    if not email:
+        return "Invalid email", 400
+
+    # tabloyu garantiye al
+    ensure_subscribers_table()
+
+    con = get_conn(read_only=False)
+    try:
+        con.execute(
+            "INSERT OR IGNORE INTO subscribers(email) VALUES (?)",
+            [email],
+        )
+        con.commit()
+    finally:
+        con.close()
+
+    # Şimdilik tekrar landing'e dön
+    return redirect(url_for("landing"))
+    # landing view fonksiyonunun adı farklıysa onu yaz (ör: "index")
+
 
 
 @app.get("/logout")

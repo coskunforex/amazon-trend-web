@@ -68,6 +68,19 @@ def get_conn(read_only=False):
 
     return con
 
+def ensure_subscribers_table():
+    """
+    Email subscribe için tablo (DuckDB içinde).
+    """
+    con = get_conn(read_only=False)
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS subscribers (
+            email TEXT PRIMARY KEY,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    con.close()
+
 
 
 
