@@ -25,17 +25,45 @@
 
 <div id="bf-banner" style="
   width:100%;
-  background:#000;
-  color:#fff;
-  padding:14px 0;
-  text-align:center;
-  font-size:15px;
-  font-weight:600;
-  letter-spacing:0.3px;
+  padding:10px 0;
+  background: radial-gradient(circle at top, rgba(56,189,248,.18), rgba(15,23,42,1));
+  border-bottom: 1px solid rgba(148,163,184,0.25);
 ">
-  🔥 Black Friday Mega Deal: <span style="color:#ffca28;">$9.99</span> (normal $29.99) — 
-  <span id="countdown" style="color:#ff5252; margin-left:6px;"></span>
+  <div style="
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 8%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 14px;
+    color:#e5e7eb;
+  ">
+    <span style="
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(22,163,74,0.18);
+      border: 1px solid rgba(34,197,94,0.6);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+    ">
+      🔥 Black Friday Deal
+    </span>
+
+    <span style="font-weight:500; white-space:nowrap;">
+      $9.99 <span style="text-decoration:line-through; opacity:.7; margin-left:4px;">$29.99</span>
+    </span>
+
+    <span style="opacity:.85; white-space:nowrap;">
+      — ends in
+      <span id="countdown" style="color:#f97373; font-weight:600; margin-left:4px;"></span>
+    </span>
+  </div>
 </div>
+
 
 <script>
 // === Black Friday End Time ===
