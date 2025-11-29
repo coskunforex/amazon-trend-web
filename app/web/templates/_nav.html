@@ -14,24 +14,30 @@
 .btn.small.outline:hover{background:rgba(255,255,255,.06)}
 </style>
 
+
 <nav class="nav">
   <div class="nav-inner">
     <a href="{{ url_for('landing') }}" class="logo">
       <span class="brand">Uptrend Hunter <span class="ai">AI</span></span>
     </a>
+
     <div class="nav-links">
-     {% if current_user %}
-  <a href="{{ url_for('dashboard') }}">Dashboard</a>
+      <a href="/academy">Academy</a>
 
-  {% if current_user.plan == "pro" %}
-    <a href="{{ url_for('app_pro') }}">Pro</a>
-  {% endif %}
+      {% if current_user %}
+        <a href="{{ url_for('dashboard') }}">Dashboard</a>
 
-  <a href="{{ url_for('logout') }}" class="btn small outline">Log out</a>
-{% else %}
+        {% if current_user.plan == "pro" %}
+          <a href="{{ url_for('app_pro') }}">Pro</a>
+        {% else %}
+          <a href="{{ url_for('checkout') }}">Upgrade</a>
+        {% endif %}
 
+        <a href="{{ url_for('logout') }}" class="btn small outline">Log out</a>
+      {% else %}
         <a href="{{ url_for('login', next=request.path) }}" class="btn small">Log in</a>
       {% endif %}
     </div>
   </div>
 </nav>
+
