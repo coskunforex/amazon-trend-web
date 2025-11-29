@@ -9,18 +9,16 @@
   <link rel="stylesheet" href="/static/css/landing.css?v=1">
   <link rel="stylesheet" href="/static/css/styles.css?v=app-final-7">
   <link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-9C7CGEWT0X"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
 
-  gtag('config', 'G-9C7CGEWT0X');
-</script>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-9C7CGEWT0X"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-9C7CGEWT0X');
+  </script>
 </head>
-
-
 
 <body data-mode="{{ mode or 'demo' }}">
 
@@ -103,13 +101,11 @@
     <div>
       <label>Include keywords (space-separated)</label>
       <input id="include" placeholder="trump costume dog" ... >
-
     </div>
 
     <div>
       <label>Exclude keywords (space-separated)</label>
       <input id="exclude" placeholder="iphone case charger" ... >
-
     </div>
 
     <div class="actions">
@@ -161,62 +157,5 @@
 
   <!-- App JS -->
   <script src="/static/js/app.js" defer></script>
-  <script>
-document.addEventListener("DOMContentLoaded", async () => {
-
-  const mode = document.body.dataset.mode || "demo"; 
-  const DEFAULT_DEMO_WEEKS = 6;
-
-  // UI elemanları
-  const w = document.querySelector("#weeksRange");
-  const label = document.querySelector("#weeksLabel");
-
-  // 0) PRO + DEMO haftalarını backend’den kesin olarak al
-  let availableWeeks = 18; 
-  try {
-    const r = await fetch("/api/meta", { cache: "no-store" });
-    if (r.ok) {
-      const j = await r.json();
-      if (j.available_weeks > 0) {
-        availableWeeks = j.available_weeks;
-      }
-    }
-  } catch(e){}
-
-  // 1) DEMO ise pro’dan kalan state’i temizle + 6 weeks yap
-  if (mode === "demo") {
-
-    try {
-      localStorage.removeItem("selectedWeeks");
-      localStorage.removeItem("lastQuery");
-      localStorage.removeItem("filters");
-    } catch(e) {}
-
-    if (w) w.value = String(DEFAULT_DEMO_WEEKS);
-    if (label) label.textContent = `${DEFAULT_DEMO_WEEKS} weeks`;
-
-    if (typeof runSearch === "function") {
-      runSearch({ weeks: DEFAULT_DEMO_WEEKS });
-    }
-    return; // DEMO konusunu bitiriyoruz
-  }
-
-  // 2) PRO modunda ise:
-  // - localStorage kalsın
-  // - "0 weeks" veya "12 weeks" kalmasın
-  // - otomatik olarak availableWeeks kullanılsın
-
-  const PRO_DEFAULT = availableWeeks; // ör: 18
-
-  if (w) w.value = String(PRO_DEFAULT);
-  if (label) label.textContent = `${PRO_DEFAULT} weeks`;
-
-  if (typeof runSearch === "function") {
-    runSearch({ weeks: PRO_DEFAULT });
-  }
-
-});
-</script>
-
 </body>
 </html>
