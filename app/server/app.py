@@ -752,6 +752,7 @@ def sitemap_xml():
   <url><loc>https://www.uptrendhunter.com/terms</loc></url>
   <url><loc>https://www.uptrendhunter.com/privacy</loc></url>
   <url><loc>https://www.uptrendhunter.com/refund</loc></url>
+  <url><loc>https://www.uptrendhunter.com/academy</loc></url>
 </urlset>
 """
     return Response(xml, mimetype="application/xml")
