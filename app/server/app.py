@@ -13,7 +13,7 @@ from app.server.emailing import (
 )
 
 from app.core.auth import set_plan
-
+from flask import Response  # en üste importlara ekle
 
 from app.core.db import get_conn, init_full, append_week
 from app.core.auth import (
@@ -681,7 +681,6 @@ def diag():
 
 
 # --- DIAGNOSTIC ENDPOINT ---
-from app.core.payments import ls_get
 
 @app.get("/diag/lemon")
 def diag_lemon():
@@ -714,6 +713,39 @@ def diag_test_mail():
     except Exception as e:
         app.logger.exception("diag mail failed")
         return jsonify({"ok": False, "error": str(e)}), 500
+
+
+
+@app.get("/robots.txt")
+def robots_txt():
+    txt = """User-agent: *
+Allow: /
+Disallow: /app
+Disallow: /pro
+Disallow: /dashboard
+Disallow: /login
+Disallow: /signup
+Disallow: /checkout
+Disallow: /admin
+Disallow: /weeks
+Disallow: /uptrends
+Disallow: /series
+Sitemap: https://www.uptrendhunter.com/sitemap.xml
+"""
+    return Response(txt, mimetype="text/plain")
+
+
+@app.get("/sitemap.xml")
+def sitemap_xml():
+    xml = """<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://www.uptrendhunter.com/</loc></url>
+  <url><loc>https://www.uptrendhunter.com/terms</loc></url>
+  <url><loc>https://www.uptrendhunter.com/privacy</loc></url>
+  <url><loc>https://www.uptrendhunter.com/refund</loc></url>
+</urlset>
+"""
+    return Response(xml, mimetype="application/xml")
 
 
 # 🟢 En son, sadece bu kalacak:
