@@ -89,6 +89,15 @@ def landing():
 def academy_how_to_use():
     return render_template("academy_how_to_use.html")
 
+@app.get("/academy")
+def academy_index():
+    return render_template("academy_index.html")
+
+@app.get("/academy/ceo-brief")
+def academy_ceo_brief():
+    return render_template("academy_ceo_brief.html")
+
+
 
 @app.get("/terms")
 def terms():
@@ -753,6 +762,8 @@ def sitemap_xml():
   <url><loc>https://www.uptrendhunter.com/privacy</loc></url>
   <url><loc>https://www.uptrendhunter.com/refund</loc></url>
   <url><loc>https://www.uptrendhunter.com/academy</loc></url>
+  <url><loc>https://www.uptrendhunter.com/academy/how-to-use</loc></url>
+  <url><loc>https://www.uptrendhunter.com//academy/ceo-brief</loc></url>
 </urlset>
 """
     return Response(xml, mimetype="application/xml")
