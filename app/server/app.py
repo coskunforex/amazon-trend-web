@@ -30,6 +30,8 @@ from app.core.auth import (
 from app.core.db import get_conn, init_full, append_week, ensure_subscribers_table
 
 
+
+
 # ---- Pricing / Plan text (used by dashboard & checkout) ----
 PRICE_TEXT = os.environ.get("PRICE_TEXT", "$29.99/month")
 PLAN_NAME  = os.environ.get("PLAN_NAME", "Uptrend Hunter Pro")
@@ -403,9 +405,14 @@ def uptrends():
         offset   = request.args.get("offset", 0, type=int)
         max_rank = request.args.get("maxRank", 1_500_000, type=int)
 
-        # ✅ MODE tespiti (URL ?mode=pro|demo, cookie fallback, default demo)
-        mode = (request.args.get("mode") or request.cookies.get("mode") or "demo").lower()
-        mode = "pro" if mode == "pro" else "demo"
+       # ✅ MODE sadece session+plan ile belirlenir (URL/cookie ASLA değil)
+        email = session.get("user_email")
+        mode = "demo"
+        if email:
+        u = get_user(email)
+        if u and u.get("plan") == "pro":
+        mode = "pro"
+
 
         # ✅ Login olmuş PRO kullanıcıyı session'dan tespit et ve mode'u zorla PRO yap
         email = session.get("user_email")
@@ -427,6 +434,7 @@ def uptrends():
         # ✅ Sonuç limiti: demo=50, pro=250 (gelen limit parametresini üstten sınırla)
         if mode == "demo":
             limit = min(limit, 50)
+             offset = 0 
         else:
             limit = min(limit, 250)
 
@@ -547,35 +555,45 @@ def series():
         start_id = request.args.get("startWeekId", type=int)
         end_id   = request.args.get("endWeekId", type=int)
 
+        # ✅ MODE sadece session+plan ile belirlenir
+        email = session.get("user_email")
+        mode = "demo"
+        if email:
+            u = get_user(email)
+            if u and u.get("plan") == "pro":
+                mode = "pro"
+
+        # ✅ start/end zorunlu olsun (demo full-history çekemesin)
+        if not (start_id and end_id):
+            return jsonify({"error": "Provide startWeekId and endWeekId"}), 400
+
+        if end_id < start_id:
+            start_id, end_id = end_id, start_id
+
+        # ✅ DEMO: max 6 weeks
+        if mode == "demo" and (end_id - start_id + 1) > 6:
+            return jsonify({
+                "error": "upgrade_required",
+                "message": "Demo is limited to 6 weeks. Upgrade to Pro."
+            }), 403
+
         con = get_conn(read_only=True)
 
-        if start_id and end_id:
-            if end_id < start_id:
-                start_id, end_id = end_id, start_id
-
-            rows = con.execute("""
-                WITH all_weeks AS (
-                  SELECT DISTINCT week FROM searches ORDER BY week
-                ),
-                weeks_idx AS (
-                  SELECT week, ROW_NUMBER() OVER (ORDER BY week) AS week_id
-                  FROM all_weeks
-                )
-                SELECT w.week, s.rank
-                FROM searches s
-                JOIN weeks_idx w USING(week)
-                WHERE LOWER(s.term) = LOWER(?)
-                  AND w.week_id BETWEEN ?
-                                  AND ?
-                ORDER BY w.week
-            """, [term, start_id, end_id]).fetchall()
-        else:
-            rows = con.execute("""
-                SELECT week, rank
-                FROM searches
-                WHERE LOWER(term) = LOWER(?)
-                ORDER BY week
-            """, [term]).fetchall()
+        rows = con.execute("""
+            WITH all_weeks AS (
+              SELECT DISTINCT week FROM searches ORDER BY week
+            ),
+            weeks_idx AS (
+              SELECT week, ROW_NUMBER() OVER (ORDER BY week) AS week_id
+              FROM all_weeks
+            )
+            SELECT w.week, s.rank
+            FROM searches s
+            JOIN weeks_idx w USING(week)
+            WHERE LOWER(s.term) = LOWER(?)
+              AND w.week_id BETWEEN ? AND ?
+            ORDER BY w.week
+        """, [term, start_id, end_id]).fetchall()
 
         con.close()
 
@@ -587,6 +605,7 @@ def series():
     except Exception as e:
         app.logger.exception("series failed")
         return jsonify({"error": "series_failed", "message": str(e)}), 500
+
 
 
 # ---------- CHECKOUT (placeholder) ----------
