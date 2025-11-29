@@ -99,10 +99,6 @@ def refund():
 
 
 # ---------- APP (demo/pro) ----------
-@app.get("/app")
-def app_demo():
-    # Demo: include/exclude kapalı, 8 hafta UI limiti (JS tarafında uygulanıyor)
-    return render_template("index.html", mode="demo")
 
 @app.get("/pro")
 def app_pro():
