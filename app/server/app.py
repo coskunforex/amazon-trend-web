@@ -405,17 +405,9 @@ def uptrends():
         offset   = request.args.get("offset", 0, type=int)
         max_rank = request.args.get("maxRank", 1_500_000, type=int)
 
-       # ✅ MODE sadece session+plan ile belirlenir (URL/cookie ASLA değil)
+        # ✅ MODE sadece session+plan ile belirlenir (URL/cookie ASLA değil)
         email = session.get("user_email")
         mode = "demo"
-        if email:
-        u = get_user(email)
-        if u and u.get("plan") == "pro":
-        mode = "pro"
-
-
-        # ✅ Login olmuş PRO kullanıcıyı session'dan tespit et ve mode'u zorla PRO yap
-        email = session.get("user_email")
         if email:
             u = get_user(email)
             if u and u.get("plan") == "pro":
@@ -426,17 +418,15 @@ def uptrends():
         if end_id < start_id:
             start_id, end_id = end_id, start_id
 
-        # ✅ DEMO için 6 hafta clamp
+        # ✅ DEMO için 6 hafta clamp (ve pagination bypass kapalı)
         if mode == "demo":
             if (end_id - start_id + 1) > 6:
                 end_id = start_id + 5  # 6 hafta
-
-        # ✅ Sonuç limiti: demo=50, pro=250 (gelen limit parametresini üstten sınırla)
-        if mode == "demo":
             limit = min(limit, 50)
-             offset = 0 
+            offset = 0
         else:
             limit = min(limit, 250)
+            offset = max(offset, 0)
 
         con = get_conn(read_only=True)
         try:
