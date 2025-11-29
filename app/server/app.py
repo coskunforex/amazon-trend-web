@@ -648,6 +648,14 @@ def checkout_start():
         app.logger.exception("checkout_start failed")
         return render_template("checkout.html", user=get_user(email), error=str(e)), 500
 
+@app.get("/app")
+def app_demo():
+    email = session.get("user_email")
+    if email:
+        u = get_user(email)
+        if u and u.get("plan") == "pro":
+            return redirect(url_for("app_pro"))
+    return render_template("index.html", mode="demo")
 
 
 # ---------- API: Diagnostics ----------
