@@ -85,6 +85,11 @@ def health():
 def landing():
     return render_template("landing.html")
 
+@app.get("/academy/how-to-use")
+def academy_how_to_use():
+    return render_template("academy_how_to_use.html")
+
+
 @app.get("/terms")
 def terms():
     return render_template("terms.html")
