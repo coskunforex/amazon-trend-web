@@ -109,6 +109,10 @@ def academy_weekly_routine():
 def academy_trend_vs_seasonality():
     return render_template("academy_trend_vs_seasonality.html")
 
+@app.get("/academy/build-product-ideas")
+def academy_build_product_ideas():
+    return render_template("academy_build_product_ideas.html")
+ 
 @app.get("/academy/include-exclude")
 def academy_include_exclude():
     return render_template("academy_include_exclude.html")
@@ -783,6 +787,8 @@ def sitemap_xml():
   <url><loc>https://www.uptrendhunter.com/academy/weekly-routine</loc></url>
   <url><loc>https://www.uptrendhunter.com/academy/trend-vs-seasonality</loc></url>
   <url><loc>https://www.uptrendhunter.com/academy/include-exclude</loc></url>
+  <url><loc>https://www.uptrendhunter.com/academy/build-product-ideas</loc></url>
+
 
 
 </urlset>
