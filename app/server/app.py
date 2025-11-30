@@ -120,10 +120,14 @@ def academy_build_product_ideas():
 @app.get("/academy/shopify-creatives")
 def academy_shopify_creatives():
     return render_template("academy_shopify_creatives.html")
-    
+
 @app.get("/academy/amazon-fba-validation")
 def academy_amazon_fba_validation():
     return render_template("academy_fba_validation.html")
+
+@app.get("/academy/amazon-fba-seasonality")
+def academy_amazon_fba_seasonality():
+    return render_template("academy_fba_seasonality.html")
 
  
 @app.get("/academy/ppc-cleanup")
@@ -810,10 +814,7 @@ def sitemap_xml():
   <url><loc>https://www.uptrendhunter.com/academy/shopify-dropshipping</loc></url>
   <url><loc>https://www.uptrendhunter.com/academy/shopify-creatives</loc></url>
   <url><loc>https://www.uptrendhunter.com/academy/amazon-fba-validation</loc></url>
-
-
-
-
+  <url><loc>https://www.uptrendhunter.com/academy/amazon-fba-seasonality</loc></url>
 
 
 </urlset>
