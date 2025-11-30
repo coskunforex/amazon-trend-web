@@ -93,10 +93,6 @@ def academy_how_to_use():
 def academy_search_momentum():
     return render_template("academy/search-momentum.html")
 
-    @app.get("/academy")
-def academy_index():
-    return render_template("academy_index.html")
-
 @app.get("/academy")
 def academy_index():
     return render_template("academy_index.html")
