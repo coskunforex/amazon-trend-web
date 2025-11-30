@@ -101,6 +101,10 @@ def academy_index():
 def academy_ceo_brief():
     return render_template("academy_ceo_brief.html")
 
+@app.get("/academy/weekly-routine")
+def academy_weekly_routine():
+    return render_template("academy_weekly_routine.html")
+
 @app.get("/terms")
 def terms():
     return render_template("terms.html")
@@ -767,6 +771,7 @@ def sitemap_xml():
   <url><loc>https://www.uptrendhunter.com/academy/how-to-use</loc></url>
   <url><loc>https://www.uptrendhunter.com/academy/ceo-brief</loc></url>
   <url><loc>https://www.uptrendhunter.com/academy/search-momentum</loc></url>
+  <url><loc>https://www.uptrendhunter.com/academy/weekly-routine</loc></url>
 
 </urlset>
 """
