@@ -91,7 +91,7 @@ def academy_how_to_use():
 
 @app.route("/academy/search-momentum")
 def academy_search_momentum():
-    return render_template("academy/search-momentum.html")
+    return render_template("academy_search_momentum.html")
 
 @app.get("/academy")
 def academy_index():
