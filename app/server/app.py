@@ -113,6 +113,11 @@ def academy_trend_vs_seasonality():
 def academy_build_product_ideas():
     return render_template("academy_build_product_ideas.html")
  
+@app.get("/academy/ppc-cleanup")
+def academy_ppc_cleanup():
+    return render_template("academy_ppc_cleanup.html")
+
+
 @app.get("/academy/include-exclude")
 def academy_include_exclude():
     return render_template("academy_include_exclude.html")
@@ -788,6 +793,8 @@ def sitemap_xml():
   <url><loc>https://www.uptrendhunter.com/academy/trend-vs-seasonality</loc></url>
   <url><loc>https://www.uptrendhunter.com/academy/include-exclude</loc></url>
   <url><loc>https://www.uptrendhunter.com/academy/build-product-ideas</loc></url>
+  <url><loc>https://www.uptrendhunter.com/academy/ppc-cleanup</loc></url>
+
 
 
 
