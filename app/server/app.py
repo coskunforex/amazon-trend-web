@@ -116,6 +116,11 @@ def academy_trend_vs_seasonality():
 @app.get("/academy/build-product-ideas")
 def academy_build_product_ideas():
     return render_template("academy_build_product_ideas.html")
+
+@app.get("/academy/shopify-creatives")
+def academy_shopify_creatives():
+    return render_template("academy_shopify_creatives.html")
+
  
 @app.get("/academy/ppc-cleanup")
 def academy_ppc_cleanup():
@@ -799,6 +804,8 @@ def sitemap_xml():
   <url><loc>https://www.uptrendhunter.com/academy/build-product-ideas</loc></url>
   <url><loc>https://www.uptrendhunter.com/academy/ppc-cleanup</loc></url>
   <url><loc>https://www.uptrendhunter.com/academy/shopify-dropshipping</loc></url>
+  <url><loc>https://www.uptrendhunter.com/academy/shopify-creatives</loc></url>
+
 
 
 
