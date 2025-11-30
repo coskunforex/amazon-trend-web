@@ -105,6 +105,10 @@ def academy_ceo_brief():
 def academy_weekly_routine():
     return render_template("academy_weekly_routine.html")
 
+@app.get("/academy/trend-vs-seasonality")
+def academy_trend_vs_seasonality():
+    return render_template("academy_trend_vs_seasonality.html")
+
 @app.get("/terms")
 def terms():
     return render_template("terms.html")
@@ -772,6 +776,7 @@ def sitemap_xml():
   <url><loc>https://www.uptrendhunter.com/academy/ceo-brief</loc></url>
   <url><loc>https://www.uptrendhunter.com/academy/search-momentum</loc></url>
   <url><loc>https://www.uptrendhunter.com/academy/weekly-routine</loc></url>
+  <url><loc>https://www.uptrendhunter.com/academy/trend-vs-seasonality</loc></url>
 
 </urlset>
 """
