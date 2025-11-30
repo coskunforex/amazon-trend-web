@@ -105,6 +105,10 @@ def academy_ceo_brief():
 def academy_weekly_routine():
     return render_template("academy_weekly_routine.html")
 
+@app.get("/academy/shopify-dropshipping")
+def academy_shopify_dropshipping():
+    return render_template("academy_shopify_dropshipping.html")
+
 @app.get("/academy/trend-vs-seasonality")
 def academy_trend_vs_seasonality():
     return render_template("academy_trend_vs_seasonality.html")
@@ -794,6 +798,7 @@ def sitemap_xml():
   <url><loc>https://www.uptrendhunter.com/academy/include-exclude</loc></url>
   <url><loc>https://www.uptrendhunter.com/academy/build-product-ideas</loc></url>
   <url><loc>https://www.uptrendhunter.com/academy/ppc-cleanup</loc></url>
+  <url><loc>https://www.uptrendhunter.com/academy/shopify-dropshipping</loc></url>
 
 
 
