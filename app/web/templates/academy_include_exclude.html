@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+
+  <title>Include / Exclude Filters Playbook</title>
+  <link rel="canonical" href="https://www.uptrendhunter.com/academy/include-exclude"/>
+
+  <meta name="description" content="A practical playbook for using include and exclude filters to clean up marketplace search data and lock into profitable niches."/>
+  <meta name="robots" content="index,follow"/>
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="article"/>
+  <meta property="og:site_name" content="Uptrend Hunter AI"/>
+  <meta property="og:url" content="https://www.uptrendhunter.com/academy/include-exclude"/>
+  <meta property="og:title" content="Include / Exclude Filters Playbook"/>
+  <meta property="og:description" content="Learn how to use include and exclude filters to focus on the right marketplace search terms and remove noise."/>
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary"/>
+  <meta name="twitter:title" content="Include / Exclude Filters Playbook"/>
+  <meta name="twitter:description" content="Learn how to use include and exclude filters to focus on the right marketplace search terms and remove noise."/>
+
+  <link rel="stylesheet" href="/static/css/landing.css?v=1">
+  <link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
+
+  <style>
+    .academy-wrap{max-width:980px;margin:0 auto;padding:40px 8%}
+    .academy-wrap h1{font-size:34px;line-height:1.15;margin:10px 0 10px}
+    .academy-wrap p{max-width:80ch}
+    .kicker{opacity:.9}
+    .meta{opacity:.7;font-size:14px;margin:8px 0 22px}
+    .card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:18px;margin:18px 0}
+    .grid{display:grid;grid-template-columns:1fr;gap:14px}
+    @media(min-width:900px){.grid{grid-template-columns:1fr 1fr}}
+    ul.check{margin:0;padding-left:18px}
+    ul.check li{margin:6px 0}
+    pre{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px;overflow:auto;font-size:13px}
+    code{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,"Liberation Mono","Courier New",monospace}
+  </style>
+</head>
+
+<body>
+  {% include "_nav.html" %}
+
+  <main class="academy-wrap">
+    <p class="kicker">Academy • Playbook</p>
+    <h1>Include / Exclude Filters Playbook</h1>
+    <p class="meta">Updated: 2025-11-30 • Read time: ~6 minutes</p>
+
+    <div class="card">
+      <h2>Why filters matter so much</h2>
+      <p>
+        The raw table can show thousands of marketplace search terms. If you don’t filter,
+        you waste time scrolling and chasing noise.
+      </p>
+      <p>
+        <strong>Include</strong> and <strong>Exclude</strong> filters are how you:
+      </p>
+      <ul class="check">
+        <li>lock into a niche or product family,</li>
+        <li>remove terms you would never bid on or build around,</li>
+        <li>see the real opportunities without getting blinded by junk.</li>
+      </ul>
+    </div>
+
+    <h2>How the filters work (simple mental model)</h2>
+    <div class="card">
+      <ul class="check">
+        <li><strong>Include</strong> = “only show terms that contain these words”.</li>
+        <li><strong>Exclude</strong> = “hide any term that contains these words”.</li>
+        <li>Both accept <strong>space-separated words or short phrases</strong>.</li>
+      </ul>
+      <p>
+        You don’t need to overfit. Start broad, then gradually tighten.
+      </p>
+    </div>
+
+    <h2>Step 1 — Define your core niche with Include</h2>
+    <div class="card">
+      <p>
+        Use Include to describe the type of products you actually care about.
+      </p>
+      <p>Examples:</p>
+      <pre><code>cat toothbrush
+wooden ornament
+stainless steel mug
+teacher gift
+</code></pre>
+      <ul class="check">
+        <li>Use 1–3 words that describe the niche, not a full sentence.</li>
+        <li>Think like a shopper: how would they phrase this?</li>
+        <li>If you sell multiple product lines, run them one-by-one.</li>
+      </ul>
+    </div>
+
+    <h2>Step 2 — Clean the junk with Exclude</h2>
+    <div class="card">
+      <p>
+        Exclude is where you get rid of terms that are technically “related”
+        but useless for you.
+      </p>
+      <p>Common patterns to exclude in marketplace search data:</p>
+      <ul class="check">
+        <li>tutorial / pattern / diy / how to / free / printable</li>
+        <li>phone models you don’t sell for (iphone, samsung, etc.)</li>
+        <li>sizes or materials you never stock</li>
+        <li>“for kids” if you only sell adult, or the reverse</li>
+      </ul>
+      <p>Example exclude patterns:</p>
+      <pre><code>free printable pattern diy
+tutorial pdf
+iphone case
+</code></pre>
+    </div>
+
+    <h2>Step 3 — Combine filters into “recipes”</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>Gift-focused recipe</h3>
+        <p><strong>Include:</strong></p>
+        <pre><code>gift for mom grandma gift</code></pre>
+        <p><strong>Exclude:</strong></p>
+        <pre><code>card printable svg pattern</code></pre>
+        <ul class="check">
+          <li>Focus on physical items, not digital downloads.</li>
+          <li>Cleaner view of real product demand.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Accessories-only recipe</h3>
+        <p><strong>Include:</strong></p>
+        <pre><code>case cover holder stand</code></pre>
+        <p><strong>Exclude:</strong></p>
+        <pre><code>tutorial how to repair</code></pre>
+        <ul class="check">
+          <li>Lock into accessory-type terms.</li>
+          <li>Drop repair / info-only queries.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>Step 4 — Avoid these common mistakes</h2>
+    <div class="card">
+      <ul class="check">
+        <li>
+          <strong>Over-filtering with Include.</strong>
+          If you add too many words, you can kill good long-tail terms.
+          Start simple, then tighten if needed.
+        </li>
+        <li>
+          <strong>Forgetting that filters are AND-based.</strong>
+          If you write <code>cat dog</code> in Include, you’re asking for terms that contain
+          <em>both</em>, not one or the other.
+        </li>
+        <li>
+          <strong>Not refreshing recipes over time.</strong>
+          As you learn your niche, update your Include/Exclude recipes to reflect reality.
+        </li>
+      </ul>
+    </div>
+
+    <h2>Step 5 — Work from broad to narrow</h2>
+    <div class="card">
+      <p>A good pattern for each session:</p>
+      <ul class="check">
+        <li>Run a broad Include + minimal Exclude to see the landscape.</li>
+        <li>Note clusters that look interesting.</li>
+        <li>Then create a tighter Include recipe for each cluster.</li>
+      </ul>
+      <p>
+        This way you don’t miss opportunities, but you still end with a focused,
+        high-quality shortlist.
+      </p>
+    </div>
+
+    <h2>Step 6 — Save your best filter sets</h2>
+    <div class="card">
+      <p>
+        Keep a simple doc or sheet where you store the Include/Exclude combos that
+        “worked” for you:
+      </p>
+      <ul class="check">
+        <li>Write the date, filter values, and what you found.</li>
+        <li>Re-use these recipes in future weeks for faster scanning.</li>
+        <li>Over time, this becomes your personal playbook for reading marketplace demand.</li>
+      </ul>
+    </div>
+
+    <p class="meta">
+      Back to: <a href="/academy">Academy</a> · Related:
+      <a href="/academy/how-to-use">How to use Uptrend Hunter</a> ·
+      <a href="/academy/weekly-routine">20-minute weekly routine</a>
+    </p>
+  </main>
+
+  <footer class="footer" style="text-align:center; padding:30px 0; border-top:1px solid #1e293b;">
+    <p>© 2025 Uptrend Hunter by Erkan Ecom LLC. All rights reserved.</p>
+    <div class="links" style="margin-top:10px;">
+      <a href="/" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Home</a> |
+      <a href="/terms" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Terms</a> |
+      <a href="/privacy" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Privacy</a> |
+      <a href="/refund" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Refund</a> |
+      <a href="mailto:support@uptrendhunter.com" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Contact</a>
+    </div>
+  </footer>
+</body>
+</html>
