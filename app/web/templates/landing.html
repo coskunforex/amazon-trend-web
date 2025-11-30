@@ -87,47 +87,7 @@
       text-transform: uppercase;
       letter-spacing: .12em;
     ">
-      🔥 Black Friday Deal
-    </span>
-
-    <span style="font-weight:500; white-space:nowrap;">
-      $9.99 <span style="text-decoration:line-through; opacity:.7; margin-left:4px;">$29.99</span>
-    </span>
-
-    <span style="opacity:.85; white-space:nowrap;">
-      — ends in
-      <span id="countdown" style="color:#f97373; font-weight:600; margin-left:4px;"></span>
-    </span>
-  </div>
-</div>
-
-
-<script>
-// === Black Friday End Time ===
-// Bitiş süresini buradan değiştir: (YYYY-MM-DD HH:MM:SS)
-const endTime = new Date("2025-11-29T23:59:59").getTime();
-
-function updateCountdown() {
-    const now = new Date().getTime();
-    const distance = endTime - now;
-
-    if (distance < 0) {
-        document.getElementById("countdown").innerHTML = "Expired";
-        return;
-    }
-
-    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const mins = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-    const secs = Math.floor((distance % (1000 * 60)) / 1000);
-
-    document.getElementById("countdown").innerHTML =
-      `${days}d ${hours}h ${mins}m ${secs}s left`;
-}
-
-setInterval(updateCountdown, 1000);
-updateCountdown();
-</script>
+  
 
   <!-- Hero -->
   <section class="hero">
