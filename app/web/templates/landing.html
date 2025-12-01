@@ -351,17 +351,51 @@
     </details>
   </section>
 
-  <!-- Final CTA -->
+    <!-- Final CTA -->
   <section class="final-cta">
     <h2>Find your next winning product today</h2>
     <p>No signup required. Get started in seconds.</p>
     <a href="/app" class="btn">Try Free Demo</a>
   </section>
 
-  <div class="email-box">
-    <input type="email" placeholder="Your email" />
-    <button class="btn-primary">Subscribe</button>
-  </div>
+  <!-- Newsletter / weekly report -->
+  <section class="newsletter" style="padding:60px 20px 40px; text-align:center;">
+    <div class="container" style="max-width:720px; margin:0 auto;">
+      <h2 style="font-size:26px; margin-bottom:10px;">
+        Get Weekly Amazon Trend Reports — Free
+      </h2>
+      <p style="color:#9ca3af; font-size:15px; margin-bottom:22px;">
+        Once a week we send a short, data-packed email with rising search terms,
+        seasonal breakouts and early product ideas you can actually use.
+      </p>
+
+      <form class="email-box"
+            method="POST"
+            action="/subscribe"
+            style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+        <input
+          type="email"
+          name="email"
+          placeholder="Your email…"
+          required
+          style="padding:12px 14px; border-radius:8px; border:1px solid #1f2933;
+                 background:#020617; color:#e5e7eb; min-width:240px; flex:1 1 260px;"
+        >
+        <button
+          type="submit"
+          class="btn"
+          style="padding:12px 20px; border-radius:8px; font-weight:600;"
+        >
+          Get Weekly Report
+        </button>
+      </form>
+
+      <p style="margin-top:10px; font-size:13px; color:#6b7280;">
+        No spam. One actionable email per week. Unsubscribe anytime.
+      </p>
+    </div>
+  </section>
+
 
   <!-- Built by sellers block -->
   <section class="builtby" style="text-align:center; padding:80px 20px;">
