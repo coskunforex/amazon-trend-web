@@ -33,101 +33,29 @@
     gtag('js', new Date());
     gtag('config', 'G-9C7CGEWT0X');
   </script>
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  "name": "Uptrend Hunter AI",
-  "applicationCategory": "BusinessApplication",
-  "operatingSystem": "Web",
-  "url": "https://www.uptrendhunter.com/",
-  "description": "Uptrend Hunter AI helps Amazon sellers spot rising search terms early so they can make faster product and PPC decisions.",
-  "offers": {
-    "@type": "Offer",
-    "price": "29.99",
-    "priceCurrency": "USD",
-    "url": "https://www.uptrendhunter.com/checkout"
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Uptrend Hunter AI",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web",
+    "url": "https://www.uptrendhunter.com/",
+    "description": "Uptrend Hunter AI helps Amazon sellers spot rising search terms early so they can make faster product and PPC decisions.",
+    "offers": {
+      "@type": "Offer",
+      "price": "29.99",
+      "priceCurrency": "USD",
+      "url": "https://www.uptrendhunter.com/checkout"
+    }
   }
-}
-</script>
-
-
+  </script>
 </head>
-
-
 
 <body>
 
   {% include "_nav.html" %}
-
-<div id="bf-banner" style="
-  width:100%;
-  padding:10px 0;
-  background: radial-gradient(circle at top, rgba(56,189,248,.18), rgba(15,23,42,1));
-  border-bottom: 1px solid rgba(148,163,184,0.25);
-">
-  <div style="
-    max-width: 1120px;
-    margin: 0 auto;
-    padding: 0 8%;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    font-size: 14px;
-    color:#e5e7eb;
-  ">
-    <span style="
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: rgba(22,163,74,0.18);
-      border: 1px solid rgba(34,197,94,0.6);
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: .12em;
-    ">
-      🔥 Black Friday Deal
-    </span>
-
-    <span style="font-weight:500; white-space:nowrap;">
-      $9.99 <span style="text-decoration:line-through; opacity:.7; margin-left:4px;">$29.99</span>
-    </span>
-
-    <span style="opacity:.85; white-space:nowrap;">
-      — ends in
-      <span id="countdown" style="color:#f97373; font-weight:600; margin-left:4px;"></span>
-    </span>
-  </div>
-</div>
-
-
-<script>
-// === Black Friday End Time ===
-// Bitiş süresini buradan değiştir: (YYYY-MM-DD HH:MM:SS)
-const endTime = new Date("2025-11-29T23:59:59").getTime();
-
-function updateCountdown() {
-    const now = new Date().getTime();
-    const distance = endTime - now;
-
-    if (distance < 0) {
-        document.getElementById("countdown").innerHTML = "Expired";
-        return;
-    }
-
-    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const mins = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-    const secs = Math.floor((distance % (1000 * 60)) / 1000);
-
-    document.getElementById("countdown").innerHTML =
-      `${days}d ${hours}h ${mins}m ${secs}s left`;
-}
-
-setInterval(updateCountdown, 1000);
-updateCountdown();
-</script>
 
   <!-- Hero -->
   <section class="hero">
@@ -138,38 +66,33 @@ updateCountdown();
         of marketplace search momentum and reveal <strong>early uptrends</strong> in seconds —
         no setup, no spreadsheets.
       </p>
-            <div class="cta-group">
-  {% if current_user and current_user.plan == "pro" %}
-    <a href="/pro" class="btn">Open Pro app</a>
-    <a
-      href="{{ LEMON_PORTAL_URL or '/dashboard' }}"
-      class="btn ghost"
-      target="_blank"
-      rel="noopener"
-    >
-      Account &amp; billing
-    </a>
-  {% else %}
-    <a href="/app" class="btn">Try Free Demo</a>
-    <a href="/checkout" class="btn ghost">Upgrade to Pro</a>
-  {% endif %}
-</div>
 
+      <div class="cta-group">
+        {% if current_user and current_user.plan == "pro" %}
+          <a href="/pro" class="btn">Open Pro app</a>
+          <a
+            href="{{ LEMON_PORTAL_URL or '/dashboard' }}"
+            class="btn ghost"
+            target="_blank"
+            rel="noopener"
+          >
+            Account &amp; billing
+          </a>
+        {% else %}
+          <a href="/app" class="btn">Try Free Demo</a>
+          <a href="/checkout" class="btn ghost">Upgrade to Pro</a>
+        {% endif %}
+      </div>
 
-
-    <p class="hero-sub" style="margin-top:18px;">
-  Powered by marketplace-level search term data and long-range keyword momentum analysis.
-</p>
-
+      <p class="hero-sub" style="margin-top:18px;">
+        Powered by marketplace-level search term data and long-range keyword momentum analysis.
+      </p>
     </div>
+
     <div class="hero-image">
       <img src="/static/img/app-screen.png" alt="Uptrend Hunter — Amazon trend dashboard" loading="lazy">
-      
-
     </div>
   </section>
-
-
 
   <!-- Features -->
   <section id="features" class="features">
@@ -194,113 +117,102 @@ updateCountdown();
     </div>
   </section>
 
+  <!-- Case Studies -->
+  <section style="padding: 80px 0; background: #0C1220;">
+    <div class="container" style="max-width: 1250px; margin: auto; padding: 0 24px;">
 
-  <!-- ========================= -->
-<!-- Case Studies — Real sellers use trend data -->
-<!-- ========================= -->
+      <h2 style="font-size: 34px; font-weight: 700; margin-bottom: 50px;">
+        Case Studies — <span style="color:#82C8F8;">Real sellers using trend momentum</span>
+      </h2>
 
-<section style="padding: 80px 0; background: #0C1220;">
-  <div class="container" style="max-width: 1250px; margin: auto; padding: 0 24px;">
+      <!-- CASE STUDY 1 -->
+      <div style="
+        display: flex;
+        gap: 40px;
+        margin-bottom: 90px;
+        flex-wrap: wrap;
+        align-items: flex-start;
+      ">
+        <div style="flex: 1 1 520px; text-align: center;">
+          <img src="/static/img/case2.png"
+               alt="Case Study 1"
+               style="width: 100%; border-radius: 14px; cursor: zoom-in;"
+               onclick="openZoom('/static/img/case2.png')">
+          <p style="margin-top: 8px; opacity: 0.75;">Click to zoom</p>
+        </div>
 
-    <h2 style="font-size: 34px; font-weight: 700; margin-bottom: 50px;">
-      Case Studies — <span style="color:#82C8F8;">Real sellers using trend momentum</span>
-    </h2>
+        <div style="flex: 1 1 520px;">
+          <h3 style="font-size: 26px; margin-bottom: 10px;">Case Study #1 — Seasonal product timing</h3>
 
-    <!-- CASE STUDY 1 -->
-    <div style="
-      display: flex;
-      gap: 40px;
-      margin-bottom: 90px;
-      flex-wrap: wrap;
-      align-items: flex-start;
-    ">
-      <!-- Image -->
-      <div style="flex: 1 1 520px; text-align: center;">
-        <img src="/static/img/case2.png"
-             alt="Case Study 1"
-             style="width: 100%; border-radius: 14px; cursor: zoom-in;"
-             onclick="openZoom('/static/img/case2.png')">
-        <p style="margin-top: 8px; opacity: 0.75;">Click to zoom</p>
+          <p style="opacity: 0.9; line-height: 1.55;">
+            “Seasonal products were always a guessing game for me. I used to rely on last year’s patterns and gut feeling.
+            Once I started tracking weekly search momentum, everything became clearer.”
+          </p>
+
+          <p style="opacity: 0.9; line-height: 1.55; margin-top: 12px;">
+            “I noticed <strong>‘burgundy Christmas ornaments’</strong> climbing steadily weeks before the main peak.
+            That signal helped me prioritize the right style early, list ahead of the crowd, and be fully stocked when demand exploded.”
+          </p>
+
+          <p style="margin-top:16px; font-weight:600;">
+            — A.K. <span style="opacity:0.7;">(real user, seasonal & home category seller)</span>
+          </p>
+        </div>
       </div>
 
-      <!-- Text -->
-      <div style="flex: 1 1 520px;">
-        <h3 style="font-size: 26px; margin-bottom: 10px;">Case Study #1 — Seasonal product timing</h3>
+      <!-- CASE STUDY 2 -->
+      <div style="
+        display: flex;
+        gap: 40px;
+        flex-wrap: wrap;
+        align-items: flex-start;
+      ">
+        <div style="flex: 1 1 520px; text-align: center;">
+          <img src="/static/img/case1.png"
+               alt="Case Study 2"
+               style="width: 100%; border-radius: 14px; cursor: zoom-in;"
+               onclick="openZoom('/static/img/case1.png')">
+          <p style="margin-top: 8px; opacity: 0.75;">Click to zoom</p>
+        </div>
 
-        <p style="opacity: 0.9; line-height: 1.55;">
-        “Seasonal products were always a guessing game for me. I used to rely on last year’s patterns and gut feeling.  
-        Once I started tracking weekly search momentum, everything became clearer.”
-        </p>
+        <div style="flex: 1 1 520px;">
+          <h3 style="font-size: 26px; margin-bottom: 10px;">Case Study #2 — Smarter ad decisions</h3>
 
-        <p style="opacity: 0.9; line-height: 1.55; margin-top: 12px;">
-        “I noticed <strong>‘burgundy Christmas ornaments’</strong> climbing steadily weeks before the main peak.  
-        That signal helped me prioritize the right style early, list ahead of the crowd, and be fully stocked when demand exploded.”
-        </p>
+          <p style="opacity: 0.9; line-height: 1.55;">
+            “My biggest problem with ads was wasting budget on the wrong keyword variations.
+            It was hard to know which terms were actually gaining demand week by week.”
+          </p>
 
-        <p style="margin-top:16px; font-weight:600;">
-          — A.K. <span style="opacity:0.7;">(real user, seasonal & home category seller)</span>
-        </p>
+          <p style="opacity: 0.9; line-height: 1.55; margin-top: 12px;">
+            “By following the momentum table, I saw which <strong>‘trump mug’</strong> variations were rising fastest.
+            I shifted spend toward the high-momentum terms and reduced budget on flat ones.
+            That cut waste and boosted sales right when demand was accelerating.”
+          </p>
+
+          <p style="margin-top:16px; font-weight:600;">
+            — M.Y. <span style="opacity:0.7;">(real user, gifts & mugs category seller)</span>
+          </p>
+        </div>
       </div>
+
     </div>
+  </section>
 
-
-    <!-- CASE STUDY 2 -->
-    <div style="
-      display: flex;
-      gap: 40px;
-      flex-wrap: wrap;
-      align-items: flex-start;
-    ">
-      <!-- Image -->
-      <div style="flex: 1 1 520px; text-align: center;">
-        <img src="/static/img/case1.png"
-             alt="Case Study 2"
-             style="width: 100%; border-radius: 14px; cursor: zoom-in;"
-             onclick="openZoom('/static/img/case1.png')">
-        <p style="margin-top: 8px; opacity: 0.75;">Click to zoom</p>
-      </div>
-
-      <!-- Text -->
-      <div style="flex: 1 1 520px;">
-        <h3 style="font-size: 26px; margin-bottom: 10px;">Case Study #2 — Smarter ad decisions</h3>
-
-        <p style="opacity: 0.9; line-height: 1.55;">
-        “My biggest problem with ads was wasting budget on the wrong keyword variations.  
-        It was hard to know which terms were actually gaining demand week by week.”
-        </p>
-
-        <p style="opacity: 0.9; line-height: 1.55; margin-top: 12px;">
-        “By following the momentum table, I saw which <strong>‘trump mug’</strong> variations were rising fastest.  
-        I shifted spend toward the high-momentum terms and reduced budget on flat ones.  
-        That cut waste and boosted sales right when demand was accelerating.”
-        </p>
-
-        <p style="margin-top:16px; font-weight:600;">
-          — M.Y. <span style="opacity:0.7;">(real user, gifts & mugs category seller)</span>
-        </p>
-      </div>
-    </div>
-
+  <!-- Modal for zoom -->
+  <div id="zoomModal" style="
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,.7);
+    backdrop-filter: blur(4px); z-index:9999; align-items:center; justify-content:center;">
+    <img id="zoomImg" src="" style="max-width:90%; max-height:90%; border-radius:14px;">
   </div>
-</section>
 
-<!-- Modal for zoom -->
-<div id="zoomModal" style="
-  display:none; position:fixed; inset:0; background:rgba(0,0,0,.7);
-  backdrop-filter: blur(4px); z-index:9999; align-items:center; justify-content:center;">
-  <img id="zoomImg" src="" style="max-width:90%; max-height:90%; border-radius:14px;">
-</div>
-
-<script>
-  function openZoom(src) {
-    document.getElementById('zoomImg').src = src;
-    document.getElementById('zoomModal').style.display = 'flex';
-  }
-  document.getElementById('zoomModal').onclick = () =>
-    document.getElementById('zoomModal').style.display = 'none';
-</script>
-
-
+  <script>
+    function openZoom(src) {
+      document.getElementById('zoomImg').src = src;
+      document.getElementById('zoomModal').style.display = 'flex';
+    }
+    document.getElementById('zoomModal').onclick = () =>
+      document.getElementById('zoomModal').style.display = 'none';
+  </script>
 
   <!-- Use Cases -->
   <section id="usecases" class="features" style="margin-top:60px;">
@@ -321,17 +233,16 @@ updateCountdown();
     </div>
   </section>
 
-<!-- Why it works -->
+  <!-- Why it works: chart -->
   <div style="display:flex;justify-content:center;align-items:center;flex-direction:column;">
-  <img src="/static/img/trend-graph.png" 
-       alt="Example of Uptrend Hunter chart showing keyword momentum" 
-       style="max-width:800px; width:100%; border-radius:12px; box-shadow:0 0 20px rgba(0,0,0,0.2);" 
-       loading="lazy">
-  <p style="color:#9ca3af; font-size:14px; margin-top:12px;">
-    Real app view — keyword momentum over 12 weeks. Only consistent upward trends are flagged.
-  </p>
-</div>
-
+    <img src="/static/img/trend-graph.png"
+         alt="Example of Uptrend Hunter chart showing keyword momentum"
+         style="max-width:800px; width:100%; border-radius:12px; box-shadow:0 0 20px rgba(0,0,0,0.2);"
+         loading="lazy">
+    <p style="color:#9ca3af; font-size:14px; margin-top:12px;">
+      Real app view — keyword momentum over 12 weeks. Only consistent upward trends are flagged.
+    </p>
+  </div>
 
   <!-- How it works -->
   <section id="how" class="how">
@@ -356,74 +267,89 @@ updateCountdown();
   </section>
 
   <!-- Pricing -->
-  <!-- Pricing -->
-<section id="pricing" class="pricing">
-  <h2>Simple pricing</h2>
-  <div class="plans">
-    <div class="plan">
-      <h3>Starter</h3>
-      <p class="price">Free</p>
-      <ul>
-        <li>Up to 50 results per query</li>
-        <li>6 week lookback</li>
-        <li>Basic filters</li>
-      </ul>
-      <!-- Starter = DEMO -->
-      <a href="/app" class="btn full" aria-label="Start free demo">Start Demo</a>
-    </div>
+  <section id="pricing" class="pricing">
+    <h2>Simple pricing</h2>
+    <div class="plans">
 
-        <div class="plan highlight">
-      <h3>Pro</h3>
-      <p class="price">
-  <span style="font-size:26px; font-weight:700;">$9.99</span>
-  <span style="text-decoration:line-through; opacity:0.6; margin-left:6px; font-size:16px;">$29.99</span>
-  <span style="font-size:14px; color:#2ecc71; margin-left:6px; font-weight:600;">Black Friday</span>
-</p>
-<div style="margin-top:6px; font-size:14px; color:#2ecc71; font-weight:600;">
-    ✔ Black Friday Special — 67% OFF. First month applies only.
-  </div>
-      <ul>
-        <li>Full 18+ week history</li>
-        <li>Advanced Include/Exclude</li>
-        <li>Up to 250 results per query</li>
-        <li>Priority updates & support</li>
-      </ul>
+      <div class="plan">
+        <h3>Starter</h3>
+        <p class="price">Free</p>
+        <ul>
+          <li>Up to 50 results per query</li>
+          <li>6 week lookback</li>
+          <li>Basic filters</li>
+        </ul>
+        <a href="/app" class="btn full" aria-label="Start free demo">Start Demo</a>
+      </div>
 
-      {% if current_user and current_user.plan == "pro" %}
-        <a href="/pro" class="btn full" aria-label="Open Pro app">Open Pro</a>
-        <p style="margin-top:8px; font-size:14px; color:#9ea8b7;">
-          You already have Pro — thank you for supporting Uptrend Hunter.
+      <div class="plan highlight">
+        <h3>Pro</h3>
+        <p class="price">
+          $29.99 <span style="font-size:14px; opacity:0.7;">/ month</span>
         </p>
-      {% else %}
-        <a href="/checkout" class="btn full" aria-label="Upgrade to Pro">Start Pro</a>
-        <p style="margin-top:8px; font-size:14px; color:#9ea8b7;">
-          🔒Secure checkout · 30-day refund
-        </p>
-      {% endif %}
+        <ul>
+          <li>Full 18+ week history</li>
+          <li>Advanced Include/Exclude</li>
+          <li>Up to 250 results per query</li>
+          <li>Priority updates & support</li>
+        </ul>
+
+        {% if current_user and current_user.plan == "pro" %}
+          <a href="/pro" class="btn full" aria-label="Open Pro app">Open Pro</a>
+          <p style="margin-top:8px; font-size:14px; color:#9ea8b7;">
+            You already have Pro — thank you for supporting Uptrend Hunter.
+          </p>
+        {% else %}
+          <a href="/checkout" class="btn full" aria-label="Upgrade to Pro">Start Pro</a>
+          <p style="margin-top:8px; font-size:14px; color:#9ea8b7;">
+            🔒Secure checkout · 30-day refund
+          </p>
+        {% endif %}
+      </div>
 
     </div>
-
-  </div>
-</section>
-
+  </section>
 
   <!-- FAQ -->
   <section id="faq" class="faq">
     <h2>FAQ</h2>
-    <details><summary>How Uptrend Hunter Works?</summary><p>Uptrend Hunter analyzes weekly marketplace search behavior and builds a
-  historical dataset</p></details>
-    <details><summary>How many weeks of data are included?</summary><p>18+ weeks and growing, updated regularly.</p></details>
-    <details><summary>>Where does Uptrend Hunter’s data come from?</summary><p>Uptrend Hunter uses an internally maintained marketplace search-term dataset
-    built from tracking weekly search behavior over time. We store repeated
-    queries, monitor ranking changes, and compute a momentum score to highlight
-    genuine rising trends instead of random spikes. everything is based on publicly
-    observable marketplace search patterns</p></details>
-    <details><summary>Which browsers are supported?</summary><p>Latest versions of Chrome, Edge, Safari, and Firefox.</p></details>
-    <details><summary>Is there a refund policy?</summary><p>Yes — cancel Pro anytime within 30 days for a full refund.</p></details>
-    <details><summary>How fast does it process results?</summary><p>Starter: up to 50 results per query. Pro: higher limits and faster queries.</p></details>
+
+    <details>
+      <summary>How Uptrend Hunter works?</summary>
+      <p>Uptrend Hunter analyzes weekly marketplace search behavior and builds a historical dataset.</p>
+    </details>
+
+    <details>
+      <summary>How many weeks of data are included?</summary>
+      <p>18+ weeks and growing, updated regularly.</p>
+    </details>
+
+    <details>
+      <summary>Where does Uptrend Hunter’s data come from?</summary>
+      <p>
+        Uptrend Hunter uses an internally maintained marketplace search-term dataset
+        built from tracking weekly search behavior over time. We store repeated
+        queries, monitor ranking changes, and compute a momentum score to highlight
+        genuine rising trends instead of random spikes. Everything is based on publicly
+        observable marketplace search patterns.
+      </p>
+    </details>
+
+    <details>
+      <summary>Which browsers are supported?</summary>
+      <p>Latest versions of Chrome, Edge, Safari, and Firefox.</p>
+    </details>
+
+    <details>
+      <summary>Is there a refund policy?</summary>
+      <p>Yes — cancel Pro anytime within 30 days for a full refund.</p>
+    </details>
+
+    <details>
+      <summary>How fast does it process results?</summary>
+      <p>Starter: up to 50 results per query. Pro: higher limits and faster queries.</p>
+    </details>
   </section>
-
-
 
   <!-- Final CTA -->
   <section class="final-cta">
@@ -432,13 +358,10 @@ updateCountdown();
     <a href="/app" class="btn">Try Free Demo</a>
   </section>
 
-<div class="email-box">
-  <input type="email" placeholder="Your email" />
-  <button class="btn-primary">Subscribe</button>
-</div>
-
-
-
+  <div class="email-box">
+    <input type="email" placeholder="Your email" />
+    <button class="btn-primary">Subscribe</button>
+  </div>
 
   <!-- Built by sellers block -->
   <section class="builtby" style="text-align:center; padding:80px 20px;">
@@ -455,67 +378,60 @@ updateCountdown();
   <footer class="footer" style="text-align:center; padding:30px 0; border-top:1px solid #1e293b;">
     <p>© 2025 Uptrend Hunter by Erkan Ecom LLC. All rights reserved.</p>
     <div class="links" style="margin-top:10px;">
-      <a href="/terms" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Terms & Conditions</a> |
+      <a href="/terms" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Terms &amp; Conditions</a> |
       <a href="/privacy" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Privacy Policy</a> |
       <a href="/refund" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Refund Policy</a> |
-      <a href="mailto:support@uptrendhunter.com" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Contact</a> |
-     
-
+      <a href="mailto:support@uptrendhunter.com" style="color:#9aa0a6; text-decoration:none; margin:0 10px;">Contact</a>
     </div>
     <div class="payment-note">🔒 Secure payments — by Lemon Squeezy</div>
-
   </footer>
-<!-- ===== TRUST BAR (Footer Üstü) ===== -->
-<section class="trust-bar">
-  <div class="trust-inner">
 
-    <div class="trust-item">
-      <img src="/static/img/trust/ssl-secure.svg" alt="SSL Secure">
-      <span>SSL Secured</span>
+  <!-- Trust bar -->
+  <section class="trust-bar">
+    <div class="trust-inner">
+      <div class="trust-item">
+        <img src="/static/img/trust/ssl-secure.svg" alt="SSL Secure">
+        <span>SSL Secured</span>
+      </div>
+      <div class="trust-item">
+        <img src="/static/img/trust/visa.svg" alt="Visa">
+        <span>Visa</span>
+      </div>
+      <div class="trust-item">
+        <img src="/static/img/trust/mastercard.svg" alt="Mastercard">
+        <span>Mastercard</span>
+      </div>
+      <div class="trust-item">
+        <img src="/static/img/trust/stripe.svg" alt="Stripe">
+        <span>Stripe</span>
+      </div>
+      <div class="trust-item">
+        <img src="/static/img/trust/shield.svg" alt="Data Protection">
+        <span>Data Protection</span>
+      </div>
     </div>
+  </section>
 
-    <div class="trust-item">
-      <img src="/static/img/trust/visa.svg" alt="Visa">
-      <span>Visa</span>
-    </div>
-
-    <div class="trust-item">
-      <img src="/static/img/trust/mastercard.svg" alt="Mastercard">
-      <span>Mastercard</span>
-    </div>
-
-    <div class="trust-item">
-      <img src="/static/img/trust/stripe.svg" alt="Stripe">
-      <span>Stripe</span>
-    </div>
-
-    <div class="trust-item">
-      <img src="/static/img/trust/shield.svg" alt="Data Protection">
-      <span>Data Protection</span>
-    </div>
-
+  <!-- Lightbox -->
+  <div id="lightbox" style="
+    position:fixed; inset:0; background:rgba(0,0,0,0.85);
+    display:none; align-items:center; justify-content:center;
+    z-index:9999; padding:24px;">
+    <img id="lightbox-img" src=""
+         style="max-width:95%; max-height:95%; border-radius:14px; border:1px solid rgba(255,255,255,0.15);">
   </div>
-</section>
-<!-- Lightbox -->
-<div id="lightbox" style="
-  position:fixed; inset:0; background:rgba(0,0,0,0.85);
-  display:none; align-items:center; justify-content:center;
-  z-index:9999; padding:24px;">
-  <img id="lightbox-img" src=""
-       style="max-width:95%; max-height:95%; border-radius:14px; border:1px solid rgba(255,255,255,0.15);">
-</div>
 
-<script>
-  function openLightbox(src){
-    const lb = document.getElementById('lightbox');
-    const img = document.getElementById('lightbox-img');
-    img.src = src;
-    lb.style.display = 'flex';
-  }
-  document.getElementById('lightbox').addEventListener('click', function(){
-    this.style.display = 'none';
-  });
-</script>
+  <script>
+    function openLightbox(src){
+      const lb = document.getElementById('lightbox');
+      const img = document.getElementById('lightbox-img');
+      img.src = src;
+      lb.style.display = 'flex';
+    }
+    document.getElementById('lightbox').addEventListener('click', function(){
+      this.style.display = 'none';
+    });
+  </script>
 
 </body>
 </html>
