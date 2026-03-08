@@ -306,7 +306,9 @@ function renderTable(rows, s, e){
 async function showSeries(term, s, e){
   try{
     setLoading(true);
-    const params = new URLSearchParams({ term, startWeekId: s, endWeekId: e });
+    const params = new URLSearchParams({
+      term, startWeekId: s, endWeekId: e, maxRank: 2000000
+    });
     const data = await fetchJSON("/series?" + params.toString());
     drawMiniChart(term, data);
     openModal();
