@@ -629,17 +629,16 @@ def series():
               FROM all_weeks
             )
             SELECT w.week, s.rank
-            FROM searches s
-            JOIN weeks_idx w USING(week)
-            WHERE LOWER(s.term) = LOWER(?)
-              AND w.week_id BETWEEN ? AND ?
+            FROM weeks_idx w
+            LEFT JOIN searches s ON s.week = w.week AND LOWER(s.term) = LOWER(?)
+            WHERE w.week_id BETWEEN ? AND ?
             ORDER BY w.week
         """, [term, start_id, end_id]).fetchall()
 
         con.close()
 
         return jsonify([
-            {"week": r[0], "weekLabel": r[0], "rank": int(r[1])}
+            {"week": r[0], "weekLabel": r[0], "rank": int(r[1]) if r[1] is not None else None}
             for r in rows
         ])
 
