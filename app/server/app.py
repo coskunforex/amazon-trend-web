@@ -618,6 +618,9 @@ def series():
                 "message": "Demo is limited to 6 weeks. Upgrade to Pro."
             }), 403
 
+        # ✅ Same max_rank as /uptrends so chart matches table "weeks" count
+        max_rank = request.args.get("maxRank", 1_500_000, type=int)
+
         con = get_conn(read_only=True)
 
         rows = con.execute("""
@@ -630,10 +633,15 @@ def series():
             )
             SELECT w.week, s.rank
             FROM weeks_idx w
-            LEFT JOIN searches s ON s.week = w.week AND LOWER(s.term) = LOWER(?)
+            LEFT JOIN searches s ON s.week = w.week
+              AND LOWER(s.term) = LOWER(?)
+              AND s.rank IS NOT NULL
+              AND s.rank <= ?
+              AND LENGTH(TRIM(s.term)) >= 2
+              AND LOWER(s.term) <> UPPER(s.term)
             WHERE w.week_id BETWEEN ? AND ?
             ORDER BY w.week
-        """, [term, start_id, end_id]).fetchall()
+        """, [term, max_rank, start_id, end_id]).fetchall()
 
         con.close()
 
