@@ -229,15 +229,20 @@ async function runQuery(){
 
     const norm = str => str.replaceAll(",", " ").trim();
     const params = new URLSearchParams({
-      startWeekId: s, endWeekId: e,
-      include: norm(includeInp.value),
-      exclude: norm(excludeInp.value),
-    });
+  startWeekId: s,
+  endWeekId: e,
+  include: norm(includeInp.value),
+  exclude: norm(excludeInp.value),
+  maxRank: 2000000,
+  limit: MODE === "demo" ? 50 : 250,
+  offset: 0,
+  mode: MODE,
+});
 
-    const rows = await fetchJSON(
-      "/uptrends?" + params.toString(),
-      currentController.signal
-    );
+const rows = await fetchJSON(
+  "/uptrends?" + params.toString(),
+  currentController.signal
+);
 
     const sorted = sortRows(rows, currentSort.key, currentSort.dir);
     renderTable(sorted, s, e);
